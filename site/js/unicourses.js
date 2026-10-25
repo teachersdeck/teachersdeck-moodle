@@ -2,8 +2,8 @@
 /* =========================================================
    UniCourses — the UniDeck course client (backend v2.12.0), one file in two apps
    ---------------------------------------------------------
-   studentdeck/js/unicourses.js   (this copy is the one to edit) — UniStudentDeck's Courses, Assignments, Grades
-   teachersdeck/js/unicourses.js  — LectureDeck's Course builder, Assignments, Grader, Gradebook
+   studentdeck/js/unicourses.js   (this copy is the one to edit) — UniStudentDeck's Courses, Assignments, Grades, Modules, Announcements
+   teachersdeck/js/unicourses.js  — LectureDeck's Course builder, Assignments, Grader, Gradebook, Modules, Announcements
    tools/check_shared.py keeps them identical. Only the UniDeck apps load it (their own index.html); StudentDeck and
    TeachersDeck carry the file but never run it.
 
@@ -93,6 +93,42 @@ const UniCourses = (() => {
       if (i < 3) put('c1', 'a3', s.uid, { link: 'https://docs.google.com/document/d/demo-bibliography-' + (i + 1), submittedAtMs: at(-1, 9 + i, 0) }, null);
     });
     void rnd;
+    /* v2.13.0: modules, progress, announcements and read status for the demo courses */
+    const mods = {
+      c1: [
+        { id: 'm1', title: 'Week 1: What academic writing is', order: 1, releaseAtMs: at(-28, 8, 0), items: [
+          { id: 'w1p', kind: 'page', title: 'Welcome to ENG 201', body: 'Welcome! This course is about writing clear, well-supported arguments for university.\n\nEach week has a short reading, a lecture and one task. Tick items off as you go.\nOffice hours: Wednesdays 14:00, room B204.' },
+          { id: 'w1s', kind: 'link', title: 'Course syllabus (PDF)', url: 'https://example.edu/eng201/syllabus.pdf' },
+          { id: 'w1r', kind: 'reading', title: 'Swales & Feak, unit 1', url: '' },
+          { id: 'w1a', kind: 'assignment', refId: 'a1', title: 'Diagnostic paragraph' }] },
+        { id: 'm2', title: 'Week 2: Thesis and argument', order: 2, releaseAtMs: at(-21, 8, 0), items: [
+          { id: 'w2p', kind: 'page', title: 'Lecture notes: a thesis you can defend', body: 'A thesis is a claim someone could disagree with.\n\nTest: can you name the evidence that would prove you wrong?\nNarrow it: one place, one period, one group.' },
+          { id: 'w2v', kind: 'link', title: 'Lecture recording (video)', url: 'https://example.edu/eng201/week2-video' },
+          { id: 'w2a', kind: 'assignment', refId: 'a2', title: 'Essay 1: Argument' }] },
+        { id: 'm3', title: 'Week 3: Sources and evidence', order: 3, releaseAtMs: at(-3, 8, 0), items: [
+          { id: 'w3r', kind: 'reading', title: 'Booth et al., chapter 5: finding sources', url: 'https://example.edu/eng201/booth-ch5' },
+          { id: 'w3l', kind: 'link', title: 'Library guide: academic databases', url: 'https://example.edu/library/databases' },
+          { id: 'w3a', kind: 'assignment', refId: 'a3', title: 'Annotated bibliography' }] },
+        { id: 'm4', title: 'Week 4: Midterm reflection', order: 4, releaseAtMs: at(5, 8, 0), items: [
+          { id: 'w4p', kind: 'page', title: 'How to reflect on your writing', body: 'Compare your diagnostic paragraph with Essay 1. What changed, and why?' },
+          { id: 'w4a', kind: 'assignment', refId: 'a4', title: 'Midterm reflection' }] },
+      ],
+      c2: [
+        { id: 'r1', title: 'Week 1: Designing a survey', order: 1, releaseAtMs: at(-7, 8, 0), items: [
+          { id: 'r1p', kind: 'page', title: 'Good survey questions', body: 'One idea per question. No leading words. Offer a "don’t know" option.' },
+          { id: 'r1a', kind: 'assignment', refId: 'b1', title: 'Survey design draft' }] },
+      ],
+    };
+    const progress = { c1: { d1: { w1p: at(-27), w1s: at(-27), w1r: at(-26), w1a: at(-24), w2p: at(-20), w2v: at(-19), w2a: at(-6) } } };
+    const anns = {
+      c1: [
+        { id: 'n1', title: 'Essay 1 grades next week', body: 'I am reading your essays now. Grades and rubric comments will be released next Wednesday. Please read the comments before you start the annotated bibliography.', pinned: true, authorName: me.teacher.name, createdAtMs: at(-2, 9, 30) },
+        { id: 'n2', title: 'Library session moved to room L3', body: 'Thursday’s library session on finding academic sources is in room L3, not the main hall.', pinned: false, authorName: me.teacher.name, createdAtMs: at(-5, 16, 10) },
+        { id: 'n3', title: 'Welcome to Academic Writing', body: 'Welcome! Start with Week 1 in Modules. Join the course in UniStudentDeck with the code WRIT-2026 if a friend hasn’t yet.', pinned: false, authorName: me.teacher.name, createdAtMs: at(-28, 8, 5) },
+      ],
+      c2: [{ id: 'q1', title: 'Survey ethics form', body: 'Before you collect any responses, submit the one-page ethics form linked in Week 1.', pinned: false, authorName: me.teacher.name, createdAtMs: at(-1, 11, 0) }],
+    };
+    const reads = { c1: { d1: { n3: at(-28, 9, 0), n2: at(-5, 18, 0) }, d2: { n3: at(-27), n1: at(-1) }, d3: { n3: at(-27) }, d4: { n3: at(-26), n2: at(-4) } } };
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
@@ -144,6 +180,31 @@ const UniCourses = (() => {
       async release(c, aId) { await wait(); let n = 0; for (const [key, g] of Object.entries(grades)) if (key.startsWith(`${c}|${aId}|`) && !g.released) { g.released = true; g.releasedAtMs = Date.now(); n++; } return { released: n }; },
       async exportGradebook(c) { await wait(); const csv = M.gradebookCsv(courses[c], students.filter((s) => membership[c].has(s.uid)), asg[c], Object.entries(grades).filter(([key]) => key.startsWith(c + '|')).map(([, g]) => g));
         return { csv, filename: `${courses[c].title.replace(/[^A-Za-z0-9]+/g, '-')}-gradebook.csv` }; },
+      /* ---- v2.13.0 modules and announcements (demo) ---- */
+      async modules(c) { await wait(); need(c); return (mods[c] || []).map((m) => ({ ...m, items: m.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, refId: i.refId })) })).sort((a, b) => a.order - b.order); },
+      async moduleContent(c, mid) { await wait(); need(c); const m = (mods[c] || []).find((x) => x.id === mid); if (!m) return null;
+        if (role() !== 'teacher' && m.releaseAtMs && m.releaseAtMs > Date.now()) return null;
+        const items = {}; m.items.forEach((i) => { if (i.url || i.body) items[i.id] = { url: i.url, body: i.body }; }); return { releaseAtMs: m.releaseAtMs, items }; },
+      async saveModule(c, m) { await wait(); need(c); if (!m.title) throw new Error('Give the module a title.');
+        const items = (m.items || []).map((i) => ({ id: i.id || Math.random().toString(36).slice(2, 10), kind: i.kind, title: i.kind === 'assignment' ? ((asg[c].find((a) => a.id === i.refId) || {}).title || '') : i.title, refId: i.refId, url: i.url || '', body: i.body || '' }));
+        const list = mods[c] || (mods[c] = []);
+        if (m.id) { Object.assign(list.find((x) => x.id === m.id), { title: m.title, releaseAtMs: m.releaseAtMs || null, items }); return { moduleId: m.id }; }
+        const id = 'm' + Math.random().toString(36).slice(2, 7); list.push({ id, title: m.title, order: list.length + 1, releaseAtMs: m.releaseAtMs || null, items }); return { moduleId: id }; },
+      async reorderModules(c, order) { await wait(); order.forEach((id, i) => { const m = mods[c].find((x) => x.id === id); if (m) m.order = i + 1; }); return { ok: true }; },
+      async deleteModule(c, mid) { await wait(); mods[c] = mods[c].filter((m) => m.id !== mid); return { ok: true }; },
+      async myProgress(c) { await wait(); return { ...((progress[c] || {})[myUid()] || {}) }; },
+      async markItemDone(c, mid, iid, done) { await wait(); const m = mods[c].find((x) => x.id === mid); if (m.releaseAtMs && m.releaseAtMs > Date.now()) throw new Error('This module is not open yet.');
+        const p = (progress[c] || (progress[c] = {}))[myUid()] || (progress[c][myUid()] = {}); if (done) p[iid] = p[iid] || Date.now(); else delete p[iid]; return { ok: true }; },
+      async progressAll(c) { await wait(); return Object.entries(progress[c] || {}).map(([uid, done]) => ({ uid, done: { ...done } })); },
+      async announcements(c) { await wait(); need(c); return [...(anns[c] || [])].sort((a, b) => (b.pinned - a.pinned) || (b.createdAtMs - a.createdAtMs)).map((a) => ({ ...a })); },
+      async saveAnnouncement(d) { await wait(); if (!d.title) throw new Error('Give the announcement a title.'); if (!d.body) throw new Error('Write the announcement.');
+        if (d.id) { Object.assign(anns[d.courseId].find((a) => a.id === d.id), { title: d.title, body: d.body, pinned: !!d.pinned, editedAtMs: Date.now() }); return { posted: [{ courseId: d.courseId, announcementId: d.id }] }; }
+        const posted = (d.courseIds || []).map((c) => { const id = 'n' + Math.random().toString(36).slice(2, 7); (anns[c] || (anns[c] = [])).push({ id, title: d.title, body: d.body, pinned: !!d.pinned, authorName: me.teacher.name, createdAtMs: Date.now() }); return { courseId: c, announcementId: id }; });
+        if (!posted.length) throw new Error('Choose at least one course.'); return { posted }; },
+      async deleteAnnouncement(c, id) { await wait(); anns[c] = anns[c].filter((a) => a.id !== id); return { ok: true }; },
+      async myReads(c) { await wait(); return { ...((reads[c] || {})[myUid()] || {}) }; },
+      async markRead(c, ids) { const r = (reads[c] || (reads[c] = {}))[myUid()] || (reads[c][myUid()] = {}); ids.forEach((id) => { r[id] = r[id] || Date.now(); }); return { ok: true }; },
+      async readCounts(c) { await wait(); const out = {}; Object.values(reads[c] || {}).forEach((r) => Object.keys(r).forEach((id) => { out[id] = (out[id] || 0) + 1; })); return out; },
       async fileUrl() { return null; },
     };
   })();
@@ -198,6 +259,21 @@ const UniCourses = (() => {
     grade: (c, a, uid, g) => call('gradeSubmission', { courseId: c, assignmentId: a, uid, ...g }),
     release: (c, a) => call('releaseGrades', { courseId: c, assignmentId: a }),
     exportGradebook: (c) => call('exportGradebook', { courseId: c }),
+    /* ---- v2.13.0 modules and announcements ---- */
+    async modules(c) { const s = await db.collection('courses').doc(c).collection('modules').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.order - b.order); },
+    async moduleContent(c, mid) { try { const s = await db.collection('courses').doc(c).collection('moduleContent').doc(mid).get(); return s.exists ? s.data() : null; } catch (e) { return null; } },
+    saveModule: (c, m) => call('saveModule', { courseId: c, moduleId: m.id || undefined, title: m.title, releaseAtMs: m.releaseAtMs || null, items: m.items || [] }),
+    reorderModules: (c, order) => call('reorderModules', { courseId: c, order }),
+    deleteModule: (c, mid) => call('deleteModule', { courseId: c, moduleId: mid }),
+    async myProgress(c) { const s = await db.collection('courses').doc(c).collection('progress').doc(state.user.uid).get(); return (s.exists && s.data().done) || {}; },
+    markItemDone: (c, mid, iid, done) => call('markItemDone', { courseId: c, moduleId: mid, itemId: iid, done }),
+    async progressAll(c) { const s = await db.collection('courses').doc(c).collection('progress').get(); return s.docs.map((d) => ({ uid: d.id, done: d.data().done || {} })); },
+    async announcements(c) { const s = await db.collection('courses').doc(c).collection('announcements').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => ((b.pinned === true) - (a.pinned === true)) || (b.createdAtMs - a.createdAtMs)); },
+    saveAnnouncement: (d) => call('saveAnnouncement', d.id ? { courseId: d.courseId, announcementId: d.id, title: d.title, body: d.body, pinned: !!d.pinned } : { courseIds: d.courseIds, title: d.title, body: d.body, pinned: !!d.pinned }),
+    deleteAnnouncement: (c, id) => call('deleteAnnouncement', { courseId: c, announcementId: id }),
+    async myReads(c) { const s = await db.collection('courses').doc(c).collection('reads').doc(state.user.uid).get(); return (s.exists && s.data().announcements) || {}; },
+    markRead: (c, ids) => call('markAnnouncementsRead', { courseId: c, ids }),
+    async readCounts(c) { const s = await db.collection('courses').doc(c).collection('reads').get(); const out = {}; s.docs.forEach((d) => Object.keys(d.data().announcements || {}).forEach((id) => { out[id] = (out[id] || 0) + 1; })); return out; },
     async fileUrl(path) { return storage ? storage.ref(path).getDownloadURL() : null; },
   };
 

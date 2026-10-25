@@ -1544,6 +1544,12 @@ UNI_WIDGET_DEFS.forEach(w => {
   WIDGETS.push({ id:w.id, cat:w.cat || 'course', labelKey:'uw_' + w.id, icon:w.icon || 'clipboard', w:w.w, h:w.h, render:w.render, full:!!w.full });
 });
 if(UNI) STRINGS.cat_course = STRINGS.cat_course || { en:'Courses' };
+/* UniDeck (LectureDeck): school-only widgets leave the registry in the university edition. They are built on StudentDeck's
+   class join codes and points, ParentDeck's families, or primary-school routines, none of which UniDeck has: Cloud Class
+   (Course builder replaces it), Reward Points, Notes Home, Class Activity, Progress Reports, Scrapbook Review, Board
+   Review and Hall Pass. Saved layouts and dock places for them are left untouched. TeachersDeck keeps them all. */
+const UNI_SCHOOL_ONLY = ['cloudclass', 'rewardpoints', 'noteshome', 'classactivity', 'progressreports', 'scrapreview', 'boardreview', 'hallpass'];
+if(UNI) for(let i = WIDGETS.length - 1; i >= 0; i--) if(UNI_SCHOOL_ONLY.includes(WIDGETS[i].id)) WIDGETS.splice(i, 1);
 
 const wall = document.getElementById('wall');
 const dock = document.getElementById('dock');

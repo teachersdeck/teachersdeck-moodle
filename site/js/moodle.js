@@ -1,6 +1,6 @@
 'use strict';
 /* =========================================================
-   TeachersDeck for Moodle — the launch and the save loop. tools/build_app.py puts this file where index.html loads
+   TeachersDeck for Moodle — the launch and the save loop. tools/build_platform.py puts this file where index.html loads
    js/app.js, and takes js/app.js and js/update.js out of the page: this file loads them itself, once the teacher's saved
    state for the course has arrived from Moodle, because app.js reads storage the moment it runs.
 

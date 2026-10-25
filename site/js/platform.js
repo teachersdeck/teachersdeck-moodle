@@ -1,7 +1,7 @@
 'use strict';
 /* =========================================================
    TeachersDeck for Moodle — the platform file. Sets window.TD_PLATFORM, which the shared js/app.js and js/cloud.js read
-   (their "platform:" hooks) and js/moodle.js builds on. tools/build_app.py puts this file straight after js/edition.js,
+   (their "platform:" hooks) and js/moodle.js builds on. tools/build_platform.py puts this file straight after js/edition.js,
    so it runs before every other script. The suite's own TeachersDeck never loads it.
 
    The hosted site is opened by the local_teachersdeck plugin's deck page inside a Moodle course, in a frame:

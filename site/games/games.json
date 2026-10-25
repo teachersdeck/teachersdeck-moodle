@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Classroom Word Wheel",
+    "folder": "Classroom-Word-Wheel",
+    "entry": "classroom_word_wheel.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Spelling Bee Showdown",
+    "folder": "Spelling-Bee-Showdown",
+    "entry": "spelling_bee_showdown.html",
+    "instructions": "instructions.html"
+  }
+]

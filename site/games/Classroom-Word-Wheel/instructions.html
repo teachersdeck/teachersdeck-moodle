@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>How to Play — Classroom Word Wheel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stage:#10192B;
+    --stage-deep:#0B1220;
+    --panel:#1B2740;
+    --panel-line:#2A3A5C;
+    --gold:#F0B429;
+    --gold-deep:#C9910F;
+    --ink:#F5F1E6;
+    --ink-dim:#9FB0CC;
+    --good:#4CAF6D;
+    --coral:#E8543E;
+    --sky:#3E8FD0;
+    --teal:#2FA79A;
+    --violet:#8B5FBF;
+    --grass:#5EA85C;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(240,180,41,0.06), transparent 45%),
+      radial-gradient(ellipse at 85% 100%, rgba(62,143,208,0.07), transparent 45%),
+      var(--stage);
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    padding:2rem 1.5rem 3rem;
+  }
+
+  .wrap{
+    max-width:840px;
+    margin:0 auto;
+  }
+
+  .back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:0.4rem;
+    color:var(--ink-dim);
+    text-decoration:none;
+    font-size:0.85rem;
+    font-weight:600;
+    margin-bottom:1.2rem;
+  }
+  .back-link:hover{color:var(--gold);}
+  .back-link svg{width:14px;height:14px;fill:currentColor;}
+
+  h1{
+    font-family:'Baloo 2', cursive;
+    font-weight:700;
+    font-size:clamp(1.8rem, 4vw, 2.4rem);
+    color:var(--gold);
+    margin:0 0 0.3rem;
+  }
+  .subtitle{
+    color:var(--ink-dim);
+    font-size:0.95rem;
+    margin-bottom:2rem;
+  }
+
+  h2{
+    font-family:'Baloo 2', cursive;
+    font-size:1.25rem;
+    color:var(--ink);
+    margin:0 0 0.7rem;
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:1.6rem;
+    height:1.6rem;
+    border-radius:50%;
+    background:var(--gold);
+    color:var(--stage-deep);
+    font-family:'Baloo 2', cursive;
+    font-weight:700;
+    font-size:0.9rem;
+    flex-shrink:0;
+  }
+
+  section{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    padding:1.3rem 1.5rem 1.5rem;
+    margin-bottom:1.1rem;
+  }
+
+  p{
+    line-height:1.6;
+    font-size:0.95rem;
+    color:var(--ink);
+    margin:0 0 0.7rem;
+  }
+  p:last-child{margin-bottom:0;}
+
+  ul{
+    margin:0;
+    padding-left:1.2rem;
+  }
+  li{
+    line-height:1.6;
+    font-size:0.95rem;
+    margin-bottom:0.5rem;
+  }
+  li:last-child{margin-bottom:0;}
+
+  .lock-note{
+    display:flex;
+    gap:0.6rem;
+    align-items:flex-start;
+    background:var(--stage-deep);
+    border:1px solid var(--gold-deep);
+    border-radius:10px;
+    padding:0.8rem 1rem;
+    margin-top:0.9rem;
+  }
+  .lock-note svg{width:18px;height:18px;fill:var(--gold);flex-shrink:0;margin-top:2px;}
+  .lock-note p{font-size:0.88rem;color:var(--ink-dim);margin:0;}
+
+  .prize-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+    gap:0.6rem;
+    margin-top:0.9rem;
+  }
+  .prize{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:0.7rem 0.5rem;
+    border-radius:10px;
+    font-family:'Baloo 2', cursive;
+    font-weight:700;
+    font-size:1rem;
+    color:#fff;
+    text-align:center;
+    line-height:1.25;
+  }
+  .prize.p1{background:var(--coral);}
+  .prize.p2{background:var(--sky);}
+  .prize.p3{background:var(--teal);}
+  .prize.p4{background:var(--violet);}
+  .prize.p5{background:var(--grass);}
+  .prize.pgold{background:var(--gold); color:var(--stage-deep);}
+
+  .steps{
+    counter-reset:step;
+    list-style:none;
+    padding:0;
+    margin:0;
+  }
+  .steps li{
+    position:relative;
+    padding-left:2.4rem;
+    margin-bottom:0.9rem;
+  }
+  .steps li:last-child{margin-bottom:0;}
+  .steps li::before{
+    counter-increment:step;
+    content:counter(step);
+    position:absolute;
+    left:0;
+    top:0;
+    width:1.7rem;
+    height:1.7rem;
+    border-radius:50%;
+    background:var(--gold);
+    color:var(--stage-deep);
+    font-family:'Baloo 2', cursive;
+    font-weight:700;
+    font-size:0.9rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .key-demo{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:1.7rem;
+    height:1.7rem;
+    border-radius:5px;
+    background:#33456B;
+    color:var(--ink);
+    font-weight:700;
+    font-size:0.8rem;
+    margin:0 2px;
+    vertical-align:middle;
+  }
+  .key-demo.vowel{background:#6B4E9C;}
+
+  .footer-note{
+    text-align:center;
+    color:var(--ink-dim);
+    font-size:0.85rem;
+    margin-top:1.6rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back-link" href="classroom_word_wheel.html">
+    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    Back to the game
+  </a>
+
+  <h1>How to Play</h1>
+  <div class="subtitle">Classroom Word Wheel — quick rules for teachers and students</div>
+
+  <section>
+    <h2><span class="badge">1</span> Object of the game</h2>
+    <p>
+      The teacher secretly picks a word or phrase. Students take turns spinning the wheel and
+      guessing letters to reveal the puzzle. The team that solves the puzzle wins the round —
+      but points earned along the way matter too, since the class can play multiple rounds and
+      keep a running score.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="badge">2</span> Setting up a puzzle (teacher only)</h2>
+    <p>
+      Tap <strong>Host setup</strong> to open the entry panel. Type a category (this is shown to
+      everyone) and the secret word or phrase. Tap <strong>Create puzzle</strong> and the board
+      fills in with blank tiles.
+    </p>
+    <div class="lock-note">
+      <svg viewBox="0 0 24 24"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3z"/></svg>
+      <p>
+        The secret word field hides itself as dots while you type, so it's safe to fill in even
+        while your screen is mirrored to a projector or smart TV.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="badge">3</span> Taking a turn</h2>
+    <ol class="steps">
+      <li>Mark which team is up by tapping their card in the <strong>Teams</strong> panel — it gets an "ACTIVE" tag.</li>
+      <li>The team spins the wheel by tapping <strong>SPIN</strong>. Whatever it lands on is that turn's prize.</li>
+      <li>The team guesses a letter out loud. The teacher taps that letter on the keyboard — matching tiles reveal automatically, and the key turns green (correct) or gray (not in the puzzle).</li>
+      <li>If the guess was correct, tap <strong>Apply to active team</strong> to add the wheel prize to their score.</li>
+      <li>Play passes to the next team — use <strong>Next team</strong> to rotate turns.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="badge">4</span> Buying a vowel</h2>
+    <p>
+      Instead of spinning, a team can buy a vowel
+      (<span class="key-demo vowel">A</span><span class="key-demo vowel">E</span><span class="key-demo vowel">I</span><span class="key-demo vowel">O</span><span class="key-demo vowel">U</span>)
+      for 1 point. Make sure that team is marked active, tap <strong>Buy a vowel (&minus;1)</strong>
+      to deduct the point, then tap the vowel on the keyboard to reveal it.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="badge">5</span> What's on the wheel</h2>
+    <p>The wheel has point values from 1 to 5, plus a few special spaces:</p>
+    <div class="prize-grid">
+      <div class="prize p1">+1</div>
+      <div class="prize p2">+2</div>
+      <div class="prize p3">+3</div>
+      <div class="prize p4">+4</div>
+      <div class="prize p5">+5</div>
+      <div class="prize pgold">Lose a Turn</div>
+      <div class="prize p3">Free Spin</div>
+      <div class="prize p2">Bankrupt</div>
+    </div>
+    <p style="margin-top:0.9rem;">
+      <strong>Lose a Turn</strong> — no guess this round, play passes on.<br>
+      <strong>Free Spin</strong> — the same team spins again.<br>
+      <strong>Bankrupt</strong> — tapping "Apply to active team" resets that team's score to zero.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="badge">6</span> Solving the puzzle</h2>
+    <p>
+      A team can attempt to solve the whole word or phrase at any point instead of guessing one
+      letter. If they get it right, the teacher can tap <strong>Reveal answer</strong> to flip
+      every remaining tile and confirm the win. Tap <strong>New puzzle</strong> to clear the
+      board and set up the next round — team scores carry over.
+    </p>
+  </section>
+
+  <div class="footer-note">Have fun, and remember — only the teacher should touch the secret word field!</div>
+  <div class="footer-note">Developed by Jerrod Lai</div>
+
+</div>
+</body>
+</html>

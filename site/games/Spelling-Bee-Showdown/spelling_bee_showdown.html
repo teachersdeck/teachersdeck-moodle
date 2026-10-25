@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spelling Bee Showdown | TeachersDeck</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--stage);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:'Baloo 2','Inter',sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:3px solid var(--gold)}
+.hdr h1{font-size:1.7rem;color:var(--gold);margin-right:auto}
+.lv{display:flex;gap:4px;background:var(--stage);padding:4px;border-radius:999px}
+.lv button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;color:var(--muted)}
+.lv button.on[data-l=easy]{background:var(--ok);color:#06210f}
+.lv button.on[data-l=moderate]{background:var(--gold);color:#2a2000}
+.lv button.on[data-l=hard]{background:var(--bad);color:#2b0806}
+.hbtn{border:2px solid var(--muted);background:transparent;padding:6px 14px;border-radius:999px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:18px 20px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.stage{background:var(--panel);border-radius:var(--r);padding:22px;min-height:460px}
+.btn{border:0;border-radius:12px;padding:12px 22px;font-weight:700;background:var(--gold);color:#2a2000;font-size:1.05rem}
+.btn.ghost{background:transparent;border:2px solid var(--muted);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.side{background:var(--panel);border-radius:var(--r);padding:16px;align-self:start}
+.side h2{font-size:1.25rem;margin-bottom:10px}
+.team{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;background:var(--panel2);border:3px solid transparent;border-radius:12px;padding:10px;margin-bottom:10px;cursor:pointer}
+.team.act{border-color:var(--gold)}
+.team .nm{font-family:'Baloo 2';font-weight:700;font-size:1.15rem;outline:none;min-width:0}
+.team .sc{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--gold);grid-row:span 2}
+.team .pm{display:flex;gap:6px}
+.team .pm button{border:0;width:34px;height:30px;border-radius:8px;background:var(--stage);font-weight:800}
+.side .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.side .row button{flex:1;font-size:.85rem;padding:8px 10px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:var(--stage);padding:12px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.ftr{text-align:center;color:var(--muted);font-size:.8rem;padding:14px}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shake{animation:shake .3s}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-weight:600}
+#time{font-size:2.4rem;color:var(--gold)}#time.low{color:var(--bad)}
+#turn{font-family:'Baloo 2';font-size:1.4rem;color:var(--ink)}
+.card{position:relative;margin:14px auto;max-width:720px;text-align:center;background:var(--stage);border:4px solid var(--panel2);border-radius:20px;padding:30px 16px 22px;transition:border-color .15s}
+.card.ok{border-color:var(--ok)}.card.no{border-color:var(--bad)}
+#emoji{font-size:clamp(2.6rem,7vw,3.6rem);line-height:1;margin-bottom:4px;min-height:1.2em}
+#word{font-family:'Baloo 2';font-weight:800;font-size:clamp(1.5rem,4.5vw,2.4rem);color:var(--muted)}
+#clue{font-size:1.05rem;color:var(--ink);margin-top:8px;min-height:1.4em}
+.hear{margin-top:10px;border:2px solid var(--blue);background:transparent;color:var(--ink);border-radius:999px;padding:8px 18px;font-weight:700}
+.hear:hover{background:var(--blue);color:#06183a}
+.opt{position:absolute;top:10px;right:10px;border:2px solid var(--muted);background:transparent;padding:4px 12px;border-radius:999px;font-weight:600;font-size:.85rem;color:var(--muted)}
+.opt[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
+.opt:hover:not(:disabled){background:var(--panel2)}
+.opt:disabled{opacity:.5;cursor:default}
+.answer{max-width:720px;margin:0 auto;min-height:74px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px;background:var(--stage);border:3px dashed var(--panel2);border-radius:16px;padding:6px 14px;font-family:'Baloo 2';font-weight:800;font-size:2.4rem;letter-spacing:.06em;color:var(--gold);transition:border-color .15s}
+.answer.ok{border-style:solid;border-color:var(--ok);color:var(--ok)}
+.answer.no{border-style:solid;border-color:var(--bad);color:var(--bad)}
+.caret{width:3px;height:1.9rem;margin-left:3px;background:var(--blue);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.kb{max-width:720px;margin:12px auto 0;display:flex;flex-direction:column;gap:7px}
+.kb.off{opacity:.5}
+.kr{display:flex;justify-content:center;gap:6px}
+.key{flex:0 1 58px;min-width:0;height:52px;font-family:'Baloo 2';font-weight:800;font-size:1.35rem;background:var(--panel2);color:var(--ink);border:2px solid var(--blue);border-bottom-width:4px;border-radius:10px;padding:0}
+.key.wide{flex-basis:90px}
+.key:hover:not(:disabled){background:var(--blue);color:#06183a}
+.key:active:not(:disabled),.key.hit{background:var(--gold);border-color:var(--gold);color:#2a2000;transform:translateY(2px);border-bottom-width:2px}
+.key:disabled{cursor:default}
+.kr.act{margin-top:4px;gap:12px}
+.kr.act .btn{padding:10px 22px}.kr.act #check{flex:0 1 280px}
+@media(max-width:600px){.key{height:44px;font-size:1.1rem}.kr{gap:4px}.answer{font-size:1.9rem}.opt{position:static;margin-bottom:8px}}
+.stats{display:flex;gap:22px;justify-content:center;margin-top:16px;color:var(--muted);font-weight:600}
+.stats b{color:var(--gold);font-family:'Baloo 2';font-size:1.5rem}
+#msg{text-align:center;font-family:'Baloo 2';font-size:1.3rem;min-height:2.2rem;margin-top:14px}
+.ctl{text-align:center}
+</style></head><body>
+<div id="td-header"></div>
+<div class="wrap">
+<main class="stage">
+<div class="top"><span id="prog"></span><span id="turn"></span><span id="time" class="disp"></span></div>
+<div class="card" id="card">
+  <button type="button" class="opt" id="optPics" aria-pressed="true">Pictures: On</button>
+  <div id="emoji"></div>
+  <div id="word">Ready?</div>
+  <div id="clue"></div>
+  <button class="hear" id="hear">🔊 Hear it again</button>
+</div>
+<div class="answer" id="answer" aria-label="Spelling so far"></div>
+<div class="kb off" id="kb" role="group" aria-label="Keyboard"></div>
+<div class="ctl" id="ctl"></div>
+<div class="stats"><span>Right <b id="nr">0</b></span><span>Streak <b id="ns">0</b></span><span>Best streak <b id="nb">0</b></span></div>
+<div id="msg" role="status"></div>
+</main>
+<aside id="td-teams"></aside>
+</div>
+<div class="ftr">A TeachersDeck game</div>
+<div id="toast" role="status"></div>
+<script src="spelling_bee_showdown.js"></script>
+</body></html>

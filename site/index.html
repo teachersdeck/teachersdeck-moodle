@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="td-platform" content="moodle">
+<title>TeachersDeck</title>
+<script src="js/edition.js?v=0.31.3-moodle.1"></script>   <!-- first: says which app this is (js/app.js is shared with UniDeck) -->
+<script src="js/platform.js?v=0.31.3-moodle.1"></script>   <!-- second: TeachersDeck for Moodle (tools/build_app.py) -->
+<link rel="stylesheet" href="css/style.css?v=0.31.3-moodle.1">
+<link rel="stylesheet" href="css/drawdeck.css?v=0.31.3-moodle.1">
+</head>
+<body>
+
+  <!-- Background canvas (theme lives here) -->
+  <div id="bg-layer" class="bg-layer"></div>
+  <div id="bg-overlay" class="bg-overlay"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <span class="brand-name">TeachersDeck</span>
+    </div>
+
+    <button class="xp-pill" id="xp-pill" type="button" title="My Stats &amp; XP — click to open" data-i18n-title="xp_pill_tip" aria-label="My Stats &amp; XP" data-i18n-aria="stats">
+      <span class="xp-lv" id="xp-lv">Lv 1</span><span class="xp-bar" aria-hidden="true"><i id="xp-fill"></i></span><span class="xp-tot" id="xp-tot">0 XP</span><em class="xp-pop" id="xp-pop"></em>
+    </button>
+    <button class="badge-chip" id="badge-chip" type="button" aria-label="Badges earned" title="Badges" data-i18n-title="bd_h" data-i18n-aria="bd_h"><span aria-hidden="true">🏅</span><b id="badge-n">0</b></button>
+
+    <!-- Top widget dock: left-justified, starts right after the brand name (up to 5 widget launchers) -->
+    <nav class="dock-top-widgets" id="dock-top-widgets" aria-label="Top widget launcher"></nav>
+
+    <div class="top-actions">
+      <!-- Class switcher pill: shows the class that's currently open; its menu
+           switches to another class (which reloads into that class's own deck).
+           Part of the reassignable PILLS list, so it can live in the top pill
+           row or be hidden from Settings like lang/theme. -->
+      <div class="class-pill-wrap" id="class-pill-wrap">
+        <button class="class-pill" id="class-pill" aria-haspopup="true" aria-expanded="false" title="Switch class" data-i18n-title="class_switch_label" aria-label="Switch class" data-i18n-aria="class_switch_label">
+          <svg viewBox="0 0 24 24" class="class-pill-icon" aria-hidden="true"><path d="M4 6h10M4 12h10M4 18h10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="19" cy="6" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="19" cy="18" r="1.6"/></svg>
+          <span class="class-pill-name" id="class-pill-name"></span>
+          <span class="class-pill-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="class-menu" id="class-menu" role="menu" hidden></div>
+      </div>
+      <div class="lang-toggle" id="lang-toggle" aria-label="Quick language switch"></div>
+      <button class="icon-btn" id="btn-theme" title="Change theme" aria-label="Change theme" data-i18n-title="theme_title">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.2 5.2 0 0 0 22 10.2C22 5.7 17.5 2 12 2Z"/><circle cx="7" cy="11" r="1.3"/><circle cx="10.5" cy="7" r="1.3"/><circle cx="15" cy="7.5" r="1.3"/><circle cx="17.5" cy="11.5" r="1.3"/></svg>
+      </button>
+      <!-- Settings pill: always pinned as the last (rightmost) item wherever the
+           pill row lives — see SETTINGS_PILL in buildTopDock(). Not part of the
+           reassignable PILLS list, so it can't be hidden or reordered from the
+           "Top bar pills" picker like lang/theme can. -->
+      <button class="icon-btn" id="btn-settings" title="Settings" aria-label="Settings" data-i18n-title="settings">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 17.09a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 13 1.65 1.65 0 0 0 3.17 12H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.68 6.87a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.5.5 1.21.66 1.82.33H9c.55-.24 1-.75 1-1.35V1a2 2 0 1 1 4 0v.09c0 .6.45 1.11 1 1.35h.09c.6.33 1.31.17 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.5.5-.66 1.21-.33 1.82V7c.24.55.75 1 1.35 1H21a2 2 0 1 1 0 4h-.09c-.6 0-1.11.45-1.35 1Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- TeachersDeck surface -->
+  <main id="wall" class="wall" aria-label="TeachersDeck"></main>
+
+  <!-- Bottom dock, with the app-tray tab attached directly to its top edge —
+       one visual unit, positioned together, so the line always sits flush
+       against the dock regardless of how tall the dock's content makes it.
+       Opens a full-screen grid of every widget, Android app-drawer style;
+       always present regardless of layout mode, since it's the one
+       guaranteed way to reach every widget when Compact mode has the side
+       drawers hidden. -->
+  <div class="dock-wrap" id="dock-wrap">
+    <button class="app-tray-tab" id="app-tray-tab" aria-label="Open app tray" aria-expanded="false" data-i18n-aria="app_tray_open" title="Open app tray" data-i18n-title="app_tray_open">
+      <span class="app-tray-tab-line"></span>
+    </button>
+    <nav class="dock" id="dock" aria-label="Widget launcher"></nav>
+  </div>
+
+  <!-- App tray: Android-style bottom sheet listing every widget, regardless
+       of its dock placement or the current layout mode. -->
+  <div class="app-tray-backdrop" id="app-tray-backdrop" hidden>
+    <div class="app-tray" id="app-tray" role="dialog" aria-modal="true" aria-label="All widgets">
+      <button class="app-tray-handle" id="app-tray-handle" aria-label="Close app tray" data-i18n-aria="app_tray_close" title="Close app tray" data-i18n-title="app_tray_close"></button>
+      <p class="app-tray-title" data-i18n="app_tray_title">All widgets</p>
+      <div class="app-tray-grid" id="app-tray-grid"></div>
+    </div>
+  </div>
+
+  <!-- Left widget drawer (5 slots) -->
+  <nav class="edge-dock edge-dock-left" id="dock-left" aria-label="Left widget launcher" hidden>
+    <div class="edge-dock-items" id="dock-left-items"></div>
+  </nav>
+
+  <!-- Right widget drawer (5 slots) -->
+  <nav class="edge-dock edge-dock-right" id="dock-right" aria-label="Right widget launcher" hidden>
+    <div class="edge-dock-items" id="dock-right-items"></div>
+  </nav>
+
+  <!-- Top drawer: toggle pills (language, theme, future toggles), left-justified, 5 slots -->
+  <div class="edge-dock edge-dock-top" id="dock-top" aria-label="Top toggle bar" hidden>
+    <div class="edge-dock-items" id="pills-top"></div>
+  </div>
+
+  <!-- Theme drawer -->
+  <div class="drawer" id="theme-drawer" hidden>
+    <div class="drawer-head">
+      <h2 data-i18n="theme_title">Theme</h2>
+      <button class="icon-btn" id="theme-close" aria-label="Close" data-i18n-aria="close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-label" data-i18n="backgrounds">Backgrounds</p>
+      <div class="swatch-grid" id="theme-presets"></div>
+
+      <p class="drawer-label" data-i18n="your_image">Your image or logo</p>
+      <label class="upload-row" for="bg-upload">
+        <span data-i18n="upload_bg">Upload a background image</span>
+        <input type="file" id="bg-upload" accept="image/*" hidden>
+      </label>
+
+      <label class="upload-row" for="logo-upload" hidden>
+        <span data-i18n="upload_logo">Upload a school / company logo</span>
+        <input type="file" id="logo-upload" accept="image/*" hidden>
+      </label>
+      <label class="switch-row">
+        <span data-i18n="dim_bg">Dim background (better contrast)</span>
+        <input type="checkbox" id="dim-toggle">
+      </label>
+    </div>
+  </div>
+
+  <!-- Settings drawer -->
+  <div class="drawer" id="settings-drawer" hidden>
+    <div class="drawer-head">
+      <h2 data-i18n="settings_title">Settings</h2>
+      <button class="icon-btn" id="settings-close" aria-label="Close" data-i18n-aria="close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="pro-status-card" id="pro-status-card">
+        <div class="pro-status-row">
+          <span class="pro-badge" id="pro-badge">FREE</span>
+          <span class="pro-status-text" id="pro-status-text" data-i18n="pro_status_free">You're on the Free plan</span>
+        </div>
+        <button class="primary-btn" id="pro-upgrade-open" data-i18n="pro_upgrade_btn">Upgrade to Pro</button>
+        <div id="pro-license-row">
+          <p class="dock-vis-hint" data-i18n="pro_license_label" style="margin-top:10px">Already purchased? Enter your license key</p>
+          <div class="license-input-row">
+            <input type="text" id="pro-license-input" data-i18n-placeholder="pro_license_placeholder" placeholder="TDPRO-XXXX-XXXX-XXXX">
+            <button class="ghost-btn" id="pro-license-activate" data-i18n="pro_activate_btn" style="margin:0; width:auto; padding:9px 14px;">Activate</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="drawer-label" id="classes-section" data-i18n="classes_section">Classes</p>
+      <p class="dock-vis-hint" data-i18n="classes_hint">Each class keeps its own roster, widgets, layout and theme. Switching opens that class.</p>
+      <p class="dock-vis-hint" id="classes-summary"></p>
+      <div class="btn-row"><button type="button" class="wbtn" id="class-builder-open" data-i18n="cb_open" style="margin-bottom:20px">Open Class Builder…</button></div>
+
+      <p class="drawer-label" data-i18n="language_section">Language</p>
+      <label class="upload-row" for="lang-select-1" style="cursor:default">
+        <span data-i18n="quick_lang_1">Quick language 1</span>
+        <select id="lang-select-1"></select>
+      </label>
+      <label class="upload-row" for="lang-select-2" style="cursor:default; margin-bottom:20px">
+        <span data-i18n="quick_lang_2">Quick language 2</span>
+        <select id="lang-select-2"></select>
+      </label>
+
+      <p class="drawer-label" data-i18n="layout_mode_section">Layout mode</p>
+      <p class="dock-vis-hint" data-i18n="layout_mode_hint">Choose how docks and the widget tray are arranged</p>
+      <div class="layout-mode-grid" id="layout-mode-grid"></div>
+
+      <p class="drawer-label" data-i18n="emoji_section" style="margin-top:20px">Widget icons</p>
+      <label class="switch-row"><span data-i18n="show_emojis_label">Show emoji icons</span><input type="checkbox" id="show-emojis-toggle"></label>
+      <label class="switch-row"><span data-i18n="show_xp_label">Show XP in the header</span><input type="checkbox" id="show-xp-toggle"></label>
+      <p class="dock-vis-hint lock-hint" id="emoji-lock-hint" data-i18n="layout_lock_hint" hidden>Set by the layout mode above.</p>
+
+      <p class="drawer-label" data-i18n="wm_title" style="margin-top:20px">Manage widgets</p>
+      <p class="dock-vis-hint" id="wm-settings-sum"></p>
+      <div class="btn-row"><button type="button" class="wbtn" id="wm-open" data-i18n="wm_open">Manage widgets…</button></div>
+
+      <p class="drawer-label" data-i18n="dock_buttons" style="margin-top:20px">Dock buttons</p>
+      <p class="dock-vis-hint" data-i18n="dock_buttons_hint">Choose where each widget's launcher lives</p>
+      <p class="dock-vis-hint lock-hint" id="dock-buttons-lock-hint" data-i18n="layout_lock_hint" hidden>Set by the layout mode above.</p>
+      <div class="dock-vis-list" id="dock-vis-list"></div>
+
+      <p class="drawer-label" data-i18n="drawers_section" style="margin-top:20px">Side drawers</p>
+      <label class="switch-row"><span data-i18n="drawer_left_visible_label">Show left drawer</span><input type="checkbox" id="drawer-left-visible"></label>
+      <label class="switch-row"><span data-i18n="drawer_right_visible_label">Show right drawer</span><input type="checkbox" id="drawer-right-visible"></label>
+      <p class="dock-vis-hint lock-hint" id="drawers-lock-hint" data-i18n="layout_lock_hint" hidden>Set by the layout mode above.</p>
+      <label class="switch-row"><span><span data-i18n="dock_autohide_label">Hide the bottom dock until I hover its tab</span> <span class="wm-info" tabindex="0" title="The dock slides away and only its small tab stays at the bottom edge. Point at the tab (or press Tab to a dock button) to bring it back." data-i18n-title="dock_autohide_hint" aria-label="The dock slides away and only its small tab stays at the bottom edge. Point at the tab (or press Tab to a dock button) to bring it back." data-i18n-aria="dock_autohide_hint">ⓘ</span></span><input type="checkbox" id="dock-autohide-toggle"></label>
+      <label class="switch-row"><span><span data-i18n="accept_admin_theme_label">Accept school themes from AdminDeck</span> <span class="wm-info" tabindex="0" title="When your school's admin sends a background, it is applied once to the class that is open. You can change it afterwards." data-i18n-title="accept_admin_theme_hint" aria-label="When your school's admin sends a background, it is applied once to the class that is open. You can change it afterwards." data-i18n-aria="accept_admin_theme_hint">ⓘ</span></span><input type="checkbox" id="accept-admin-theme"></label>
+
+      <p class="drawer-label" data-i18n="gdrive_section" style="margin-top:20px">Google documents</p>
+      <p class="dock-vis-hint" data-i18n="gdrive_hint">Word, PowerPoint and Excel files shown full screen are converted to Google Docs, Slides and Sheets in a &ldquo;TeachersDeck Converted&rdquo; folder in your Google Drive (Pro).</p>
+      <label class="switch-row"><span data-i18n="gdrive_remove_copy">Remove the Google copy when I close the document</span><input type="checkbox" id="gdrive-remove-copy"></label>
+      <button type="button" class="wbtn" id="gdrive-delete-all" data-i18n="gdrive_delete_all" style="margin-top:6px">Delete converted files</button>
+
+      <p class="drawer-label" data-i18n="pills_section" style="margin-top:20px">Top bar pills</p>
+      <p class="dock-vis-hint" data-i18n="pills_section_hint">Where the language switch and theme button appear when the top drawer is on</p>
+      <label class="upload-row" for="pill-place-classes" style="cursor:default">
+        <span data-i18n="pill_classes_label">Class switcher</span>
+        <select id="pill-place-classes">
+          <option value="top" data-i18n="placement_shown">Shown</option>
+          <option value="hidden" data-i18n="placement_hidden">Hidden</option>
+        </select>
+      </label>
+      <label class="upload-row" for="pill-place-lang" style="cursor:default">
+        <span data-i18n="pill_lang_label">Language switch</span>
+        <select id="pill-place-lang">
+          <option value="top" data-i18n="placement_shown">Shown</option>
+          <option value="hidden" data-i18n="placement_hidden">Hidden</option>
+        </select>
+      </label>
+      <label class="upload-row" for="pill-place-theme" style="cursor:default">
+        <span data-i18n="pill_theme_label">Theme button</span>
+        <select id="pill-place-theme">
+          <option value="top" data-i18n="placement_shown">Shown</option>
+          <option value="hidden" data-i18n="placement_hidden">Hidden</option>
+        </select>
+      </label>
+
+      <p class="drawer-label" data-i18n="calendar_system_label" style="margin-top:20px">Date system</p>
+      <select id="calendar-system-select" style="width:100%; margin-bottom:4px"></select>
+
+      <p class="drawer-label" style="margin-top:20px" data-i18n="layout_label">Layout</p>
+      <button class="ghost-btn" id="reset-layout" data-i18n="reset_layout">Reset widget positions</button>
+      <button class="ghost-btn danger" id="reset-all" data-i18n="reset_all">Reset everything</button>
+
+      <p class="drawer-label" style="margin-top:20px" data-i18n="demo_section">Demo</p>
+      <p class="dock-vis-hint" data-i18n="demo_settings_hint">Explore the Cloud features (Cloud Class, Class Activity, Notes Home, progress reports and sync) with sample data. Nothing is sent and your own classes are not touched.</p>
+      <button class="ghost-btn" id="td-demo-toggle" data-i18n="demo_try_label">Try the Cloud demo</button>
+      <p class="app-version" id="app-version"></p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- Pro upgrade modal -->
+  <div class="pro-modal-backdrop" id="pro-modal-backdrop" hidden>
+    <div class="pro-modal" role="dialog" aria-modal="true">
+      <div class="drawer-head">
+        <h2 data-i18n="pro_modal_title">Upgrade to TeachersDeck Pro</h2>
+        <button class="icon-btn" id="pro-modal-close" aria-label="Close" data-i18n-aria="close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <p class="dock-vis-hint" data-i18n="pro_modal_subtitle">One-time payment, no subscription. Unlocks on this browser.</p>
+
+        <div class="plan-grid">
+          <div class="plan-col">
+            <p class="plan-title" data-i18n="plan_free_title">Free</p>
+            <ul class="plan-list">
+              <li data-i18n="plan_free_f1"></li>
+              <li data-i18n="plan_free_f2"></li>
+              <li data-i18n="plan_free_f3"></li>
+            </ul>
+          </div>
+          <div class="plan-col plan-col-pro">
+            <p class="plan-title" data-i18n="plan_pro_title">Pro</p>
+            <ul class="plan-list">
+              <li data-i18n="plan_pro_f1"></li>
+              <li data-i18n="plan_pro_f2"></li>
+              <li data-i18n="plan_pro_f3"></li>
+              <li data-i18n="plan_pro_f4"></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card/Stripe isn't set up yet — the tab strip is collapsed to a
+             plain heading with only VietQR showing. To bring Card back:
+             remove `hidden` here and switch this heading back to the
+             .pay-tabs strip above it (the tab buttons/JS wiring were left
+             in place below, untouched). -->
+        <!-- Step 1: order form. Step 2
+             (bank transfer) stays hidden until they've opened the form. -->
+        <div class="pay-step" id="pay-step-1">
+          <p class="drawer-label pay-heading" data-i18n="pay_step1_heading">Step 1 — Fill out the order form</p>
+          <p class="dock-vis-hint" style="text-align:center" data-i18n="pay_step1_copy">Tell us who the license is for. It opens in a new tab.</p>
+          <a class="primary-btn" id="pay-order-form-link" href="#" target="_blank" rel="noopener" style="display:block; text-align:center; text-decoration:none;" data-i18n="pay_step1_btn">Open the order form</a>
+          <p class="dock-vis-hint" style="text-align:center; margin-top:8px"><a href="#" id="pay-form-done-link" data-i18n="pay_step1_done">Already submitted the form? Continue to payment</a></p>
+        </div>
+
+        <div class="pay-step" id="pay-step-2" hidden>
+          <p class="drawer-label pay-heading" id="pay-heading-bank-transfer" data-i18n="pay_step2_heading">Step 2 — Pay by Bank Transfer</p>
+          <!-- Card/Stripe isn't set up yet — tab strip hidden, only VietQR
+               shows. To bring Card back: remove `hidden` on .pay-tabs (tab
+               buttons/JS wiring are intact). -->
+          <div class="pay-tabs" hidden>
+            <button class="pay-tab active" id="pay-tab-vietqr" data-i18n="pay_tab_vietqr">VietQR (Bank transfer)</button>
+            <button class="pay-tab" id="pay-tab-card" data-i18n-dyn data-key="pay_tab_card" hidden>Card</button>
+          </div>
+
+          <div class="pay-panel" id="pay-panel-vietqr">
+            <p class="dock-vis-hint" id="vietqr-copy"></p>
+            <div class="qr-box" id="vietqr-qr-box"></div>
+            <div class="vietqr-account-details" id="vietqr-account-details"></div>
+          </div>
+        <div class="pay-panel" id="pay-panel-card" hidden>
+          <p class="dock-vis-hint" id="card-copy"></p>
+          <a class="primary-btn" id="pay-card-link" href="#" target="_blank" rel="noopener" style="display:block; text-align:center; text-decoration:none;"></a>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/qrcode-lib.js?v=0.31.3-moodle.1"></script>
+  <script src="js/jszip.min.js?v=0.31.3-moodle.1"></script>
+  <script src="js/lesson-template.js?v=0.31.3-moodle.1"></script>
+  <!-- Cloud Class (optional): see js/firebase-config.js to enable -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-functions-compat.js"></script>
+  <script src="js/firebase-config.js?v=0.31.3-moodle.1"></script>
+  <script src="js/cloud.js?v=0.31.3-moodle.1"></script>
+  <script src="js/demo.js?v=0.31.3-moodle.1"></script>
+  <!-- Office files shown full screen via Google Drive (Pro): client IDs in google-config.js -->
+  <script src="js/google-config.js?v=0.31.3-moodle.1"></script>
+  <script src="js/gdrive.js?v=0.31.3-moodle.1"></script>
+  <script src="games/games.js?v=0.31.3-moodle.1"></script>
+  <script src="js/watermark.js?v=0.31.3-moodle.1"></script>
+  <script src="js/drawdeck.js?v=0.31.3-moodle.1"></script>
+  <script src="js/moodle.js?v=0.31.3-moodle.1"></script>   <!-- loads js/app.js and js/update.js once Moodle sent the state -->
+</body>
+</html>

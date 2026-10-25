@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeachersDeck — Manual</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+  --ink-0:#0D1117;
+  --ink-1:#161C25;
+  --ink-2:#1E2732;
+  --line:rgba(237,239,243,0.09);
+  --line-hi:rgba(237,239,243,0.16);
+  --text-hi:#EDEFF3;
+  --text:#C6CCD8;
+  --text-lo:#8A93A6;
+  --amber:#E8A33D;
+  --amber-hi:#F5B85C;
+  --teal:#47C9B6;
+  --danger:#E06565;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --display:'Quicksand', 'Trebuchet MS', var(--sans);
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; scroll-padding-top:24px; }
+body{
+  margin:0; background:var(--ink-0); color:var(--text);
+  font-family:var(--sans); font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+a{ color:var(--amber-hi); text-decoration:none; border-bottom:1px solid rgba(245,184,92,0.3); }
+a:hover{ border-bottom-color:var(--amber-hi); }
+:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; border-radius:4px; }
+
+/* ---------- hero ---------- */
+.hero{
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#1a2740 0%, #2c3b57 45%, #182030 100%);
+  padding:46px 28px 0;
+}
+.hero-inner{ max-width:1180px; margin:0 auto; }
+.brand{ display:flex; align-items:center; gap:9px; font-family:var(--display); font-weight:700; color:var(--text-hi); }
+.brand-mark{ color:var(--amber); font-size:15px; }
+.brand-name{ font-size:17px; letter-spacing:.2px; }
+.hero h1{
+  font-family:var(--display); font-weight:700; color:var(--text-hi);
+  font-size:clamp(30px,5vw,46px); line-height:1.12; margin:20px 0 10px; max-width:15ch;
+}
+.hero p{ max-width:62ch; margin:0 0 26px; color:#BFC8D8; font-size:17px; }
+.hero-meta{ color:var(--text-lo); font-size:13px; font-family:var(--display); font-weight:600; }
+/* the dock strip: the app's own launcher, rendered as the page's masthead */
+.dock-strip{
+  display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; margin:0 auto;
+  background:rgba(13,17,23,0.62); border:1px solid var(--line-hi);
+  border-bottom:none; border-radius:16px 16px 0 0; transform:translateY(1px);
+  max-width:1180px;
+}
+.dock-strip span{
+  width:34px; height:34px; border:1px solid var(--line); border-radius:9px;
+  display:flex; align-items:center; justify-content:center; color:var(--text-lo);
+  background:rgba(30,39,50,0.55);
+}
+.dock-strip svg{ width:17px; height:17px; }
+.dock-strip span:nth-child(3n) svg{ color:var(--amber); }
+
+/* ---------- shell ---------- */
+.shell{ max-width:1180px; margin:0 auto; display:flex; gap:44px; padding:40px 28px 90px; align-items:flex-start; }
+nav.toc{
+  position:sticky; top:24px; flex:0 0 226px; font-family:var(--display);
+  font-size:13.5px; font-weight:600; max-height:calc(100vh - 48px); overflow:auto;
+}
+nav.toc h2{ font-size:11.5px; color:var(--text-lo); font-weight:700; margin:0 0 10px; }
+nav.toc ol{ list-style:none; margin:0; padding:0; counter-reset:toc; }
+nav.toc li{ margin:0 0 2px; }
+nav.toc a{
+  display:block; padding:5px 10px; border-radius:8px; color:var(--text);
+  border:none; border-left:2px solid transparent;
+}
+nav.toc a:hover{ background:rgba(255,255,255,0.05); color:var(--text-hi); border-left-color:var(--amber); }
+nav.toc .sub a{ padding-left:20px; font-weight:500; color:var(--text-lo); font-size:12.5px; }
+
+main{ flex:1; min-width:0; max-width:76ch; }
+section{ scroll-margin-top:24px; padding-bottom:12px; }
+section + section{ margin-top:52px; border-top:1px solid var(--line); padding-top:44px; }
+h2{
+  font-family:var(--display); font-weight:700; color:var(--text-hi);
+  font-size:27px; line-height:1.2; margin:0 0 6px;
+}
+h3{ font-family:var(--display); font-weight:700; color:var(--text-hi); font-size:18px; margin:30px 0 8px; }
+.lede{ color:var(--text-lo); margin:0 0 24px; font-size:15px; }
+p{ margin:0 0 14px; }
+ul,ol{ margin:0 0 16px; padding-left:22px; }
+li{ margin-bottom:6px; }
+code{
+  font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:13.5px;
+  background:rgba(255,255,255,0.06); padding:1.5px 5px; border-radius:5px; color:var(--amber-hi);
+}
+pre{
+  background:var(--ink-1); border:1px solid var(--line); border-radius:12px;
+  padding:14px 16px; overflow-x:auto; margin:0 0 18px;
+}
+pre code{ background:none; padding:0; color:var(--text-hi); }
+kbd{
+  font-family:var(--display); font-weight:600; font-size:12px; background:var(--ink-2);
+  border:1px solid var(--line-hi); border-bottom-width:2px; border-radius:6px; padding:2px 7px; color:var(--text-hi);
+}
+
+/* steps: install really is a sequence, so it is numbered */
+ol.steps{ list-style:none; padding:0; counter-reset:step; }
+ol.steps > li{
+  counter-increment:step; position:relative; padding-left:38px; margin-bottom:14px;
+}
+ol.steps > li::before{
+  content:counter(step); position:absolute; left:0; top:1px;
+  width:25px; height:25px; border-radius:50%; background:rgba(232,163,61,0.12);
+  border:1px solid rgba(232,163,61,0.4); color:var(--amber-hi);
+  font-family:var(--display); font-weight:700; font-size:12.5px;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.note{
+  border-left:2px solid var(--teal); background:rgba(71,201,182,0.06);
+  padding:12px 16px; border-radius:0 10px 10px 0; margin:0 0 18px; font-size:15px;
+}
+.note.warn{ border-left-color:var(--amber); background:rgba(232,163,61,0.07); }
+.note.gap{ border-left-color:var(--danger); background:rgba(224,101,101,0.06); }
+.note p:last-child{ margin-bottom:0; }
+.note strong{ color:var(--text-hi); font-family:var(--display); }
+
+/* widget entries */
+.widget{ border-top:1px solid var(--line); padding:20px 0 4px; }
+.widget:first-of-type{ border-top:none; }
+.widget-head{ display:flex; align-items:center; gap:11px; margin-bottom:6px; }
+.widget-icon{
+  flex:0 0 36px; height:36px; border-radius:10px; border:1px solid var(--line);
+  background:var(--ink-2); display:flex; align-items:center; justify-content:center; color:var(--amber);
+}
+.widget-icon svg{ width:18px; height:18px; }
+.widget h4{ font-family:var(--display); font-weight:700; font-size:16.5px; color:var(--text-hi); margin:0; }
+.tag{
+  font-family:var(--display); font-weight:700; font-size:10.5px; color:var(--amber-hi);
+  border:1px solid rgba(232,163,61,0.35); border-radius:20px; padding:1px 8px; margin-left:auto; flex-shrink:0;
+}
+.tag.free{ color:var(--teal); border-color:rgba(71,201,182,0.35); }
+.widget p{ margin:0 0 10px; }
+.widget ul{ margin-bottom:10px; }
+.group-label{
+  font-family:var(--display); font-weight:700; color:var(--text-hi); font-size:15px;
+  margin:34px 0 4px; padding-top:10px;
+}
+.group-label + p{ color:var(--text-lo); font-size:14.5px; margin-bottom:14px; }
+
+table{ width:100%; border-collapse:collapse; margin:0 0 18px; font-size:15px; }
+th,td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+th{ font-family:var(--display); font-weight:700; color:var(--text-hi); font-size:13px; }
+
+footer{
+  border-top:1px solid var(--line); padding:26px 28px 40px; color:var(--text-lo);
+  font-size:13.5px; text-align:center;
+}
+
+@media (max-width:900px){
+  .shell{ display:block; padding:28px 20px 70px; }
+  nav.toc{ position:static; width:100%; margin-bottom:34px; }
+  nav.toc ol{ columns:2; column-gap:18px; }
+  .hero{ padding:32px 20px 0; }
+}
+@media print{
+  body{ background:#fff; color:#111; }
+  .hero{ background:#fff; border-bottom:1px solid #ccc; }
+  .hero h1,h2,h3,h4,.brand{ color:#000; }
+  nav.toc,.dock-strip{ display:none; }
+  .shell{ display:block; padding:0; }
+  a{ color:#000; border:none; }
+  section + section{ page-break-before:auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand"><span class="brand-mark">&#9670;</span><span class="brand-name">TeachersDeck</span></div>
+    <h1>The classroom manual</h1>
+    <p>TeachersDeck is a wall of classroom tools that lives in your browser &mdash; a clock, a timer, a random group maker, a noise meter, your lesson files &mdash; arranged the way you want them and kept on your own computer. This guide covers installing it, setting up your classes, and what every widget does.</p>
+    <p class="hero-meta">Version 0.13.1 &middot; written for teachers, no technical background needed</p>
+  </div>
+  <div class="dock-strip" aria-hidden="true"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 6v0"/><circle cx="12" cy="14" r="8"/><path d="M12 14V9"/><path d="M18 6l1.5-1.5"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h1M4 12h1M4 18h1"/><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.3 6l.7.7L5.3 5.4" stroke-width="0"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="8" r="2.4"/><path d="M15.5 14a5 5 0 0 1 5.5 5"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v4a5 5 0 0 1-10 0V3Z"/><path d="M7 4H4.5A2.5 2.5 0 0 0 4 8.9L7 11"/><path d="M17 4h2.5A2.5 2.5 0 0 1 20 8.9L17 11"/><path d="M12 12v3.5"/><path d="M9 20h6"/><path d="M9.6 16.5h4.8l.5 3.5H9.1l.5-3.5Z"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3.5c1.3 0 2.5.7 3.2 1.8l4.6 7.4c.7 1.1 1.9 1.8 3.2 1.8H21"/><path d="M17 4l4 3-4 3"/><path d="M3 18h3.5c1.3 0 2.5-.7 3.2-1.8"/><path d="M17 20l4-3-4-3"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="8.5" y="2" width="7" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h7M8.5 19h4"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14v3M14 19h2M19 19h2"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3"/><circle cx="16" cy="8" r="1.3"/><circle cx="8" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/><circle cx="12" cy="12" r="1.3"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5c2.5-1 5.5-1 8 0v15c-2.5-1-5.5-1-8 0v-15Z"/><path d="M20 4.5c-2.5-1-5.5-1-8 0v15c2.5-1 5.5-1 8 0v-15Z"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h3.5l5 4V5l-5 4H4Z"/><path d="M16 9a4.5 4.5 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="12" height="19" rx="1"/><circle cx="14" cy="12" r="1"/><path d="M17 21.5h4M3 21.5h4"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="M13 4l4 4-4 4"/><path d="M20 16H7"/><path d="M11 12l-4 4 4 4"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-4 4V5Z"/><path d="M8 9h8M8 12.5h5"/></svg></span></div>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#install">Installing it</a></li>
+    <li><a href="#tour">Around the screen</a></li>
+    <li><a href="#classes">Classes</a></li>
+    <li><a href="#layout">Layout, theme and language</a></li>
+    <li><a href="#widgets">The widgets</a></li>
+    <li class="sub"><a href="#g-time">Time and attention</a></li>
+    <li class="sub"><a href="#g-class">Your class list</a></li>
+    <li class="sub"><a href="#g-lesson">Running the lesson</a></li>
+    <li class="sub"><a href="#g-feedback">Checking understanding</a></li>
+    <li class="sub"><a href="#g-media">Files, media and games</a></li>
+    <li class="sub"><a href="#g-language">Language and reference</a></li>
+    <li><a href="#pro">Free and Pro</a></li>
+    <li><a href="#data">Your data</a></li>
+    <li><a href="#trouble">If something goes wrong</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="install">
+  <h2>Installing it</h2>
+  <p class="lede">Three ways to run it. Pick one &mdash; the extension is the nicest for daily teaching.</p>
+
+  <h3>The quick way: just open it</h3>
+  <ol class="steps">
+    <li>Unzip the TeachersDeck folder somewhere you'll find it again, such as your Documents folder.</li>
+    <li>Double-click <code>index.html</code>. It opens in your default browser and works straight away.</li>
+  </ol>
+  <div class="note warn">
+    <p><strong>One limit.</strong> Opened this way, the Games widget can't list the ready-made games that ship in the <code>games</code> folder, because browsers block pages opened from a file from reading neighbouring files. Everything else works. Use either method below to get that section.</p>
+  </div>
+
+  <h3>As your Chrome new tab (recommended)</h3>
+  <ol class="steps">
+    <li>Open Chrome and go to <code>chrome://extensions</code>.</li>
+    <li>Turn on <strong>Developer mode</strong>, top right.</li>
+    <li>Click <strong>Load unpacked</strong> and choose the <code>teachersdeck</code> folder &mdash; the one containing <code>manifest.json</code>.</li>
+    <li>Open a new tab. TeachersDeck is now your new tab page.</li>
+  </ol>
+  <p>Chrome will occasionally warn you about developer-mode extensions. That's normal for an extension installed from a folder rather than the Chrome Web Store, and you can dismiss it. The app still runs entirely on your machine either way.</p>
+
+  <h3>From a local web server</h3>
+  <p>Useful if you'd rather keep it as a web page but still want the built-in games. In a terminal, from inside the <code>teachersdeck</code> folder:</p>
+  <pre><code>python3 -m http.server 8000</code></pre>
+  <p>Then visit <code>http://localhost:8000</code> in your browser. Stop the server with <kbd>Ctrl</kbd>+<kbd>C</kbd> when you're done.</p>
+
+  <h3>What's in the folder</h3>
+  <table>
+    <tr><th>File</th><th>What it is</th></tr>
+    <tr><td><code>index.html</code></td><td>The app itself. This is the one you open.</td></tr>
+    <tr><td><code>manual.html</code></td><td>This guide.</td></tr>
+    <tr><td><code>manifest.json</code></td><td>Tells Chrome how to load it as an extension.</td></tr>
+    <tr><td><code>css/</code>, <code>js/</code></td><td>The code. Nothing to edit here for normal use.</td></tr>
+    <tr><td><code>games/</code></td><td>Ready-made classroom games.</td></tr>
+  </table>
+</section>
+
+<section id="tour">
+  <h2>Around the screen</h2>
+  <p class="lede">Everything is a panel you open, drag where you want and close again.</p>
+
+  <h3>Opening and arranging widgets</h3>
+  <ul>
+    <li><strong>Open one</strong> by clicking its button in the dock along the bottom, or in the drawers at the left, right or top.</li>
+    <li><strong>Can't find a widget?</strong> Click the thin line above the bottom dock to open the tray of all widgets.</li>
+    <li><strong>Move a panel</strong> by dragging anywhere along its title bar &mdash; the grip on the left is the obvious spot, but the whole bar works. <strong>Resize</strong> from the small corner mark at the bottom right.</li>
+    <li><strong>Minimise</strong> with the &minus; button in the panel's corner, <strong>close</strong> with &times;.</li>
+  </ul>
+  <p>Positions are remembered, so the room you set up on Friday is still there on Monday. Settings &rarr; Reset widget positions puts everything back to tidy defaults without touching your content.</p>
+
+  <h3>The top bar</h3>
+  <ul>
+    <li><strong>Class pill</strong> &mdash; shows the class currently open and switches between classes.</li>
+    <li><strong>Language switch</strong> &mdash; two-letter buttons that flip the whole interface between your two chosen languages.</li>
+    <li><strong>Theme button</strong> &mdash; backgrounds and your own photo.</li>
+    <li><strong>Settings</strong> &mdash; classes, layout, languages, and the reset buttons. Always the rightmost button.</li>
+  </ul>
+</section>
+
+<section id="classes">
+  <h2>Classes</h2>
+  <p class="lede">If you teach several groups a day, give each one its own deck.</p>
+  <p>Each class keeps its own student list, its own open widgets and where they sit, its own theme and background, and its own checklist, scoreboard, attendance record, agenda and announcements. Switching class reopens the whole board as that class left it.</p>
+
+  <h3>Setting them up</h3>
+  <ol class="steps">
+    <li>Open <strong>Settings &rarr; Classes</strong>. Your current board is already there as your first class &mdash; type a name for it, such as <em>7A Monday</em>.</li>
+    <li>Type a name in the box below and click <strong>Create &amp; open</strong>. You get a fresh board to set up for that class.</li>
+    <li>Teaching two groups the same way? Click <strong>Copy this class</strong> instead and you get the same widgets, layout and theme under a new name.</li>
+  </ol>
+
+  <h3>Switching during the day</h3>
+  <p>Click the class pill in the top bar and choose a class. The page reloads into that class's board, which takes a second. Deleting a class with the &times; button erases that class's list, layout and settings; your files, games and music are shared between classes, so they stay.</p>
+  <div class="note">
+    <p><strong>Shared across every class:</strong> your uploaded files, games, music, videos and sounds, and your Pro licence. One teacher, one browser &mdash; no need to upload the same lesson files twice.</p>
+  </div>
+  <div class="note warn">
+    <p>The interface language is part of a class's settings, so a class set to Vietnamese switches the whole interface when you open it. Handy if you teach in two languages; worth knowing if it surprises you.</p>
+  </div>
+</section>
+
+<section id="layout">
+  <h2>Layout, theme and language</h2>
+
+  <h3>Backgrounds and your own photo</h3>
+  <p>The theme button offers six built-in backgrounds. Below them, <strong>Upload a background image</strong> takes a photo from your computer. <strong>Dim background</strong> darkens whatever is behind the panels so text stays readable &mdash; leave it on for projectors.</p>
+  <p>A new background replaces the previous one. Backgrounds are per class.</p>
+
+  <h3>Layout modes</h3>
+  <p>Settings &rarr; Layout mode decides how much furniture is on screen:</p>
+  <ul>
+    <li><strong>Compact</strong> &mdash; just the bottom dock, with the tray above it for everything else. Best on a small classroom screen. Widget emoji icons are hidden in this mode.</li>
+    <li><strong>Cozy</strong> &mdash; bottom, left and right docks all visible, with widget emoji icons shown.</li>
+    <li><strong>Custom</strong> &mdash; you choose. Only in this mode can you place each widget's button yourself, under <strong>Dock buttons</strong>, turn individual drawers on and off, and toggle widget emoji icons on or off under <strong>Widget icons</strong>.</li>
+  </ul>
+  <p>Each dock holds a limited number of buttons, so put your daily five in the bottom dock and reach the rest from the tray. In Settings, <strong>Hide the bottom dock until I hover its tab</strong> slides the dock out of the way and leaves only its small tab at the bottom edge &mdash; more room for a document or the lesson. Point at the tab (or press Tab to a dock button) and the dock comes back; click the tab to open the tray as usual.</p>
+
+  <h3>Top bar pills</h3>
+  <p>The class switcher, language switch and theme button can each be shown in the top row or hidden away, under Settings &rarr; Top bar pills. Settings itself can't be hidden.</p>
+
+  <h3>Languages and dates</h3>
+  <p>The interface speaks English, Vietnamese, Spanish, French, Chinese, Japanese, Korean and Tagalog. Pick the two you use most as <strong>Quick language 1</strong> and <strong>2</strong>; those become the buttons in the top bar for one-click switching mid-lesson. Under <strong>Date system</strong> you can show Gregorian dates, the Vietnamese and Chinese lunar date, or both together.</p>
+</section>
+
+<section id="widgets">
+  <h2>The widgets</h2>
+  <p class="lede">Thirty-one tools. You won't use them all &mdash; pick five or six for the board and leave the rest in the tray.</p>
+
+  <h3 class="group-label" id="g-time">Time and attention</h3>
+  <p>The ones that go on the board and stay there.</p>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+      <h4>Clock</h4><span class="tag free">Free</span>
+    </div>
+    <p>Shows the time and today's date in a panel big enough to read from the back row.</p>
+    <ul>
+      <li>Nothing to set up. Resize it larger for a projector.</li>
+      <li>The date follows your Date system setting, so it can show the lunar date too.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4"/><path d="M12 6v0"/><circle cx="12" cy="14" r="8"/><path d="M12 14V9"/><path d="M18 6l1.5-1.5"/></svg></span>
+      <h4>Timer</h4><span class="tag free">Free</span>
+    </div>
+    <p>A countdown for activities: five minutes for the warm-up, two for a pair discussion.</p>
+    <ul>
+      <li>Add time with the +1m and +5m buttons, then press Start.</li>
+      <li>Reset clears the clock and the time you had loaded, so Start does nothing until you add time again — no accidental restart of the last activity.</li>
+      <li>It announces time is up when it reaches zero.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13V9"/><path d="M9 3h6"/></svg></span>
+      <h4>Stopwatch</h4><span class="tag free">Free</span>
+    </div>
+    <p>Counts up, for races, timed readings and anything where you want splits.</p>
+    <ul>
+      <li>Start, then Lap records a split while it keeps running.</li>
+      <li>Each lap shows its own time and the running total, newest at the top. Reset clears the laps with it.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="20" rx="4"/><circle cx="12" cy="6.5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="17.5" r="1.4"/></svg></span>
+      <h4>Traffic Light</h4><span class="tag">Pro</span>
+    </div>
+    <p>A silent noise signal: green for talk freely, amber for quiet voices, red for silence.</p>
+    <ul>
+      <li>Tap a light to change it. Leave it on screen and point rather than raising your voice.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0"/><path d="M12 17v4"/><path d="M8.5 21h7"/></svg></span>
+      <h4>Noise Meter</h4><span class="tag">Pro</span>
+    </div>
+    <p>Listens through the microphone and shows how loud the room is.</p>
+    <ul>
+      <li>Click to enable it and allow microphone access when the browser asks. If Chrome shows no prompt on the New Tab page, click <b>Open microphone setup</b>, allow the microphone on that page, then come back and click enable again. You only do this once.</li>
+      <li>It needs a secure page — the extension, https, or localhost. From a plain file it can't ask for the microphone.</li>
+      <li>Pick how the level is shown with the three small buttons at the top: a round colour meter, a vertical bar, or a horizontal bar. Green is quiet, yellow is OK and red is too loud. The widget remembers your choice.</li>
+      <li>The meter <b>pegs</b> at the highest level it hears and holds it for 3 seconds (a &ldquo;Peak hold&rdquo; tag shows while it does), so a short shout doesn&rsquo;t flash past unnoticed. If something louder comes, the 3 seconds start again. Then the meter settles back to the current level.</li>
+      <li>Under the meter, <b>Noise over time</b> graphs the whole session as a line, with the green, yellow and red zones behind it. The graph shows the real level, not the held one, and long sessions squeeze together without losing the loud moments. It stays if you close and reopen the widget; press <b>Clear graph</b> to start fresh. Drag the widget&rsquo;s corner to make the graph bigger.</li>
+      <li>It is an approximate reading from a laptop microphone, not a calibrated sound meter. Nothing is recorded or sent anywhere &mdash; the graph exists only on your screen and is gone when you reload the page.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4"/><path d="M12 6v0"/><circle cx="12" cy="14" r="8"/><path d="M12 14V9"/><path d="M18 6l1.5-1.5"/></svg></span>
+      <h4>Days-Until Countdown</h4><span class="tag">Pro</span>
+    </div>
+    <p>Days remaining until a date that matters — an exam, a field trip, the end of term.</p>
+    <ul>
+      <li>Set a label and a date. It counts down daily and says so when the day arrives.</li>
+    </ul>
+  </div>
+
+  <h3 class="group-label" id="g-class">Your class list</h3>
+  <p>These three read the same student list, so they stay in step with each other.</p>
+  <div class="note gap">
+    <p><strong>Known gap in this version.</strong> These widgets point you to Settings &rarr; Class list, but that editor isn't in Settings yet. Until it lands, they run on the sample list the app ships with. Everything else about them works.</p>
+  </div>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="8" r="2.4"/><path d="M15.5 14a5 5 0 0 1 5.5 5"/></svg></span>
+      <h4>Attendance Tracker</h4><span class="tag">Pro</span>
+    </div>
+    <p>Mark who's here, by date.</p>
+    <ul>
+      <li>Tap each student to cycle their mark for the day. A summary line keeps the count.</li>
+      <li>Export day (.csv) downloads that day's register for your own records or your school system.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h3.5c1.3 0 2.5.7 3.2 1.8l4.6 7.4c.7 1.1 1.9 1.8 3.2 1.8H21"/><path d="M17 4l4 3-4 3"/><path d="M3 18h3.5c1.3 0 2.5-.7 3.2-1.8"/><path d="M17 20l4-3-4-3"/></svg></span>
+      <h4>Group Maker</h4><span class="tag">Pro</span>
+    </div>
+    <p>Splits the class into random groups on the spot.</p>
+    <ul>
+      <li>Choose how many groups you want, or how many students per group, then Shuffle.</li>
+      <li>Shuffle again for a different arrangement — useful when the first one puts the wrong two together.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="12" height="19" rx="1"/><circle cx="14" cy="12" r="1"/><path d="M17 21.5h4M3 21.5h4"/></svg></span>
+      <h4>Hall Pass Tracker</h4><span class="tag">Pro</span>
+    </div>
+    <p>Who is out of the room, where they went, and for how long.</p>
+    <ul>
+      <li>Pick a student, type a destination and send them out. The panel shows how long they have been gone.</li>
+      <li>Press Return when they come back. The log keeps the day's trips until you clear it.</li>
+    </ul>
+  </div>
+
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M7 16l3.5-5 3 2.5L18 8"/><circle cx="18" cy="8" r="1.3"/></svg></span>
+      <h4>Progress Reports</h4>
+    </div>
+    <p>A short written report on one student, sent to their parents in ParentDeck.</p>
+    <ul>
+      <li>Choose the student from your Cloud Class list (connect Cloud Class first, or the list will be empty). Fill in Skills, Things to improve, Strengths and Next Learning Focus, and give an overall score out of 10.</li>
+      <li>Press Send to ParentDeck. Unlike Assignments, a report goes only to that one student&rsquo;s family, not the whole class.</li>
+      <li>Pick weekly, bi-weekly or monthly and a start date to put reminders on your Calendar (marked with 📈) for the next reports. Nothing is sent automatically &mdash; the reminders are there to bring you back and write each one.</li>
+      <li>Deleting a report removes its Calendar reminders, but parents who already received it will still see it.</li>
+    </ul>
+  </div>
+
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M4 7.5l8 6 8-6"/></svg></span>
+      <h4>Notes Home</h4>
+    </div>
+    <p>A quick note to a student&rsquo;s parents &mdash; a smiley or a frowny face and a few words &mdash; with a read receipt, so you can see when it has been opened. Find it in the <strong>Cloud classroom</strong> group of the app tray.</p>
+    <ul>
+      <li>Connect Cloud Class first (Notes Home asks you to if you haven&rsquo;t). In Cloud Class, the ✉️ button on a student&rsquo;s row is a shortcut: it opens Notes Home with that student already ticked. Type the name you want parents to see in <strong>Sign notes as</strong> (for example &ldquo;Ms. Linh&rdquo;) &mdash; you only need to do this once. Parents see your class name and that name.</li>
+      <li>Tick one or more students, pick 🙂 or 🙁, and write your note (up to 500 characters). A smiley can go with no words at all; a frowny needs a few words so the parent knows what happened. Press Send note.</li>
+      <li>If you tick several students, each family gets its <em>own private copy</em>. Nobody can see another family&rsquo;s note, and students never see notes at all.</li>
+      <li>Under <strong>Sent notes</strong>, each note shows 📨 Sent until a parent opens it in ParentDeck, then ✅ Read with the time. If a child has two parents, it counts as read as soon as either one opens it.</li>
+      <li>Sent the wrong one? The 🗑️ button takes a note back &mdash; but only while it is still unread. Once a parent has opened it, it stays; send a short follow-up note instead.</li>
+      <li>Two students with the same name show a ⚠️ marker in the list. Check you have ticked the right one before you send &mdash; a note goes to that student&rsquo;s family only.</li>
+      <li>Removing a student from Cloud Class also deletes the notes you sent about them.</li>
+    </ul>
+  </div>
+
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span>
+      <h4>Class Activity</h4>
+    </div>
+    <p>See what your students are doing in StudentDeck, across the whole class. Find it in the <strong>Cloud classroom</strong> group of the app tray; it needs Cloud Class to be connected.</p>
+    <ul>
+      <li><strong>This week</strong> &mdash; how many students were active, and the class totals for reading minutes, focus sessions, games, idioms, words saved and cards reviewed.</li>
+      <li><strong>Students</strong> &mdash; each student&rsquo;s 🔥 streak, ✅ homework done out of assigned, when they were last active, and 📖 reading this week. Students who haven&rsquo;t been active for 3 or more days are listed first, so they are easy to spot.</li>
+      <li><strong>Homework completion</strong> &mdash; for each assignment, how many students have ticked it off, with a bar.</li>
+      <li><strong>Recent points</strong> &mdash; the latest awards, including when a student spends points on a reward (🎁), with the reward named. If a student redeems something while this widget is open, you get a pop-up, so a drop in points always has a visible reason.</li>
+      <li>The same 🔥 / ✅ / last-active line also appears under each student in the Cloud Class roster.</li>
+      <li>Journal entries stay private on the student&rsquo;s own device and are never shown here. These numbers are reported by each student&rsquo;s own device &mdash; treat them as a guide, not a score.</li>
+    </ul>
+  </div>
+
+  <h3 class="group-label" id="g-lesson">Running the lesson</h3>
+  <p>What's happening today, and what students should be doing right now.</p>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.2-4.3L16 5l3 3L8.3 18.8 4 20Z"/><path d="M14 7l3 3"/></svg></span>
+      <h4>DrawDeck</h4>
+    </div>
+    <p>A full-screen whiteboard for explaining things as you go, with a mind map mode and a flowchart mode. Everything works on the same page, so you can draw an arrow by hand over a mind map.</p>
+    <ul>
+      <li>The tool column has Select, Pan, Pen, Highlighter, Eraser, Text and Picture. Pick a colour from the ten swatches (or the rainbow circle for any colour) and a size from the five dots along the bottom. Keys: V, P, H, E, T, S (shapes), C (connector); hold Space and drag to move around; Ctrl + scroll or the + and − buttons to zoom; 1 fits everything on screen, 0 goes back to 100%.</li>
+      <li>Eraser: by default it rubs out just the part of a stroke it touches; choose <em>Erase whole strokes</em> in the bar along the bottom to remove a stroke in one touch. A stylus with an eraser end erases when you flip it over.</li>
+      <li>Pictures: the Picture button adds a picture from this computer or from your Files widget. You can also paste a picture (Ctrl+V) or drag one onto the board. Drag its corner handle to resize it; the shape stays in proportion.</li>
+      <li>Math tools (the ruler button in the tool column): a <strong>number line</strong>, a <strong>ruler</strong> (cm or inches), a <strong>protractor</strong>, a <strong>fraction bar</strong> and a <strong>table / grid</strong>. Drag one to move it; the round handle above a ruler, protractor or number line turns it (hold Shift to snap to 15°); the square corner handle changes its size. A pen stroke that starts on the top edge of a ruler runs perfectly straight along it. Press Enter or the Properties button to change a tool: the number line's start, end and step; the ruler's unit and length; how many parts a fraction bar has (double-click a part to shade it); a table's rows, columns, column headings and cell numbering.</li>
+      <li>Starter templates (the four-squares button at the top right): T-chart, Venn diagram, KWL chart, story map, place value chart, 100 chart, multiplication table, fraction wall, a number line from 0 to 10, a coordinate plane and handwriting lines. Each lands on the page ready to use; everything can be moved, resized or edited.</li>
+      <li>Shapes: line, arrow, rectangle, ellipse and diamond; flowcharts also have Process, Start / end and Sticky note. Drag to draw one, then type to label it. Hold Shift for a perfect square, circle or 45° line. Tick Fill shapes for a tinted inside.</li>
+      <li>Mind map: Double-click for a central topic, then Tab adds a branch and Enter adds one beside it. Branches take their own colour and tidy themselves; the small circle by a branch hides or shows what is below it. Tidy layout puts everything back in order, and Outline lets you copy the map as an indented list or turn a pasted list into a map.</li>
+      <li>Flowchart: draw shapes, choose the connector and drag from one shape to another. Connectors follow the shapes when you move them. Double-click a connector to label it (for example Yes or No).</li>
+      <li>Backgrounds (the grid button at the top): whiteboard, blackboard, grid, lined paper, three-line handwriting paper, graph paper, coordinate axes for maths, and dots. Pages: use ◀ ▶ and + at the top to run a lesson as several pages. A board can have many pages, and you can keep many boards.</li>
+      <li>Save page as picture (the ⋯ menu) downloads a PNG; Save all pages as PDF makes one PDF with a page for each board page. Save board as a file and Open a board file move a whole board between computers. Boards save themselves on this computer as you work; Ctrl+Z and Ctrl+Y undo and redo changes on the page you are on.</li>
+      <li>Hide the toolbars (F) gives you the largest possible board for the projector; the round button in the corner brings them back.</li>
+    </ul>
+  </div>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8.5L19 7.5V21H6V3Z"/><path d="M14 3v5h5"/><path d="M9 12.5h7M9 16h7M9 9h3"/></svg></span>
+      <h4>Lesson Planner</h4><span class="tag">Pro</span>
+    </div>
+    <p>Fill in the essentials of a lesson once: get your lesson plan document ready to finish, and put the lesson on the calendar.</p>
+    <ul>
+      <li>Type the topic, date, start time and length, then your name, subject and class. Objectives, materials and the minutes for each phase are optional — open the two collapsible sections to add them.</li>
+      <li>Open in Word downloads a copy of your Universal Lesson Planner template with all of that already filled in. Open it from your Downloads folder or the browser's download bar — a web page can't start Word for you.</li>
+      <li>Open in Google Docs copies the same plan and opens a new, titled Google Doc. Press Ctrl+V (Cmd+V on a Mac) in the new document to drop it in. You need to be signed in to Google. If the paste doesn't look right, use Open in Word instead, upload that file to Google Drive and choose Open with → Google Docs.</li>
+      <li>Also save to the calendar is on by default, and adds the lesson to the Calendar widget: date, start time, length, an optional reminder, and a summary in the notes. Save to calendar does only that, without opening a document.</li>
+      <li>Save again after a change and the same calendar entry is updated, not duplicated. The line under the buttons turns amber when the form has moved on from what the calendar holds.</li>
+      <li>A lesson needs a topic before it can go on the calendar; opening the document never does.</li>
+      <li>New lesson clears the topic and content but keeps your name, subject, class, start time and length for the next one. Each class keeps its own planner.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="8.5" y="2" width="7" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h7M8.5 19h4"/></svg></span>
+      <h4>Agenda Board</h4><span class="tag">Pro</span>
+    </div>
+    <p>The lesson on the wall: the schedule, today's objective, and the Do Now.</p>
+    <ul>
+      <li>Type into the three boxes. It saves as you go, and each class keeps its own.</li>
+      <li>Put it up as students walk in so nobody asks what they should be doing.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="8.5" y="2" width="7" height="3.5" rx="1"/><path d="M8.5 11h7M8.5 15h7M8.5 19h4"/></svg></span>
+      <h4>Instructions Display</h4><span class="tag">Pro</span>
+    </div>
+    <p>Multi-step instructions shown one step at a time, so students aren't reading ahead.</p>
+    <ul>
+      <li>Give it a title, add your steps, then click Done editing.</li>
+      <li>Next and Previous move through them, with a step counter. Click Edit to change them again.</li>
+      <li>The text automatically grows or shrinks to fill the window &mdash; drag the corner to make it bigger for the back of the room.</li>
+      <li>Each step can show a Vietnamese translation under the English. Steps are translated automatically when you add them (or press the globe button on a step, or &ldquo;Translate all&rdquo;). Machine translation isn&rsquo;t perfect, so you can edit the Vietnamese yourself. The 🇻🇳 button on the display turns Vietnamese on and off.</li>
+      <li>The title gets a Vietnamese line too. Steps are numbered for you (1, 2, 3&hellip;), so you don&rsquo;t need to type the numbers.</li>
+      <li>Use the &ldquo;All steps&rdquo; / &ldquo;One at a time&rdquo; button to show every step on screen at once, or step through them with Next and Previous.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h1M4 12h1M4 18h1"/><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.3 6l.7.7L5.3 5.4" stroke-width="0"/></svg></span>
+      <h4>Checklist</h4><span class="tag">Pro</span>
+    </div>
+    <p>The lesson's plan as tickable items — or a class routine you run every day.</p>
+    <ul>
+      <li>Type an item and press Add. Tick items off as you go; ticks are saved.</li>
+      <li>Items stay until you remove them, so a daily routine can live here permanently.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span>
+      <h4>Announcements Board</h4><span class="tag">Pro</span>
+    </div>
+    <p>Notices that stay on the board: homework due, a room change, a reminder for Friday.</p>
+    <ul>
+      <li>Write a notice and post it. Pin the important one to keep it at the top.</li>
+      <li>Notices can be given an expiry so they disappear on their own, or left with none.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg></span>
+      <h4>Calendar</h4><span class="tag free">Free</span>
+    </div>
+    <p>A month view with your own events and reminders.</p>
+    <ul>
+      <li>Click a date to add an event with a time, notes and a reminder.</li>
+      <li>Add to Google opens the event prefilled in Google Calendar if you keep your real diary there.</li>
+      <li>Import .ics brings events in from Google Calendar or your school system: export the calendar there, then add the file here.</li>
+      <li>Turn on notifications to be reminded while the tab is open.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14v3M14 19h2M19 19h2"/></svg></span>
+      <h4>QR Code Generator</h4><span class="tag">Pro</span>
+    </div>
+    <p>Turns a link into a QR code big enough for the class to scan off the screen.</p>
+    <ul>
+      <li>Paste a link or any text and click Generate. Download saves the image for a worksheet or slide.</li>
+      <li>The code is made on this device — nothing is sent anywhere.</li>
+    </ul>
+  </div>
+
+  <h3 class="group-label" id="g-feedback">Checking understanding</h3>
+  <p>Quick reads of the room, and a bit of competition.</p>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/></svg></span>
+      <h4>Poll</h4><span class="tag">Pro</span>
+    </div>
+    <p>A show-of-hands vote with a question and as many options as you need.</p>
+    <ul>
+      <li>Open Manage to write the question and the options.</li>
+      <li>Tap an option once per raised hand; bars grow as you count. Reset votes clears the tally but keeps the question.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/></svg></span>
+      <h4>Exit Ticket</h4><span class="tag">Pro</span>
+    </div>
+    <p>The end-of-lesson temperature check: got it, almost, need help.</p>
+    <ul>
+      <li>Type the question, then tap a button once per raised hand.</li>
+      <li>Reset clears the counts for the next class.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0V3Z"/><path d="M7 4H4.5A2.5 2.5 0 0 0 4 8.9L7 11"/><path d="M17 4h2.5A2.5 2.5 0 0 1 20 8.9L17 11"/><path d="M12 12v3.5"/><path d="M9 20h6"/><path d="M9.6 16.5h4.8l.5 3.5H9.1l.5-3.5Z"/></svg></span>
+      <h4>Scoreboard</h4><span class="tag">Pro</span>
+    </div>
+    <p>Team points, for anything from vocabulary races to good behaviour.</p>
+    <ul>
+      <li>Rename the teams by typing over them. Plus and minus adjust the score; Reset zeroes everyone.</li>
+      <li>The Classroom Word Wheel and Spelling Bee Showdown games can send their scores straight into this widget.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3"/><circle cx="16" cy="8" r="1.3"/><circle cx="8" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/><circle cx="12" cy="12" r="1.3"/></svg></span>
+      <h4>Dice</h4><span class="tag">Pro</span>
+    </div>
+    <p>A rolled die on the big screen, for picking numbers, turns or questions.</p>
+    <ul>
+      <li>Click Roll. Good for choosing a question number without anyone arguing.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13V9"/><path d="M9 3h6"/></svg></span>
+      <h4>Reading Timer &amp; Log</h4><span class="tag">Pro</span>
+    </div>
+    <p>A reading timer that keeps a record of who read and for how long.</p>
+    <ul>
+      <li>Set the target minutes, pick a student, and start. It tells you when the time is up.</li>
+      <li>Each finished session is added to the log, which you can clear whenever you like.</li>
+    </ul>
+  </div>
+
+  <h3 class="group-label" id="g-media">Files, media and games</h3>
+  <p>Anything you bring in from outside. All of it stays on this computer.</p>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6l2 2h8v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg></span>
+      <h4>Files</h4><span class="tag free">Free</span>
+    </div>
+    <p>Your lesson files — PDFs, slides, documents, images — one click away during the lesson.</p>
+    <ul>
+      <li>Click Browse and pick files from your computer. The arrow button (&#8599;) opens a file in a new tab.</li>
+      <li><strong>Show full screen.</strong> Click a PDF&rsquo;s name (or the expand button) and it fills the screen under the top bar. Close it with <em>Close document</em> in the bar at the top of the document; the small arrow hides that bar for a bigger page.</li>
+      <li><strong>Google links.</strong> Paste a Google Docs, Slides, Sheets, Forms or Drive link, give it a name if you like, and press <em>Add Google link</em>. It then shows full screen the same way, as a read-only view; <em>Edit in Google</em> opens the editor in a new tab. You need to be signed in to Google in this browser, and the document must be shared with you. If it doesn&rsquo;t appear, use <em>Open in tab</em>.</li>
+      <li><strong>Word, PowerPoint and Excel files (Pro).</strong> Click one and TeachersDeck converts it, once, to a Google Doc, Slides or Sheet in a <em>TeachersDeck Converted</em> folder in your own Google Drive, then shows it full screen. The first time, Google asks you to allow access to the files TeachersDeck creates (only those, not the rest of your Drive). Opening the same file again is instant. <em>Re-convert</em> replaces the Google copy after you change the original. In Settings, <em>Google documents</em> can delete the Google copy when you close a document, or delete all converted files (they go to your Drive trash). If it can&rsquo;t convert (offline, school account blocked, file too big), it says why and offers <em>Open the original in a tab</em>. The arrow button always opens the original in a tab.</li>
+      <li><strong>Keep a widget on top of the document.</strong> While a document is full screen, widgets you had open are behind it. Click the pin in a widget&rsquo;s title bar, or tick it in the <em>Widgets</em> menu in the document bar, and the clock, timer, stopwatch, noise meter or any other widget stays on top of the page. Widgets you open while a document is showing are pinned automatically. Pinned widgets stay pinned next time.</li>
+      <li>Files live inside this browser on this computer. Keep your originals where they are. A pasted Google link saves only the link, not the document.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="8" width="20" height="10" rx="5"/><path d="M7 11v4M5 13h4"/><circle cx="16" cy="11.5" r="1"/><circle cx="18.5" cy="14" r="1"/></svg></span>
+      <h4>Games</h4><span class="tag">Pro</span>
+    </div>
+    <p>Ready-made classroom games, plus any HTML game you add yourself.</p>
+    <ul>
+      <li>Built-in games ship in the games folder and are there however you open the app: as the extension, from a web server, or by opening <code>index.html</code> straight from the folder. Right now there are two: <b>Classroom Word Wheel</b> and <b>Spelling Bee Showdown</b>. Tap the small ? on a tile for how to play.</li>
+      <li>My games takes any single-file HTML game via Browse.</li>
+      <li>Games written in Java or Python need converting to HTML and JavaScript before they will run here.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span>
+      <h4>Music Player</h4><span class="tag">Pro</span>
+    </div>
+    <p>Background music for group work, from your own files or a streaming link.</p>
+    <ul>
+      <li>My files plays audio you add from your computer.</li>
+      <li>Stream takes a direct audio link. YouTube links open in a new tab, because YouTube blocks embedded playback for many videos.</li>
+      <li>Spotify opens your playlist in Spotify rather than playing it here — in-app playback would need a Premium account and a registered Spotify app.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg></span>
+      <h4>Video Player</h4><span class="tag">Pro</span>
+    </div>
+    <p>Video clips for the lesson, from your files or from YouTube.</p>
+    <ul>
+      <li>My files plays video you add from your computer, full width on the projector.</li>
+      <li>YouTube links open in a new tab for the same reason as above — it always works, embedding often doesn't.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h3.5l5 4V5l-5 4H4Z"/><path d="M16 9a4.5 4.5 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></span>
+      <h4>Soundboard</h4><span class="tag">Pro</span>
+    </div>
+    <p>Your own sound effects on buttons: a chime for tidy-up, a fanfare for a right answer.</p>
+    <ul>
+      <li>Add audio clips with Browse. Each becomes a button you tap to play.</li>
+      <li>One volume slider covers them all, and Stop cuts a clip short.</li>
+    </ul>
+  </div>
+
+  <h3 class="group-label" id="g-language">Language and reference</h3>
+  <p>Built for English and language classrooms, useful anywhere.</p>
+    <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0"/><path d="M12 17v4"/><path d="M8.5 21h7"/></svg></span>
+      <h4>Text-to-Speech Reader</h4><span class="tag">Pro</span>
+    </div>
+    <p>Reads text aloud in the voice of the interface language, at a speed you set.</p>
+    <ul>
+      <li>Paste or type the text and press Play. The speed slider slows it down for listening practice.</li>
+      <li>It uses the voices your browser already has. If your browser has none, the widget says so.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-4 4V5Z"/><path d="M8 9h8M8 12.5h5"/></svg></span>
+      <h4>Conversation Starter Cards</h4><span class="tag">Pro</span>
+    </div>
+    <p>Discussion prompts on a card, sorted by difficulty.</p>
+    <ul>
+      <li>Choose easy, medium, hard or all, then Next card.</li>
+      <li>Useful for the last five minutes, or as a warm-up while stragglers arrive.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8c-2 0-3.3 1.6-3.3 3.7 0 2.2 1.6 3.6 3.2 3.6.2 1.7-.9 3-2.6 3.4l.5 1.6c3-.5 4.6-2.6 4.6-5.8V8H7Zm9 0c-2 0-3.3 1.6-3.3 3.7 0 2.2 1.6 3.6 3.2 3.6.2 1.7-.9 3-2.6 3.4l.5 1.6c3-.5 4.6-2.6 4.6-5.8V8H16Z"/></svg></span>
+      <h4>Idiom of the Day</h4><span class="tag">Pro</span>
+    </div>
+    <p>One English idiom a day, with its meaning and an example sentence.</p>
+    <ul>
+      <li>It changes by date on its own. Shuffle shows another; Back to today returns to the day's idiom.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5c2.5-1 5.5-1 8 0v15c-2.5-1-5.5-1-8 0v-15Z"/><path d="M20 4.5c-2.5-1-5.5-1-8 0v15c2.5-1 5.5-1 8 0v-15Z"/></svg></span>
+      <h4>Grammar Quick-Reference</h4><span class="tag">Pro</span>
+    </div>
+    <p>Grammar rules and examples on the board, so you don't have to write them out.</p>
+    <ul>
+      <li>Pick a topic from the list to show its rule and examples.</li>
+    </ul>
+  </div>
+  <div class="widget">
+    <div class="widget-head">
+      <span class="widget-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13"/><path d="M13 4l4 4-4 4"/><path d="M20 16H7"/><path d="M11 12l-4 4 4 4"/></svg></span>
+      <h4>Unit Converter</h4><span class="tag">Pro</span>
+    </div>
+    <p>Length, weight, temperature and currency, converted on the screen.</p>
+    <ul>
+      <li>Pick a category, type a number, read the result.</li>
+      <li>Currency uses approximate fixed rates, not live ones — fine for classroom estimates, not for anything that matters financially.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pro">
+  <h2>Free and Pro</h2>
+  <p>The free version covers the clock, timer, stopwatch, calendar and your lesson files. Pro unlocks the other twenty-six widgets plus the custom background photo and full control over the side drawers. It's a monthly or annual subscription, and it unlocks on the browser you enter it in.</p>
+  <p>To activate: open <strong>Settings &rarr; TeachersDeck Pro</strong>, paste your licence key into the box and click <strong>Activate</strong>. Keys look like <code>TDPRO-XXXX-XXXX-XXXX</code>.</p>
+  <div class="note warn">
+    <p><strong>In this build everything is unlocked</strong> so the whole app can be tested and demonstrated. If you're reading this as a teacher trying it out, that means you can use every widget now.</p>
+  </div>
+</section>
+
+<section id="data">
+  <h2>Your data</h2>
+  <p>Everything &mdash; your classes, layouts, checklists, attendance, uploaded files, games and music &mdash; is stored by your browser on this computer. Nothing is sent to a server, there's no account, and no one else can see it. Which also means:</p>
+  <ul>
+    <li>Clearing your browser's site data or history erases it. Look for &ldquo;cookies and site data&rdquo; before you clear anything.</li>
+    <li>It doesn't follow you between computers. The classroom machine and your laptop at home keep separate decks.</li>
+    <li>Using the app in a private or incognito window keeps nothing after you close it.</li>
+    <li>Keep your original lesson files in their normal folders. What you add to the Files widget is a copy inside the browser, not a backup.</li>
+  </ul>
+  <p>Settings has two reset buttons. <strong>Reset widget positions</strong> tidies the board and keeps your content. <strong>Reset everything</strong> erases every class and everything stored, on every class, and can't be undone.</p>
+</section>
+
+<section id="trouble">
+  <h2>If something goes wrong</h2>
+
+  <h3>The background image won't stick</h3>
+  <p>If you see a message saying the image was applied but can't be saved, the window you're in is blocking storage &mdash; usually an embedded preview or a private window. The background will hold for the lesson but reset when you reload. Open the app in a normal browser tab or as the extension and upload it again.</p>
+
+  <h3>The noise meter says it can't hear anything</h3>
+  <p>It needs microphone permission, and browsers only grant that to pages served over <code>https</code>, over <code>localhost</code>, or running as the extension. If nothing happens when you click enable, use the <b>Open microphone setup</b> button that appears in the widget. To check the permission afterwards, open <code>chrome://settings/content/microphone</code> and make sure TeachersDeck is not under &ldquo;Not allowed to use your microphone&rdquo;. Treat the reading as a rough guide, not a measurement.</p>
+
+  <h3>The Games widget shows no built-in games</h3>
+  <p>The built-in games are listed in <code>games/games.js</code>, so they appear however you open the app. If the section is missing, the <code>games</code> folder was probably left out when you moved or unzipped the app &mdash; keep it beside <code>index.html</code>. Your own uploaded games work either way.</p>
+
+  <h3>A YouTube link opens in a new tab instead of playing here</h3>
+  <p>That's deliberate. YouTube blocks embedded playback for many videos, so the app hands them to a real tab, which always works.</p>
+
+  <h3>Everything looks wrong after an update</h3>
+  <p>Try Settings &rarr; Reset widget positions first. If the board is still odd, close any other tabs with TeachersDeck open and reload &mdash; an old tab left open can hold the app's storage during an update.</p>
+</section>
+
+</main>
+</div>
+
+<footer>TeachersDeck 0.13.1 &mdash; runs on your computer, keeps your data there.</footer>
+
+</body>
+</html>

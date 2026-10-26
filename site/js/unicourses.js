@@ -2,8 +2,8 @@
 /* =========================================================
    UniCourses — the UniDeck course client (backend v2.12.0), one file in two apps
    ---------------------------------------------------------
-   studentdeck/js/unicourses.js   (this copy is the one to edit) — UniStudentDeck's Courses, Assignments, Grades, Modules, Announcements
-   teachersdeck/js/unicourses.js  — LectureDeck's Course builder, Assignments, Grader, Gradebook, Modules, Announcements
+   studentdeck/js/unicourses.js   (this copy is the one to edit) — UniStudentDeck's Courses, Assignments, Grades, Modules, Announcements, Discussions, Calendar, Office hours
+   teachersdeck/js/unicourses.js  — LectureDeck's Course builder, Assignments, Grader, Gradebook, Modules, Announcements, Discussions, Course calendar, Office hours
    tools/check_shared.py keeps them identical. Only the UniDeck apps load it (their own index.html); StudentDeck and
    TeachersDeck carry the file but never run it.
 
@@ -129,6 +129,43 @@ const UniCourses = (() => {
       c2: [{ id: 'q1', title: 'Survey ethics form', body: 'Before you collect any responses, submit the one-page ethics form linked in Week 1.', pinned: false, authorName: me.teacher.name, createdAtMs: at(-1, 11, 0) }],
     };
     const reads = { c1: { d1: { n3: at(-28, 9, 0), n2: at(-5, 18, 0) }, d2: { n3: at(-27), n1: at(-1) }, d3: { n3: at(-27) }, d4: { n3: at(-26), n2: at(-4) } } };
+    /* v2.14.0: discussions, calendar events and office hours for the demo courses */
+    const wk = (dow, h, m, weeks = 0) => { const x = new Date(now); x.setHours(h, m, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7) + ((dow + 6) % 7) + weeks * 7); return x.getTime(); };   // dow: 1 = Monday
+    const HOUR = 36e5;
+    const threads = {
+      c1: [
+        { id: 't1', title: 'Is hedging a sign of weak writing?', body: 'This week we read about hedging. Some people say "may" and "suggests" make writing sound unsure. Do you agree? Give one example from your own field.', postFirst: true, pinned: true, locked: false, authorName: me.teacher.name, createdAtMs: at(-4, 9, 0) },
+        { id: 't2', title: 'Questions about Essay 1', body: 'Ask anything about Essay 1 here so everyone sees the answer.', postFirst: false, pinned: false, locked: false, authorName: me.teacher.name, createdAtMs: at(-12, 10, 0) },
+      ],
+      c2: [{ id: 't3', title: 'Sampling for your project', body: 'Describe your sampling plan in three sentences. Reply to one classmate.', postFirst: false, pinned: false, locked: false, authorName: me.teacher.name, createdAtMs: at(-2, 13, 0) }],
+    };
+    const posts = {
+      t1: [
+        { id: 'p1', uid: 'd2', name: 'Binh Tran', role: 'student', body: 'I disagree. In engineering reports we hedge because measurements have error. "The results suggest" is just honest.', createdAtMs: at(-3, 20, 15) },
+        { id: 'p2', uid: 'd3', name: 'Chi Le', role: 'student', body: 'Too much hedging is a problem though. My first draft had "may possibly" three times in one paragraph.', createdAtMs: at(-3, 21, 40) },
+        { id: 'p3', uid: 'dt', name: me.teacher.name, role: 'instructor', body: 'Both good points. The skill is matching the strength of the claim to the strength of the evidence.', createdAtMs: at(-2, 8, 30) },
+        { id: 'p4', uid: 'd5', name: 'Giang Vo', role: 'student', body: 'In medicine papers we say "is associated with" instead of "causes" unless it was a trial. That is hedging too.', createdAtMs: at(-1, 19, 5) },
+      ],
+      t2: [
+        { id: 'p5', uid: 'd4', name: 'Duc Pham', role: 'student', body: 'Can we use news articles as one of the three sources?', createdAtMs: at(-10, 17, 0) },
+        { id: 'p6', uid: 'dt', name: me.teacher.name, role: 'instructor', body: 'One news source is fine for background, but your three main sources must be academic.', createdAtMs: at(-10, 18, 20) },
+        { id: 'p7', uid: 'd1', name: 'An Nguyen', role: 'student', body: 'Is the 1,000 words with or without the references?', createdAtMs: at(-8, 11, 0) },
+        { id: 'p8', uid: 'dt', name: me.teacher.name, role: 'instructor', body: 'Without the references.', createdAtMs: at(-8, 12, 5) },
+      ],
+      t3: [{ id: 'p9', uid: 'd2', name: 'Binh Tran', role: 'student', body: 'Stratified by faculty, then random within each. About 30 per faculty.', createdAtMs: at(-1, 9, 0) }],
+    };
+    const posted = { t1: new Set(['d2', 'd3', 'd5']), t2: new Set(['d4', 'd1']), t3: new Set(['d2']) };
+    const events = {
+      c1: [
+        { id: 'e1', title: 'Lecture: Academic Writing', kind: 'class', startAtMs: wk(1, 9, 0, -4), endAtMs: wk(1, 9, 0, -4) + 1.5 * HOUR, location: 'Hall B', link: '', weeklyUntilMs: wk(1, 9, 0, 8) },
+        { id: 'e2', title: 'Seminar: Academic Writing', kind: 'class', startAtMs: wk(3, 10, 0, -4), endAtMs: wk(3, 10, 0, -4) + HOUR, location: 'Room B204', link: '', weeklyUntilMs: wk(3, 10, 0, 8) },
+        { id: 'e3', title: 'Midterm: in-class writing', kind: 'exam', startAtMs: at(9, 9, 0), endAtMs: at(9, 9, 0) + 2 * HOUR, location: 'Hall C', link: '', weeklyUntilMs: null },
+      ],
+      c2: [{ id: 'e4', title: 'Lecture: Research Methods', kind: 'class', startAtMs: wk(2, 14, 0, -4), endAtMs: wk(2, 14, 0, -4) + 1.5 * HOUR, location: 'Room S310', link: '', weeklyUntilMs: wk(2, 14, 0, 8) }],
+    };
+    const slots = { c1: [], c2: [] }, bookings = { c1: {}, c2: {} };
+    for (let i = 0; i < 6; i++) { const s = wk(3, 14, 0, 1) + i * 20 * 6e4; slots.c1.push({ id: 'o' + i, startAtMs: s, endAtMs: s + 20 * 6e4, location: 'Room B204', link: 'https://meet.example.com/eng201-office-hours', booked: false }); }
+    [[1, 'd3', 'Chi Le', 'Essay 1 rubric'], [2, 'd1', 'An Nguyen', 'Narrowing my research question'], [4, 'd6', 'Hanh Do', '']].forEach(([i, uid, name, note]) => { slots.c1[i].booked = true; bookings.c1['o' + i] = { slotId: 'o' + i, uid, name, note, startAtMs: slots.c1[i].startAtMs, endAtMs: slots.c1[i].endAtMs, bookedAtMs: at(-1) }; });
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
@@ -205,6 +242,36 @@ const UniCourses = (() => {
       async myReads(c) { await wait(); return { ...((reads[c] || {})[myUid()] || {}) }; },
       async markRead(c, ids) { const r = (reads[c] || (reads[c] = {}))[myUid()] || (reads[c][myUid()] = {}); ids.forEach((id) => { r[id] = r[id] || Date.now(); }); return { ok: true }; },
       async readCounts(c) { await wait(); const out = {}; Object.values(reads[c] || {}).forEach((r) => Object.keys(r).forEach((id) => { out[id] = (out[id] || 0) + 1; })); return out; },
+      /* ---- v2.14.0 discussions, calendar events, office hours (demo) ---- */
+      async threads(c) { await wait(); need(c); return (threads[c] || []).map((x) => ({ ...x, postCount: (posts[x.id] || []).length, lastPostAtMs: Math.max(x.createdAtMs, ...(posts[x.id] || []).map((p) => p.createdAtMs)) })).sort((a, b) => (b.pinned - a.pinned) || (b.lastPostAtMs - a.lastPostAtMs)); },
+      async posts(c, tid) { await wait(); need(c); const th = (threads[c] || []).find((x) => x.id === tid); if (!th) throw new Error('Discussion not found.');
+        if (role() !== 'teacher' && th.postFirst && !(posted[tid] && posted[tid].has(myUid()))) return { locked: true, posts: [] };
+        return { locked: false, posts: (posts[tid] || []).map((p) => ({ ...p })).sort((a, b) => a.createdAtMs - b.createdAtMs) }; },
+      async saveThread(c, d) { await wait(); if (!d.title) throw new Error('Give the discussion a title.'); if (!d.body) throw new Error('Write the prompt for the discussion.');
+        const list = threads[c] || (threads[c] = []); const flags = { postFirst: !!d.postFirst, pinned: !!d.pinned, locked: !!d.locked };
+        if (d.id) { Object.assign(list.find((x) => x.id === d.id), { title: d.title, body: d.body, ...flags }); return { threadId: d.id }; }
+        const id = 't' + Math.random().toString(36).slice(2, 7); list.push({ id, title: d.title, body: d.body, ...flags, authorName: me.teacher.name, createdAtMs: Date.now() }); return { threadId: id }; },
+      async deleteThread(c, tid) { await wait(); threads[c] = threads[c].filter((x) => x.id !== tid); delete posts[tid]; return { ok: true }; },
+      async postReply(c, tid, body) { await wait(); const th = threads[c].find((x) => x.id === tid); if (th.locked) throw new Error('This discussion is closed.'); if (!String(body || '').trim()) throw new Error('Write your reply first.');
+        const who = role() === 'teacher' ? { uid: me.teacher.uid, name: me.teacher.name, role: 'instructor' } : { uid: me.student.uid, name: me.student.name, role: 'student' };
+        const id = 'p' + Math.random().toString(36).slice(2, 7); (posts[tid] || (posts[tid] = [])).push({ id, ...who, body: String(body).trim(), createdAtMs: Date.now() }); (posted[tid] || (posted[tid] = new Set())).add(who.uid); return { postId: id }; },
+      async editPost(c, tid, pid, body) { await wait(); const p = posts[tid].find((x) => x.id === pid); if (p.uid !== myUid()) throw new Error('You can only edit your own replies.'); p.body = body; p.editedAtMs = Date.now(); return { ok: true }; },
+      async removePost(c, tid, pid) { await wait(); const p = posts[tid].find((x) => x.id === pid); if (p.uid !== myUid() && role() !== 'teacher') throw new Error('You can only remove your own replies.'); p.body = ''; p.removed = true; return { ok: true }; },
+      async events(c) { await wait(); need(c); return (events[c] || []).map((e) => ({ ...e })); },
+      async saveEvent(c, e) { await wait(); if (!e.title) throw new Error('Give the event a title.'); const list = events[c] || (events[c] = []);
+        const row = { title: e.title, kind: e.kind || 'other', startAtMs: e.startAtMs, endAtMs: e.endAtMs || e.startAtMs, location: e.location || '', link: e.link || '', weeklyUntilMs: e.weeklyUntilMs || null };
+        if (e.id) { Object.assign(list.find((x) => x.id === e.id), row); return { eventId: e.id }; } const id = 'e' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row }); return { eventId: id }; },
+      async deleteEvent(c, id) { await wait(); events[c] = events[c].filter((x) => x.id !== id); return { ok: true }; },
+      async slots(c) { await wait(); need(c); return (slots[c] || []).map((s) => ({ ...s })).sort((a, b) => a.startAtMs - b.startAtMs); },
+      async myBookings(c) { await wait(); return Object.values(bookings[c] || {}).filter((b) => b.uid === myUid()).map((b) => ({ ...b })); },
+      async bookings(c) { await wait(); return Object.values(bookings[c] || {}).map((b) => ({ ...b })); },
+      async openSlots(c, d) { await wait(); const n = Math.floor((d.endAtMs - d.startAtMs) / (d.minutes * 6e4)); if (n < 1) throw new Error('That time is shorter than one slot.'); if (n > 40) throw new Error('Open up to 40 slots at once.');
+        for (let i = 0; i < n; i++) { const s = d.startAtMs + i * d.minutes * 6e4; (slots[c] || (slots[c] = [])).push({ id: 'o' + Math.random().toString(36).slice(2, 7), startAtMs: s, endAtMs: s + d.minutes * 6e4, location: d.location || '', link: d.link || '', booked: false }); } return { created: n }; },
+      async deleteSlot(c, id) { await wait(); slots[c] = slots[c].filter((s) => s.id !== id); delete bookings[c][id]; return { ok: true }; },
+      async bookSlot(c, id, note) { await wait(); const s = slots[c].find((x) => x.id === id); if (s.booked) throw new Error('Someone just booked that slot. Pick another.'); if (s.startAtMs <= Date.now()) throw new Error('That slot has already started.');
+        if (Object.values(bookings[c]).filter((b) => b.uid === myUid() && b.startAtMs > Date.now()).length >= 2) throw new Error('You can hold up to 2 upcoming bookings in a course.');
+        s.booked = true; bookings[c][id] = { slotId: id, uid: myUid(), name: me.student.name, note: note || '', startAtMs: s.startAtMs, endAtMs: s.endAtMs, bookedAtMs: Date.now() }; return { ok: true, link: s.link, location: s.location }; },
+      async cancelBooking(c, id) { await wait(); delete bookings[c][id]; const s = slots[c].find((x) => x.id === id); if (s) s.booked = false; return { ok: true }; },
       async fileUrl() { return null; },
     };
   })();
@@ -274,6 +341,29 @@ const UniCourses = (() => {
     async myReads(c) { const s = await db.collection('courses').doc(c).collection('reads').doc(state.user.uid).get(); return (s.exists && s.data().announcements) || {}; },
     markRead: (c, ids) => call('markAnnouncementsRead', { courseId: c, ids }),
     async readCounts(c) { const s = await db.collection('courses').doc(c).collection('reads').get(); const out = {}; s.docs.forEach((d) => Object.keys(d.data().announcements || {}).forEach((id) => { out[id] = (out[id] || 0) + 1; })); return out; },
+    /* ---- v2.14.0 discussions, calendar events, office hours ---- */
+    async threads(c) { const s = await db.collection('courses').doc(c).collection('threads').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => ((b.pinned === true) - (a.pinned === true)) || (b.lastPostAtMs - a.lastPostAtMs)); },
+    async posts(c, tid) {
+      const tref = db.collection('courses').doc(c).collection('threads').doc(tid);
+      const th = await tref.get(); if (!th.exists) throw new Error('Discussion not found.');
+      if (state.role !== 'teacher' && th.data().postFirst) { const m = await tref.collection('posted').doc(state.user.uid).get(); if (!m.exists) return { locked: true, posts: [] }; }
+      const s = await tref.collection('posts').get(); return { locked: false, posts: s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.createdAtMs - b.createdAtMs) };
+    },
+    saveThread: (c, d) => call('saveThread', { courseId: c, threadId: d.id || undefined, title: d.title, body: d.body, postFirst: !!d.postFirst, pinned: !!d.pinned, locked: !!d.locked }),
+    deleteThread: (c, tid) => call('deleteThread', { courseId: c, threadId: tid }),
+    postReply: (c, tid, body) => call('postReply', { courseId: c, threadId: tid, body }),
+    editPost: (c, tid, pid, body) => call('editPost', { courseId: c, threadId: tid, postId: pid, body }),
+    removePost: (c, tid, pid) => call('removePost', { courseId: c, threadId: tid, postId: pid }),
+    async events(c) { const s = await db.collection('courses').doc(c).collection('events').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })); },
+    saveEvent: (c, e) => call('saveEvent', { courseId: c, eventId: e.id || undefined, title: e.title, kind: e.kind, startAtMs: e.startAtMs, endAtMs: e.endAtMs, location: e.location || '', link: e.link || '', weeklyUntilMs: e.weeklyUntilMs || null }),
+    deleteEvent: (c, id) => call('deleteEvent', { courseId: c, eventId: id }),
+    async slots(c) { const s = await db.collection('courses').doc(c).collection('officeHours').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.startAtMs - b.startAtMs); },
+    async myBookings(c) { const s = await db.collection('courses').doc(c).collection('bookings').where('uid', '==', state.user.uid).get(); return s.docs.map((d) => ({ slotId: d.id, ...d.data() })); },
+    async bookings(c) { const s = await db.collection('courses').doc(c).collection('bookings').get(); return s.docs.map((d) => ({ slotId: d.id, ...d.data() })); },
+    openSlots: (c, d) => call('openSlots', { courseId: c, startAtMs: d.startAtMs, endAtMs: d.endAtMs, minutes: d.minutes, location: d.location || '', link: d.link || '' }),
+    deleteSlot: (c, id) => call('deleteSlot', { courseId: c, slotId: id }),
+    bookSlot: (c, id, note) => call('bookSlot', { courseId: c, slotId: id, note: note || '' }),
+    cancelBooking: (c, id) => call('cancelBooking', { courseId: c, slotId: id }),
     async fileUrl(path) { return storage ? storage.ref(path).getDownloadURL() : null; },
   };
 

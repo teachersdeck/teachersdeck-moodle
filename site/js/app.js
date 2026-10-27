@@ -631,6 +631,9 @@ const STRINGS = {
   cc_sync_names_empty:{ en:'No students have joined yet — nothing to copy.' },
 
   theme_title:  { en:'Theme', vi:'Giao diện', es:'Tema', fr:'Thème', zh:'主题', ja:'テーマ', ko:'테마', tl:'Tema' },
+  mode_title:   { en:'Mode', vi:'Chế độ', es:'Modo', fr:'Mode', zh:'模式', ja:'モード', ko:'모드', tl:'Mode' },
+  mode_light:   { en:'Light', vi:'Sáng', es:'Claro', fr:'Clair', zh:'浅色', ja:'ライト', ko:'라이트', tl:'Maliwanag' },
+  mode_dark:    { en:'Dark', vi:'Tối', es:'Oscuro', fr:'Sombre', zh:'深色', ja:'ダーク', ko:'다크', tl:'Madilim' },
   backgrounds:  { en:'Backgrounds', vi:'Hình nền', es:'Fondos', fr:'Arrière-plans', zh:'背景', ja:'背景', ko:'배경', tl:'Mga Background' },
   your_image:   { en:'Your image or logo', vi:'Hình ảnh hoặc logo của bạn', es:'Tu imagen o logo', fr:'Votre image ou logo', zh:'您的图片或标志', ja:'画像またはロゴ', ko:'이미지 또는 로고', tl:'Larawan o logo mo' },
   upload_bg:    { en:'Upload a background image', vi:'Tải lên hình nền', es:'Subir una imagen de fondo', fr:"Importer une image de fond", zh:'上传背景图片', ja:'背景画像をアップロード', ko:'배경 이미지 업로드', tl:'Mag-upload ng background na larawan' },
@@ -714,9 +717,10 @@ const STRINGS = {
   drawer_hover_hint:  { en:'On: drawers tuck away to a thin edge strip and pop open when your mouse reaches that edge (bottom, top, left and right). Off: any drawer you\u2019ve made visible above just stays fully open.', vi:'Bật: các ngăn thu lại thành một dải mỏng ở mép màn hình và tự mở ra khi chuột chạm mép đó (trên, dưới, trái, phải). Tắt: ngăn nào đang hiện ở trên sẽ luôn mở rộng sẵn.' },
   drawer_full_toast: { en:'{side} is full ({max} max)', vi:'{side} đã đầy (tối đa {max})' },
   pills_section:      { en:'Top bar pills', vi:'Nút nhanh trên cùng' },
-  pills_section_hint: { en:'Where the language switch and theme button appear when the top drawer is on', vi:'Nơi hiển thị nút chuyển ngôn ngữ và nút giao diện khi ngăn trên cùng đang mở' },
+  pills_section_hint: { en:'Where the language switch, theme button and Light / Dark switch appear when the top drawer is on', vi:'Nơi hiển thị nút chuyển ngôn ngữ, nút giao diện và nút Sáng / Tối khi ngăn trên cùng đang mở' },
   pill_lang_label:  { en:'Language switch', vi:'Nút chuyển ngôn ngữ' },
   pill_theme_label: { en:'Theme button', vi:'Nút giao diện' },
+  pill_mode_label: { en:'Light / Dark switch', vi:'Nút Sáng / Tối', es:'Interruptor Claro / Oscuro', fr:'Bouton Clair / Sombre', zh:'浅色 / 深色切换', ja:'ライト / ダーク切り替え', ko:'라이트 / 다크 전환', tl:'Switch ng Maliwanag / Madilim' },
   placement_shown: { en:'Shown', vi:'Hiện' },
   version_label: { en:'Version', vi:'Phiên bản' },
   quick_lang_1: { en:'Quick language 1', vi:'Ngôn ngữ nhanh 1', es:'Idioma rápido 1', fr:'Langue rapide 1', zh:'快捷语言 1', ja:'クイック言語 1', ko:'빠른 언어 1', tl:'Mabilis na wika 1' },
@@ -1931,7 +1935,8 @@ const PILL_CAP = 5;
 const PILLS = [
   { id:'classes', el: ()=> document.getElementById('class-pill-wrap') },
   { id:'lang', el: ()=> document.getElementById('lang-toggle') },
-  { id:'theme', el: ()=> document.getElementById('btn-theme') }
+  { id:'theme', el: ()=> document.getElementById('btn-theme') },
+  { id:'mode', el: ()=> document.getElementById('mode-toggle') }    // Light / Dark: last pill, so it sits just left of Settings as in every suite app
 ];
 // Settings pill: always shown, always last (far right) in whichever row the
 // pills currently live in. Deliberately kept out of PILLS/pillsInTop() so it
@@ -2068,7 +2073,9 @@ function buildDrawerSettings(){
   themeSel.value = state.pillPlacement.theme || 'top';
   const classSel = document.getElementById('pill-place-classes');
   classSel.value = state.pillPlacement.classes || 'top';
-  [['classes', classSel], ['lang', langSel], ['theme', themeSel]].forEach(([id, sel])=>{
+  const modeSel = document.getElementById('pill-place-mode');
+  modeSel.value = state.pillPlacement.mode || 'top';
+  [['classes', classSel], ['lang', langSel], ['theme', themeSel], ['mode', modeSel]].forEach(([id, sel])=>{
     sel.onchange = ()=>{
       const target = sel.value;
       if(target === 'top' && pillsInTop().length >= PILL_CAP && state.pillPlacement[id] !== 'top'){
@@ -7933,6 +7940,7 @@ const PRESETS = [
   { id:'slate', css:'linear-gradient(180deg,#20242c 0%, #2b3038 100%)' },
   { id:'plain', css:'#12161C' }
 ];
+const presetBg = p => (typeof DeckMode !== 'undefined') ? DeckMode.background(p.id, p.css) : p.css;   // Light mode: the same preset, pale (js/mode.js)
 
 const bgLayer = document.getElementById('bg-layer');
 const bgOverlay = document.getElementById('bg-overlay');
@@ -7947,7 +7955,7 @@ let sessionBgUrl = null;
 
 function paintPreset(){
   const p = PRESETS.find(p=>p.id===state.theme) || PRESETS[0];
-  bgLayer.style.background = p.css;
+  bgLayer.style.background = presetBg(p);
   bgLayer.style.backgroundSize = 'cover';
 }
 
@@ -8001,7 +8009,7 @@ function buildPresetSwatches(){
   PRESETS.forEach(p=>{
     const sw = document.createElement('div');
     sw.className = 'swatch' + ((!state.customBg && !sessionBgUrl && state.theme===p.id) ? ' active' : '');
-    sw.style.background = p.css;
+    sw.style.background = presetBg(p);
     sw.title = p.id;
     sw.addEventListener('click', ()=>{
       state.theme = p.id; state.customBg = false;
@@ -8473,7 +8481,9 @@ function setLanguage(code){
   buildLangToggle();
   buildClassPill();
   buildClassList();
+  [modeSwitch, modeToggle].forEach(sw=>{ if(sw) sw.relabel({ label:t('mode_title'), light:t('mode_light'), dark:t('mode_dark') }); });
 }
+let modeSwitch = null, modeToggle = null;   // the Light / Dark switch in the Theme drawer, and its icon-only twin in the top bar (set in init)
 
 function buildLangToggle(){
   const box = document.getElementById('lang-toggle');
@@ -10253,6 +10263,11 @@ function init(){
   buildPresetSwatches();
   applyTheme();
   initCustomBg();
+  if(typeof DeckMode !== 'undefined'){            // Light / Dark (js/mode.js), top of the Theme drawer
+    modeSwitch = DeckMode.mountSwitch(document.getElementById('mode-switch'), { label:t('mode_title'), light:t('mode_light'), dark:t('mode_dark') });
+    modeToggle = DeckMode.mountSwitch(document.getElementById('mode-toggle'), { label:t('mode_title'), light:t('mode_light'), dark:t('mode_dark') }, { compact:true });
+    DeckMode.onChange(()=>{ applyTheme(); buildPresetSwatches(); });   // a preset background follows the mode; a teacher's own image doesn't change
+  }
   buildProStatus();
   recheckLicenseIfNeeded();
   const verEl = document.getElementById('app-version');

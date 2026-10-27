@@ -1,0 +1,14 @@
+/* TeachersDeck — hand-written part of css/light.css (tools/gen_light_css.py appends this file).
+   1. Where the Light / Dark switch (js/mode.js) sits: top bar size, menu spacing.
+   2. Light-mode fixes the generator can't guess. Keep each one scoped to html[data-mode="light"]. */
+
+/* ---------- 1. where the Light / Dark switch sits (its look is css/mode.css, shared by all four apps) ---------- */
+#mode-switch{ margin:0 0 18px; }
+#mode-toggle{ --deck-bar-h:38px; --deck-bar-r:11px; }
+
+/* ---------- 2. light-mode fixes ---------- */
+/* "Dim background (better contrast)": on a light page, contrast comes from a white veil, not a dark one */
+html[data-mode="light"] .bg-overlay{ background:rgba(255,255,255,0.45); }
+/* The stoplight colours (On track / Monitor / Needs attention) are neon on dark; on a light page they'd be unreadable as
+   text and harsh as borders, so Light mode uses deeper versions of the same three. Tile fills keep their soft tints. */
+html[data-mode="light"], html[data-mode="light"] .sx-wrap .sx-tile[data-st]{ --st-good:#15803d; --st-watch:#a16207; --st-bad:#dc2626; }   /* where this app defines them */

@@ -1,0 +1,37 @@
+/* The Light / Dark switch drawn by js/mode.js — the same look in every TeachersDeck Suite app.
+   ONE FILE IN FOUR APPS: teachersdeck/css/mode.css is the copy to edit; tools/check_shared.py keeps the StudentDeck,
+   ParentDeck and AdminDeck copies identical. Fixed suite colours (not each app's variables) so it is identical everywhere;
+   the only per-app knobs are the top bar's button size: --deck-bar-h (height) and --deck-bar-r (corner radius).
+
+   .deck-mode-toggle  the icon-only form in the top bar, just left of Settings
+   .deck-mode-switch  the labelled form at the top of each app's theme menu */
+
+.deck-mode-toggle, .deck-mode-switch{
+  display:flex; align-items:stretch; gap:2px; box-sizing:border-box; flex:none;
+  border:1px solid rgba(237,239,243,0.16); background:rgba(20,26,34,0.55);
+}
+.deck-mode-toggle{ height:var(--deck-bar-h, 34px); padding:3px; border-radius:var(--deck-bar-r, 999px); backdrop-filter:blur(6px); }
+.deck-mode-switch{ padding:3px; border-radius:11px; min-width:176px; }
+
+.deck-mode-opt{
+  display:flex; align-items:center; justify-content:center; gap:6px; margin:0; border:none; cursor:pointer;
+  background:transparent; color:#a3acbd; font-family:inherit; font-weight:600; font-size:13px; line-height:1.2;
+  transition:background .15s ease, color .15s ease;
+}
+.deck-mode-toggle .deck-mode-opt{ width:calc(var(--deck-bar-h, 34px) - 8px); padding:0; border-radius:var(--deck-bar-r, 999px); }
+.deck-mode-toggle .deck-mode-opt span{ display:none; }
+.deck-mode-switch .deck-mode-opt{ flex:1; padding:7px 10px; border-radius:8px; }
+
+.deck-mode-opt svg{ width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
+.deck-mode-opt[data-value="dark"] svg{ fill:currentColor; stroke:none; }
+.deck-mode-opt:hover{ color:#f4f1e8; background:rgba(255,255,255,0.07); }
+.deck-mode-opt.on, .deck-mode-opt.on:hover{ background:#E8A33D; color:#231604; }
+.deck-mode-opt:focus-visible{ outline:2px solid #E8A33D; outline-offset:2px; }
+
+/* Light mode */
+html:where([data-mode="light"]) .deck-mode-toggle, html:where([data-mode="light"]) .deck-mode-switch{
+  border-color:rgba(15,23,42,0.14); background:rgba(255,255,255,0.72);
+}
+html:where([data-mode="light"]) .deck-mode-opt{ color:#5b6475; }
+html:where([data-mode="light"]) .deck-mode-opt:hover{ color:#0f172a; background:rgba(15,23,42,0.06); }
+html:where([data-mode="light"]) .deck-mode-opt.on{ background:#E8A33D; color:#231604; }

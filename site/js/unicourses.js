@@ -66,6 +66,7 @@ const UniCourses = (() => {
         { id: 'a1', title: 'Diagnostic paragraph', instructions: 'Write one paragraph (150–200 words) on a topic you care about. We use it to plan the term.', dueAtMs: at(-24), points: 10, rubric: [], submitType: 'text', attempts: 1, category: 'assignments', latePolicy: null },
         { id: 'a2', title: 'Essay 1: Argument', instructions: 'A 1,000-word argumentative essay. Take a clear position and support it with at least three academic sources. Upload a PDF or Word file.', dueAtMs: at(-6), points: 20, rubric, submitType: 'file', attempts: 2, category: 'assignments', latePolicy: null },
         { id: 'a3', title: 'Annotated bibliography', instructions: 'Five sources for your research essay, each with a 100-word annotation. Share a link to your document.', dueAtMs: at(3), points: 15, rubric: [], submitType: 'link', attempts: 0, category: 'assignments', latePolicy: null },
+        { id: 'a5', title: 'Group presentation: a writing myth', instructions: 'In your group, pick one common myth about academic writing and present the evidence against it (10 minutes, slides as a PDF). One person submits for the whole group.', dueAtMs: at(12), points: 30, rubric: [], submitType: 'file', attempts: 2, category: 'assignments', latePolicy: null, group: true },
         { id: 'a4', title: 'Midterm reflection', instructions: 'What has changed in how you write? 300 words.', dueAtMs: at(10), points: 10, rubric: [], submitType: 'any', attempts: 1, category: 'exams', latePolicy: { mode: 'closed' } },
       ],
       c3: [],
@@ -97,6 +98,26 @@ const UniCourses = (() => {
       }
       if (i < 3) put('c1', 'a3', s.uid, { link: 'https://docs.google.com/document/d/demo-bibliography-' + (i + 1), submittedAtMs: at(-1, 9 + i, 0) }, null);
     });
+    /* v2.16.0: groups and their task lists (Academic Writing: An's group "Floodwatch"; Research Methods: two groups for An to see as a TA) */
+    const groups = {
+      c1: [
+        { id: 'g1', name: 'Floodwatch', memberUids: ['d1', 'd2', 'd3'] }, { id: 'g2', name: 'Plain English', memberUids: ['d4', 'd5', 'd6'] },
+        { id: 'g3', name: 'Citation Station', memberUids: ['d7', 'd8', 'd9'] }, { id: 'g4', name: 'Hedge Fund', memberUids: ['d10', 'd11', 'd12'] }],
+      c2: [{ id: 'g5', name: 'Campus Life', memberUids: ['d2', 'd3', 'd4'] }, { id: 'g6', name: 'Commuters', memberUids: ['d5', 'd6', 'd7'] }],
+    };
+    Object.values(groups).flat().forEach((g) => { g.memberNames = Object.fromEntries(g.memberUids.map((u) => [u, students.find((x) => x.uid === u).name])); g.createdAtMs = at(-10, 9, 0); });
+    const tasks = {
+      g1: [
+        { id: 'k1', title: 'Choose the myth', done: true, doneAtMs: at(-3, 18, 0), assigneeUid: null, assigneeName: '', dueAtMs: at(-3), createdByName: 'Binh Tran', createdAtMs: at(-6, 10, 0) },
+        { id: 'k2', title: 'Find three studies against it', done: false, assigneeUid: 'd1', assigneeName: 'An Nguyen', dueAtMs: at(4), createdByName: 'Binh Tran', createdAtMs: at(-5, 11, 0) },
+        { id: 'k3', title: 'Draft the slides', done: false, assigneeUid: 'd2', assigneeName: 'Binh Tran', dueAtMs: at(8), createdByName: 'Chi Le', createdAtMs: at(-4, 9, 0) },
+        { id: 'k4', title: 'Rehearse together (Room L3)', done: false, assigneeUid: null, assigneeName: '', dueAtMs: at(10, 17, 0), createdByName: 'Chi Le', createdAtMs: at(-2, 20, 0) }],
+      g2: [{ id: 'k5', title: 'Pick a myth', done: true, doneAtMs: at(-2), assigneeUid: null, assigneeName: '', dueAtMs: null, createdByName: 'Duc Pham', createdAtMs: at(-4) }],
+      g5: [{ id: 'k6', title: 'Agree on the survey platform', done: false, assigneeUid: 'd3', assigneeName: 'Chi Le', dueAtMs: at(2), createdByName: 'Binh Tran', createdAtMs: at(-1) }],
+    };
+    const groupOf = (c, uid) => (groups[c] || []).find((g) => g.memberUids.includes(uid));
+    groups.c1[1].memberUids.forEach((u) => put('c1', 'a5', u, { files: [{ path: 'demo', name: 'plain-english-myth.pdf', size: 912000, type: 'application/pdf' }], submittedAtMs: at(-1, 21, 15),
+      groupId: 'g2', groupName: 'Plain English', groupUids: groups.c1[1].memberUids, submittedBy: 'd4', submittedByName: 'Duc Pham' }, null));
     const qs = ['Do first-year students who live on campus feel less lonely than those who commute?', 'How many hours a week do students in paid work study outside class?', 'Do students trust AI tools more for coding or for writing?', 'Does the library’s late opening change when students study?', 'How do international students choose their first-year courses?', 'Do group projects improve how students rate their course?', 'How far do students travel to campus, and does it affect attendance?'];
     students.slice(1, 8).forEach((s, i) => put('c2', 'b0', s.uid, { text: qs[i], submittedAtMs: i === 6 ? at(-2, 9, 0) : at(-4, 15 + (i % 5), 20) }, i < 2 ? { score: 8 + (i % 2), feedback: 'Clear and answerable. Say who you will survey.', released: false } : null));
     void rnd;
@@ -207,17 +228,25 @@ const UniCourses = (() => {
       async myGrades(c) { await wait(); const out = {}; for (const [key, g] of Object.entries(grades)) if (key.startsWith(c + '|') && g.uid === myUid() && g.released) out[g.assignmentId] = { ...g }; return out; },
       async uploadFile(c, a, file, onProgress) { for (let p = 0; p <= 100; p += 25) { if (onProgress) onProgress(p); await wait(); } return { path: 'demo', name: file.name, size: file.size, type: file.type }; },
       async submit(c, aId, w) { await wait(); need(c); const A = asg[c].find((x) => x.id === aId); const pol = A.latePolicy || courses[c].latePolicy;
+        const G = A.group ? groupOf(c, myUid()) : null; if (A.group && !G) throw new Error('This is a group assignment and you are not in a group yet. Ask your instructor.');
         if (!M.acceptsSubmission(pol, A.dueAtMs, Date.now())) throw new Error('The due date has passed and this assignment does not accept late work.');
-        const prev = subs[k(c, aId, myUid())]; const attempt = prev ? prev.attempt + 1 : 1;
+        const uids = G ? G.memberUids : [myUid()];
+        const attempt = Math.max(0, ...uids.map((u) => (subs[k(c, aId, u)] ? subs[k(c, aId, u)].attempt : 0))) + 1;
         if (A.attempts && attempt > A.attempts) throw new Error(A.attempts === 1 ? 'This assignment allows one submission.' : `This assignment allows ${A.attempts} submissions.`);
         if (!w.text && !w.link && !(w.files || []).length) throw new Error('Add your work before submitting.');
         const L = M.lateness(A.dueAtMs, Date.now());
-        subs[k(c, aId, myUid())] = { assignmentId: aId, uid: myUid(), name: me.student.name, text: w.text || '', link: w.link || '', files: w.files || [], submittedAtMs: Date.now(), attempt, ...L };
-        if (grades[k(c, aId, myUid())]) grades[k(c, aId, myUid())].needsRegrade = true; return { attempt, ...L }; },
+        uids.forEach((u) => {
+          subs[k(c, aId, u)] = { assignmentId: aId, uid: u, name: students.find((x) => x.uid === u).name, text: w.text || '', link: w.link || '', files: w.files || [], submittedAtMs: Date.now(), attempt, ...L,
+            ...(G ? { groupId: G.id, groupName: G.name, groupUids: uids, submittedBy: myUid(), submittedByName: me.student.name } : {}) };
+          if (grades[k(c, aId, u)]) grades[k(c, aId, u)].needsRegrade = true; });
+        return { attempt, ...L, members: uids.length }; },
       async roster(c) { await wait(); return students.filter((s) => membership[c].has(s.uid)).map((s) => ({ ...s, role: courseRole(c, s.uid) })); },
       async submissions(c, aId) { await wait(); return Object.values(subs).filter((s) => s.assignmentId === aId && subs[k(c, aId, s.uid)] === s).map((s) => ({ ...s })); },
       async grades(c) { await wait(); return Object.entries(grades).filter(([key]) => key.startsWith(c + '|')).map(([, g]) => ({ ...g })); },
       async grade(c, aId, uid, g) { await wait(); const A = asg[c].find((x) => x.id === aId); const s = subs[k(c, aId, uid)];
+        const targets = g.wholeGroup && A.group && s && s.groupUids ? s.groupUids.filter((u) => courseRole(c, u) === 'student') : [uid]; let out = null;
+        for (const t of targets) out = await this.gradeOne(c, aId, t, g); return { ...out, graded: targets.length }; },
+      async gradeOne(c, aId, uid, g) { const A = asg[c].find((x) => x.id === aId); const s = subs[k(c, aId, uid)];
         const rs = A.rubric.length ? M.rubricScore(A.rubric, g.rubricScores) : { score: M.round2(Number(g.score)), rubricScores: {} };
         if (!A.rubric.length && !(rs.score >= 0 && rs.score <= A.points)) throw new Error(`The score must be from 0 to ${A.points}.`);
         const pen = M.latePenaltyPct(A.latePolicy || courses[c].latePolicy, s ? s.lateDays : 0); const prev = grades[k(c, aId, uid)];
@@ -282,6 +311,22 @@ const UniCourses = (() => {
         s.booked = true; bookings[c][id] = { slotId: id, uid: myUid(), name: me.student.name, note: note || '', startAtMs: s.startAtMs, endAtMs: s.endAtMs, bookedAtMs: Date.now() }; return { ok: true, link: s.link, location: s.location }; },
       async cancelBooking(c, id) { await wait(); delete bookings[c][id]; const s = slots[c].find((x) => x.id === id); if (s) s.booked = false; return { ok: true }; },
       async fileUrl() { return null; },
+      /* ---- v2.16.0 groups and task lists (demo) ---- */
+      async myGroup(c) { await wait(); need(c); const g = groupOf(c, myUid()); return g ? { ...g } : null; },
+      async allGroups(c) { await wait(); return (groups[c] || []).map((g) => ({ ...g })); },
+      async saveGroups(c, list) { await wait(); const seen = new Set(), names = new Set();
+        const out = list.map((g, i) => { const name = String(g.name || '').trim() || `Group ${i + 1}`; if (names.has(name.toLowerCase())) throw new Error(`Two groups are called "${name}". Give each group its own name.`); names.add(name.toLowerCase());
+          (g.memberUids || []).forEach((u) => { if (seen.has(u)) throw new Error('A student is in two groups. A student is in one group per course.'); seen.add(u); });
+          const id = g.id || 'g' + Math.random().toString(36).slice(2, 7); return { id, name, memberUids: [...g.memberUids], memberNames: Object.fromEntries(g.memberUids.map((u) => [u, students.find((x) => x.uid === u).name])), createdAtMs: Date.now() }; });
+        const keep = new Set(out.map((g) => g.id)); (groups[c] || []).forEach((g) => { if (!keep.has(g.id)) delete tasks[g.id]; }); groups[c] = out;
+        return { groups: out.map((g) => ({ id: g.id, name: g.name, size: g.memberUids.length })), ungrouped: [...membership[c]].filter((u) => courseRole(c, u) === 'student' && !seen.has(u)).length }; },
+      async tasks(c, gid) { await wait(); return (tasks[gid] || []).map((t) => ({ ...t })).sort((a, b) => (a.done - b.done) || ((a.dueAtMs || 9e15) - (b.dueAtMs || 9e15))); },
+      async saveTask(c, gid, t) { await wait(); if (!String(t.title || '').trim()) throw new Error('Write the task first.'); const g = (groups[c] || []).find((x) => x.id === gid);
+        const row = { title: String(t.title).trim(), assigneeUid: t.assigneeUid || null, assigneeName: t.assigneeUid ? g.memberNames[t.assigneeUid] : '', dueAtMs: t.dueAtMs || null };
+        const list = tasks[gid] || (tasks[gid] = []); if (t.id) { Object.assign(list.find((x) => x.id === t.id), row); return { taskId: t.id }; }
+        const id = 'k' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row, done: false, doneAtMs: null, createdByName: role() === 'teacher' ? me.teacher.name : me.student.name, createdAtMs: Date.now() }); return { taskId: id }; },
+      async setTaskDone(c, gid, tid, done) { await wait(); const t = tasks[gid].find((x) => x.id === tid); t.done = !!done; t.doneAtMs = done ? Date.now() : null; return { ok: true }; },
+      async deleteTask(c, gid, tid) { await wait(); tasks[gid] = tasks[gid].filter((x) => x.id !== tid); return { ok: true }; },
     };
   })();
 
@@ -375,6 +420,14 @@ const UniCourses = (() => {
     bookSlot: (c, id, note) => call('bookSlot', { courseId: c, slotId: id, note: note || '' }),
     cancelBooking: (c, id) => call('cancelBooking', { courseId: c, slotId: id }),
     async fileUrl(path) { return storage ? storage.ref(path).getDownloadURL() : null; },
+    /* ---- v2.16.0 groups and task lists ---- */
+    async myGroup(c) { const s = await db.collection('courses').doc(c).collection('groups').where('memberUids', 'array-contains', state.user.uid).get(); return s.empty ? null : { id: s.docs[0].id, ...s.docs[0].data() }; },
+    async allGroups(c) { const s = await db.collection('courses').doc(c).collection('groups').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true })); },
+    saveGroups: (c, groups) => call('saveGroups', { courseId: c, groups: groups.map((g) => ({ id: g.id || undefined, name: g.name, memberUids: g.memberUids })) }),
+    async tasks(c, gid) { const s = await db.collection('courses').doc(c).collection('groups').doc(gid).collection('tasks').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => ((a.done === true) - (b.done === true)) || ((a.dueAtMs || 9e15) - (b.dueAtMs || 9e15))); },
+    saveTask: (c, gid, t) => call('saveTask', { courseId: c, groupId: gid, taskId: t.id || undefined, title: t.title, assigneeUid: t.assigneeUid || null, dueAtMs: t.dueAtMs || null }),
+    setTaskDone: (c, gid, tid, done) => call('setTaskDone', { courseId: c, groupId: gid, taskId: tid, done: !!done }),
+    deleteTask: (c, gid, tid) => call('deleteTask', { courseId: c, groupId: gid, taskId: tid }),
   };
 
   const B = DEMO ? D : R;

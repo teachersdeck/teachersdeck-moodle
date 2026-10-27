@@ -8,6 +8,6 @@
    The version lives here (tools/release.py checks it against manifest.json, index.html and the README). */
 window.DECK_EDITION = Object.freeze({
   name: 'TeachersDeck',
-  version: '0.33.0',
+  version: '0.33.1',
   uni: false                  // the school edition; UniDeck's copy says true
 });

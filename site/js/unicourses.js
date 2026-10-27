@@ -58,6 +58,8 @@ const UniCourses = (() => {
         weights: { assignments: 60, exams: 40 }, latePolicy: { mode: 'penalty', perDayPct: 10, maxDays: 5 }, archived: false },
       c2: { courseId: 'c2', title: 'Research Methods', term: 'Fall 2026', section: 'SOC 310', code: 'RSCH-3104', ownerName: me.teacher.name,
         weights: { assignments: 100 }, latePolicy: { mode: 'accept' }, archived: false },
+      c3: { courseId: 'c3', title: 'Statistics I', term: 'Fall 2026', section: 'MATH 120', code: 'STAT-1201', ownerName: me.teacher.name,
+        weights: { assignments: 100 }, latePolicy: { mode: 'accept' }, archived: false },   // for trying "join a course" in the demo
     };
     const asg = {
       c1: [
@@ -66,11 +68,14 @@ const UniCourses = (() => {
         { id: 'a3', title: 'Annotated bibliography', instructions: 'Five sources for your research essay, each with a 100-word annotation. Share a link to your document.', dueAtMs: at(3), points: 15, rubric: [], submitType: 'link', attempts: 0, category: 'assignments', latePolicy: null },
         { id: 'a4', title: 'Midterm reflection', instructions: 'What has changed in how you write? 300 words.', dueAtMs: at(10), points: 10, rubric: [], submitType: 'any', attempts: 1, category: 'exams', latePolicy: { mode: 'closed' } },
       ],
+      c3: [],
       c2: [
+        { id: 'b0', title: 'Research question', instructions: 'One research question you could answer with a survey, and why it matters (150 words).', dueAtMs: at(-3), points: 10, rubric: [], submitType: 'text', attempts: 1, category: 'assignments', latePolicy: null },
         { id: 'b1', title: 'Survey design draft', instructions: 'Draft ten survey questions for your project and explain the sampling plan.', dueAtMs: at(5), points: 25, rubric: [], submitType: 'any', attempts: 0, category: 'assignments', latePolicy: null },
       ],
     };
-    const subs = {}, grades = {}, membership = { c1: new Set(students.map((s) => s.uid)), c2: new Set(students.slice(1, 8).map((s) => s.uid)) };
+    const subs = {}, grades = {}, membership = { c1: new Set(students.map((s) => s.uid)), c2: new Set(students.slice(0, 8).map((s) => s.uid)), c3: new Set(students.slice(2, 10).map((s) => s.uid)) };
+    const staffRoles = { c2: { d1: 'ta' } };   // v2.15.0: An Nguyen (the demo student) is a TA in Research Methods
     const k = (c, a, u) => `${c}|${a}|${u}`;
     let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const put = (c, a, u, sub, g) => {
@@ -92,6 +97,8 @@ const UniCourses = (() => {
       }
       if (i < 3) put('c1', 'a3', s.uid, { link: 'https://docs.google.com/document/d/demo-bibliography-' + (i + 1), submittedAtMs: at(-1, 9 + i, 0) }, null);
     });
+    const qs = ['Do first-year students who live on campus feel less lonely than those who commute?', 'How many hours a week do students in paid work study outside class?', 'Do students trust AI tools more for coding or for writing?', 'Does the library’s late opening change when students study?', 'How do international students choose their first-year courses?', 'Do group projects improve how students rate their course?', 'How far do students travel to campus, and does it affect attendance?'];
+    students.slice(1, 8).forEach((s, i) => put('c2', 'b0', s.uid, { text: qs[i], submittedAtMs: i === 6 ? at(-2, 9, 0) : at(-4, 15 + (i % 5), 20) }, i < 2 ? { score: 8 + (i % 2), feedback: 'Clear and answerable. Say who you will survey.', released: false } : null));
     void rnd;
     /* v2.13.0: modules, progress, announcements and read status for the demo courses */
     const mods = {
@@ -163,20 +170,22 @@ const UniCourses = (() => {
       ],
       c2: [{ id: 'e4', title: 'Lecture: Research Methods', kind: 'class', startAtMs: wk(2, 14, 0, -4), endAtMs: wk(2, 14, 0, -4) + 1.5 * HOUR, location: 'Room S310', link: '', weeklyUntilMs: wk(2, 14, 0, 8) }],
     };
-    const slots = { c1: [], c2: [] }, bookings = { c1: {}, c2: {} };
+    const slots = { c1: [], c2: [], c3: [] }, bookings = { c1: {}, c2: {}, c3: {} };
     for (let i = 0; i < 6; i++) { const s = wk(3, 14, 0, 1) + i * 20 * 6e4; slots.c1.push({ id: 'o' + i, startAtMs: s, endAtMs: s + 20 * 6e4, location: 'Room B204', link: 'https://meet.example.com/eng201-office-hours', booked: false }); }
     [[1, 'd3', 'Chi Le', 'Essay 1 rubric'], [2, 'd1', 'An Nguyen', 'Narrowing my research question'], [4, 'd6', 'Hanh Do', '']].forEach(([i, uid, name, note]) => { slots.c1[i].booked = true; bookings.c1['o' + i] = { slotId: 'o' + i, uid, name, note, startAtMs: slots.c1[i].startAtMs, endAtMs: slots.c1[i].endAtMs, bookedAtMs: at(-1) }; });
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
     const inCourse = (c) => role() === 'teacher' || membership[c].has(myUid());
+    const courseRole = (c, uid = myUid()) => (uid === me.teacher.uid ? 'instructor' : ((staffRoles[c] || {})[uid] || 'student'));
+    const isStaff = (c) => role() === 'teacher' || courseRole(c) === 'ta';
     const need = (c) => { if (!courses[c] || !inCourse(c)) throw new Error('You are not in this course.'); };
     return {
       async signIn(r) { await wait(); const p = r === 'teacher' ? me.teacher : me.student; state = { ...state, user: { uid: p.uid, name: p.name, email: p.email }, role: r === 'teacher' ? 'teacher' : 'unistudent', under18: false, needsBirthDate: r !== 'teacher' }; fire(); },
       async completeProfile() { await wait(); state = { ...state, needsBirthDate: false }; fire(); },
       async signOut() { state = { ...state, user: null, role: null }; fire(); },
-      async myCourses() { await wait(); return Object.values(courses).filter((c) => inCourse(c.courseId)).map((c) => ({ courseId: c.courseId, role: role() === 'teacher' ? 'instructor' : 'student', title: c.title, term: c.term, section: c.section })); },
-      async course(c) { await wait(); need(c); const x = { ...courses[c], memberCount: membership[c].size, assignmentCount: asg[c].length }; if (role() !== 'teacher') delete x.code; return x; },
+      async myCourses() { await wait(); return Object.values(courses).filter((c) => inCourse(c.courseId)).map((c) => ({ courseId: c.courseId, role: courseRole(c.courseId), title: c.title, term: c.term, section: c.section })); },
+      async course(c) { await wait(); need(c); const x = { ...courses[c], memberCount: membership[c].size, assignmentCount: asg[c].length }; if (!isStaff(c)) delete x.code; return x; },
       async createCourse(f) { await wait(); const id = 'c' + (Object.keys(courses).length + 1); const w = M.cleanWeights(f.weights); if (w.error) throw new Error(w.error);
         courses[id] = { courseId: id, title: f.title, term: f.term || '', section: f.section || '', code: 'DEMO-' + (1000 + Object.keys(courses).length), ownerName: me.teacher.name, weights: w.weights, latePolicy: M.cleanLatePolicy(f.latePolicy), archived: false };
         asg[id] = []; membership[id] = new Set(); return { courseId: id, code: courses[id].code }; },
@@ -184,9 +193,9 @@ const UniCourses = (() => {
         if (f.latePolicy) f = { ...f, latePolicy: M.cleanLatePolicy(f.latePolicy) }; Object.assign(courses[c], f); return { ok: true }; },
       async regenerateCode(c) { await wait(); courses[c].code = 'DEMO-' + Math.floor(1000 + Math.random() * 9000); return { code: courses[c].code }; },
       async joinCourse(code) { await wait(); const c = Object.values(courses).find((x) => x.code === String(code).trim().toUpperCase());
-        if (!c) throw new Error('No course has that code. In the demo, try RSCH-3104.'); const was = membership[c.courseId].has(myUid()); membership[c.courseId].add(myUid()); return { courseId: c.courseId, title: c.title, alreadyIn: was }; },
+        if (!c) throw new Error('No course has that code. In the demo, try STAT-1201.'); const was = membership[c.courseId].has(myUid()); membership[c.courseId].add(myUid()); return { courseId: c.courseId, title: c.title, alreadyIn: was }; },
       async leaveCourse(c) { await wait(); membership[c].delete(myUid()); return { ok: true }; },
-      async setMemberRole(c, uid, r) { await wait(); const s = students.find((x) => x.uid === uid); if (s) s.role = r; return { ok: true }; },
+      async setMemberRole(c, uid, r) { await wait(); (staffRoles[c] || (staffRoles[c] = {}))[uid] = r; return { ok: true }; },
       async assignments(c) { await wait(); need(c); return asg[c].map((a) => ({ ...a })).sort((a, b) => (a.dueAtMs || 9e15) - (b.dueAtMs || 9e15)); },
       async saveAssignment(c, a) { await wait(); need(c); const rub = (a.rubric || []).map((r, i) => ({ id: r.id || 'r' + (i + 1), criterion: r.criterion, points: Number(r.points) }));
         const pts = rub.length ? rub.reduce((s, r) => s + r.points, 0) : Number(a.points); if (!a.title) throw new Error('Give the assignment a title.'); if (!(pts > 0)) throw new Error('Points must be above 0.');
@@ -205,7 +214,7 @@ const UniCourses = (() => {
         const L = M.lateness(A.dueAtMs, Date.now());
         subs[k(c, aId, myUid())] = { assignmentId: aId, uid: myUid(), name: me.student.name, text: w.text || '', link: w.link || '', files: w.files || [], submittedAtMs: Date.now(), attempt, ...L };
         if (grades[k(c, aId, myUid())]) grades[k(c, aId, myUid())].needsRegrade = true; return { attempt, ...L }; },
-      async roster(c) { await wait(); return students.filter((s) => membership[c].has(s.uid)).map((s) => ({ ...s })); },
+      async roster(c) { await wait(); return students.filter((s) => membership[c].has(s.uid)).map((s) => ({ ...s, role: courseRole(c, s.uid) })); },
       async submissions(c, aId) { await wait(); return Object.values(subs).filter((s) => s.assignmentId === aId && subs[k(c, aId, s.uid)] === s).map((s) => ({ ...s })); },
       async grades(c) { await wait(); return Object.entries(grades).filter(([key]) => key.startsWith(c + '|')).map(([, g]) => ({ ...g })); },
       async grade(c, aId, uid, g) { await wait(); const A = asg[c].find((x) => x.id === aId); const s = subs[k(c, aId, uid)];
@@ -215,12 +224,12 @@ const UniCourses = (() => {
         grades[k(c, aId, uid)] = { assignmentId: aId, uid, score: rs.score, rubricScores: rs.rubricScores, feedback: g.feedback || '', latePenaltyPct: pen, finalScore: M.finalScore(rs.score, pen), points: A.points, released: prev ? prev.released : false, gradedAtMs: Date.now(), needsRegrade: false };
         return { score: rs.score, finalScore: grades[k(c, aId, uid)].finalScore, latePenaltyPct: pen }; },
       async release(c, aId) { await wait(); let n = 0; for (const [key, g] of Object.entries(grades)) if (key.startsWith(`${c}|${aId}|`) && !g.released) { g.released = true; g.releasedAtMs = Date.now(); n++; } return { released: n }; },
-      async exportGradebook(c) { await wait(); const csv = M.gradebookCsv(courses[c], students.filter((s) => membership[c].has(s.uid)), asg[c], Object.entries(grades).filter(([key]) => key.startsWith(c + '|')).map(([, g]) => g));
+      async exportGradebook(c) { await wait(); const csv = M.gradebookCsv(courses[c], students.filter((s) => membership[c].has(s.uid) && courseRole(c, s.uid) === 'student'), asg[c], Object.entries(grades).filter(([key]) => key.startsWith(c + '|')).map(([, g]) => g));
         return { csv, filename: `${courses[c].title.replace(/[^A-Za-z0-9]+/g, '-')}-gradebook.csv` }; },
       /* ---- v2.13.0 modules and announcements (demo) ---- */
       async modules(c) { await wait(); need(c); return (mods[c] || []).map((m) => ({ ...m, items: m.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, refId: i.refId })) })).sort((a, b) => a.order - b.order); },
       async moduleContent(c, mid) { await wait(); need(c); const m = (mods[c] || []).find((x) => x.id === mid); if (!m) return null;
-        if (role() !== 'teacher' && m.releaseAtMs && m.releaseAtMs > Date.now()) return null;
+        if (!isStaff(c) && m.releaseAtMs && m.releaseAtMs > Date.now()) return null;
         const items = {}; m.items.forEach((i) => { if (i.url || i.body) items[i.id] = { url: i.url, body: i.body }; }); return { releaseAtMs: m.releaseAtMs, items }; },
       async saveModule(c, m) { await wait(); need(c); if (!m.title) throw new Error('Give the module a title.');
         const items = (m.items || []).map((i) => ({ id: i.id || Math.random().toString(36).slice(2, 10), kind: i.kind, title: i.kind === 'assignment' ? ((asg[c].find((a) => a.id === i.refId) || {}).title || '') : i.title, refId: i.refId, url: i.url || '', body: i.body || '' }));
@@ -236,7 +245,7 @@ const UniCourses = (() => {
       async announcements(c) { await wait(); need(c); return [...(anns[c] || [])].sort((a, b) => (b.pinned - a.pinned) || (b.createdAtMs - a.createdAtMs)).map((a) => ({ ...a })); },
       async saveAnnouncement(d) { await wait(); if (!d.title) throw new Error('Give the announcement a title.'); if (!d.body) throw new Error('Write the announcement.');
         if (d.id) { Object.assign(anns[d.courseId].find((a) => a.id === d.id), { title: d.title, body: d.body, pinned: !!d.pinned, editedAtMs: Date.now() }); return { posted: [{ courseId: d.courseId, announcementId: d.id }] }; }
-        const posted = (d.courseIds || []).map((c) => { const id = 'n' + Math.random().toString(36).slice(2, 7); (anns[c] || (anns[c] = [])).push({ id, title: d.title, body: d.body, pinned: !!d.pinned, authorName: me.teacher.name, createdAtMs: Date.now() }); return { courseId: c, announcementId: id }; });
+        const posted = (d.courseIds || []).map((c) => { const id = 'n' + Math.random().toString(36).slice(2, 7); (anns[c] || (anns[c] = [])).push({ id, title: d.title, body: d.body, pinned: !!d.pinned, authorName: role() !== 'teacher' && courseRole(c) === 'ta' ? me.student.name : me.teacher.name, createdAtMs: Date.now() }); return { courseId: c, announcementId: id }; });
         if (!posted.length) throw new Error('Choose at least one course.'); return { posted }; },
       async deleteAnnouncement(c, id) { await wait(); anns[c] = anns[c].filter((a) => a.id !== id); return { ok: true }; },
       async myReads(c) { await wait(); return { ...((reads[c] || {})[myUid()] || {}) }; },
@@ -245,18 +254,18 @@ const UniCourses = (() => {
       /* ---- v2.14.0 discussions, calendar events, office hours (demo) ---- */
       async threads(c) { await wait(); need(c); return (threads[c] || []).map((x) => ({ ...x, postCount: (posts[x.id] || []).length, lastPostAtMs: Math.max(x.createdAtMs, ...(posts[x.id] || []).map((p) => p.createdAtMs)) })).sort((a, b) => (b.pinned - a.pinned) || (b.lastPostAtMs - a.lastPostAtMs)); },
       async posts(c, tid) { await wait(); need(c); const th = (threads[c] || []).find((x) => x.id === tid); if (!th) throw new Error('Discussion not found.');
-        if (role() !== 'teacher' && th.postFirst && !(posted[tid] && posted[tid].has(myUid()))) return { locked: true, posts: [] };
+        if (!isStaff(c) && th.postFirst && !(posted[tid] && posted[tid].has(myUid()))) return { locked: true, posts: [] };
         return { locked: false, posts: (posts[tid] || []).map((p) => ({ ...p })).sort((a, b) => a.createdAtMs - b.createdAtMs) }; },
       async saveThread(c, d) { await wait(); if (!d.title) throw new Error('Give the discussion a title.'); if (!d.body) throw new Error('Write the prompt for the discussion.');
         const list = threads[c] || (threads[c] = []); const flags = { postFirst: !!d.postFirst, pinned: !!d.pinned, locked: !!d.locked };
         if (d.id) { Object.assign(list.find((x) => x.id === d.id), { title: d.title, body: d.body, ...flags }); return { threadId: d.id }; }
-        const id = 't' + Math.random().toString(36).slice(2, 7); list.push({ id, title: d.title, body: d.body, ...flags, authorName: me.teacher.name, createdAtMs: Date.now() }); return { threadId: id }; },
+        const id = 't' + Math.random().toString(36).slice(2, 7); list.push({ id, title: d.title, body: d.body, ...flags, authorName: courseRole(c) === 'ta' ? me.student.name : me.teacher.name, createdAtMs: Date.now() }); return { threadId: id }; },
       async deleteThread(c, tid) { await wait(); threads[c] = threads[c].filter((x) => x.id !== tid); delete posts[tid]; return { ok: true }; },
       async postReply(c, tid, body) { await wait(); const th = threads[c].find((x) => x.id === tid); if (th.locked) throw new Error('This discussion is closed.'); if (!String(body || '').trim()) throw new Error('Write your reply first.');
-        const who = role() === 'teacher' ? { uid: me.teacher.uid, name: me.teacher.name, role: 'instructor' } : { uid: me.student.uid, name: me.student.name, role: 'student' };
+        const who = role() === 'teacher' ? { uid: me.teacher.uid, name: me.teacher.name, role: 'instructor' } : { uid: me.student.uid, name: me.student.name, role: courseRole(c) };
         const id = 'p' + Math.random().toString(36).slice(2, 7); (posts[tid] || (posts[tid] = [])).push({ id, ...who, body: String(body).trim(), createdAtMs: Date.now() }); (posted[tid] || (posted[tid] = new Set())).add(who.uid); return { postId: id }; },
       async editPost(c, tid, pid, body) { await wait(); const p = posts[tid].find((x) => x.id === pid); if (p.uid !== myUid()) throw new Error('You can only edit your own replies.'); p.body = body; p.editedAtMs = Date.now(); return { ok: true }; },
-      async removePost(c, tid, pid) { await wait(); const p = posts[tid].find((x) => x.id === pid); if (p.uid !== myUid() && role() !== 'teacher') throw new Error('You can only remove your own replies.'); p.body = ''; p.removed = true; return { ok: true }; },
+      async removePost(c, tid, pid) { await wait(); const p = posts[tid].find((x) => x.id === pid); if (p.uid !== myUid() && !isStaff(c)) throw new Error('You can only remove your own replies.'); p.body = ''; p.removed = true; return { ok: true }; },
       async events(c) { await wait(); need(c); return (events[c] || []).map((e) => ({ ...e })); },
       async saveEvent(c, e) { await wait(); if (!e.title) throw new Error('Give the event a title.'); const list = events[c] || (events[c] = []);
         const row = { title: e.title, kind: e.kind || 'other', startAtMs: e.startAtMs, endAtMs: e.endAtMs || e.startAtMs, location: e.location || '', link: e.link || '', weeklyUntilMs: e.weeklyUntilMs || null };
@@ -346,8 +355,9 @@ const UniCourses = (() => {
     async posts(c, tid) {
       const tref = db.collection('courses').doc(c).collection('threads').doc(tid);
       const th = await tref.get(); if (!th.exists) throw new Error('Discussion not found.');
-      if (state.role !== 'teacher' && th.data().postFirst) { const m = await tref.collection('posted').doc(state.user.uid).get(); if (!m.exists) return { locked: true, posts: [] }; }
-      const s = await tref.collection('posts').get(); return { locked: false, posts: s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.createdAtMs - b.createdAtMs) };
+      let s;
+      try { s = await tref.collection('posts').get(); }
+      catch (e) { if (th.data().postFirst && e && e.code === 'permission-denied') return { locked: true, posts: [] }; throw e; }   // post-first, not posted yet (course staff, TAs included, always read) return { locked: false, posts: s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.createdAtMs - b.createdAtMs) };
     },
     saveThread: (c, d) => call('saveThread', { courseId: c, threadId: d.id || undefined, title: d.title, body: d.body, postFirst: !!d.postFirst, pinned: !!d.pinned, locked: !!d.locked }),
     deleteThread: (c, tid) => call('deleteThread', { courseId: c, threadId: tid }),

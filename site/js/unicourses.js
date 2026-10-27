@@ -116,6 +116,9 @@ const UniCourses = (() => {
       g5: [{ id: 'k6', title: 'Agree on the survey platform', done: false, assigneeUid: 'd3', assigneeName: 'Chi Le', dueAtMs: at(2), createdByName: 'Binh Tran', createdAtMs: at(-1) }],
     };
     const groupOf = (c, uid) => (groups[c] || []).find((g) => g.memberUids.includes(uid));
+    /* v2.17.0: An's family view — on, sharing courses and deadlines, with her mother linked */
+    const fam = { enabled: true, share: { courses: true, deadlines: true, grades: false, calendar: false }, invite: null,
+      guardians: [{ uid: 'pm', name: 'Mai Nguyen', email: 'mai.nguyen@demo-mail.com', linkedAtMs: at(-20, 19, 0), lastViewedAtMs: at(-1, 20, 30) }] };
     groups.c1[1].memberUids.forEach((u) => put('c1', 'a5', u, { files: [{ path: 'demo', name: 'plain-english-myth.pdf', size: 912000, type: 'application/pdf' }], submittedAtMs: at(-1, 21, 15),
       groupId: 'g2', groupName: 'Plain English', groupUids: groups.c1[1].memberUids, submittedBy: 'd4', submittedByName: 'Duc Pham' }, null));
     const qs = ['Do first-year students who live on campus feel less lonely than those who commute?', 'How many hours a week do students in paid work study outside class?', 'Do students trust AI tools more for coding or for writing?', 'Does the library’s late opening change when students study?', 'How do international students choose their first-year courses?', 'Do group projects improve how students rate their course?', 'How far do students travel to campus, and does it affect attendance?'];
@@ -311,6 +314,13 @@ const UniCourses = (() => {
         s.booked = true; bookings[c][id] = { slotId: id, uid: myUid(), name: me.student.name, note: note || '', startAtMs: s.startAtMs, endAtMs: s.endAtMs, bookedAtMs: Date.now() }; return { ok: true, link: s.link, location: s.location }; },
       async cancelBooking(c, id) { await wait(); delete bookings[c][id]; const s = slots[c].find((x) => x.id === id); if (s) s.booked = false; return { ok: true }; },
       async fileUrl() { return null; },
+      /* ---- v2.17.0 family view (demo) ---- */
+      async familyStatus() { await wait(); return JSON.parse(JSON.stringify({ ...fam, invite: fam.invite && fam.invite.expiresAtMs > Date.now() ? fam.invite : null })); },
+      async setFamilySharing(d) { await wait(); fam.enabled = !!d.enabled; if (d.share) fam.share = { ...fam.share, ...d.share }; return this.familyStatus(); },
+      async createFamilyInvite() { await wait(); if (!fam.enabled) throw new Error('Turn on the family view first.'); if (fam.guardians.length >= 4) throw new Error('Up to 4 family members can be linked. Remove one first.');
+        fam.invite = { code: 'HOME-' + Math.floor(2000 + Math.random() * 7000), expiresAtMs: Date.now() + 7 * DAY }; return { code: fam.invite.code, expiresAtMs: fam.invite.expiresAtMs }; },
+      async cancelFamilyInvite() { await wait(); fam.invite = null; return { ok: true }; },
+      async removeFamilyLink(guardianUid) { await wait(); fam.guardians = fam.guardians.filter((g) => g.uid !== guardianUid); return { ok: true }; },
       /* ---- v2.16.0 groups and task lists (demo) ---- */
       async myGroup(c) { await wait(); need(c); const g = groupOf(c, myUid()); return g ? { ...g } : null; },
       async allGroups(c) { await wait(); return (groups[c] || []).map((g) => ({ ...g })); },
@@ -420,6 +430,12 @@ const UniCourses = (() => {
     bookSlot: (c, id, note) => call('bookSlot', { courseId: c, slotId: id, note: note || '' }),
     cancelBooking: (c, id) => call('cancelBooking', { courseId: c, slotId: id }),
     async fileUrl(path) { return storage ? storage.ref(path).getDownloadURL() : null; },
+    /* ---- v2.17.0 family view (student side; family members use UniDeck's ParentDeck) ---- */
+    familyStatus: () => call('familyStatus', {}),
+    setFamilySharing: (d) => call('setFamilySharing', { enabled: !!d.enabled, share: d.share }),
+    createFamilyInvite: () => call('createFamilyInvite', {}),
+    cancelFamilyInvite: () => call('cancelFamilyInvite', {}),
+    removeFamilyLink: (guardianUid) => call('removeFamilyLink', { guardianUid }),
     /* ---- v2.16.0 groups and task lists ---- */
     async myGroup(c) { const s = await db.collection('courses').doc(c).collection('groups').where('memberUids', 'array-contains', state.user.uid).get(); return s.empty ? null : { id: s.docs[0].id, ...s.docs[0].data() }; },
     async allGroups(c) { const s = await db.collection('courses').doc(c).collection('groups').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true })); },

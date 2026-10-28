@@ -40,7 +40,28 @@ const UniCourses = (() => {
       state = { ...state, user: { uid: u.uid, name: u.displayName || '', email: u.email || '' }, role: tok.claims.role || null, under18: tok.claims.u18 === true };
       fire();
     });
+    // v2.18 web app: coming back from a redirect sign-in (installed iPhone apps can't use pop-ups) finishes it here.
+    let pending = null; try { pending = sessionStorage.getItem('ud_signin_role'); sessionStorage.removeItem('ud_signin_role'); } catch (e) {}
+    if (pending) auth.getRedirectResult().then((r) => { if (r && r.user) finishSignIn(pending).catch(() => {}); }).catch(() => {});
     return true;
+  }
+  // Pop-ups don't work in an app installed to the iPhone Home screen, and some phones block them: use a redirect there.
+  const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  const POPUP_FAILS = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/web-storage-unsupported', 'auth/cancelled-popup-request'];
+  async function googleSignIn(role) {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const redirect = async () => { try { sessionStorage.setItem('ud_signin_role', role); } catch (e) {} await auth.signInWithRedirect(provider); return null; };
+    if (standalone() && /iPhone|iPad|iPod/.test(navigator.userAgent || '')) return redirect();
+    try { return (await auth.signInWithPopup(provider)).user; }
+    catch (e) { if (POPUP_FAILS.includes(e && e.code) && !/^chrome-extension:/.test(location.protocol)) return redirect(); throw e; }
+  }
+  async function finishSignIn(role) {
+    const u = auth.currentUser;
+    const r = role === 'teacher' ? await call('ensureUserProfile', { role: 'teacher' }) : await call('ensureUniProfile', {});
+    await u.getIdToken(true);
+    state = { ...state, user: { uid: u.uid, name: u.displayName || '', email: u.email || '' }, role: role === 'teacher' ? 'teacher' : 'unistudent',
+      under18: !!r.under18, needsBirthDate: !!r.needsBirthDate };
+    fire();
   }
   const call = async (name, data) => (await fns.httpsCallable(name)(data || {})).data;
   const errText = (e) => (e && e.message ? String(e.message).replace(/^.*?:\s(?=[A-Z])/, '') : 'Something went wrong. Try again.');
@@ -347,11 +368,9 @@ const UniCourses = (() => {
       state = { ...state, busy: true }; fire();
       try {
         let u = auth.currentUser;
-        if (!u || u.isAnonymous) u = (await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())).user;
-        const r = role === 'teacher' ? await call('ensureUserProfile', { role: 'teacher' }) : await call('ensureUniProfile', {});
-        await u.getIdToken(true);
-        state = { ...state, user: { uid: u.uid, name: u.displayName || '', email: u.email || '' }, role: role === 'teacher' ? 'teacher' : 'unistudent',
-          under18: !!r.under18, needsBirthDate: !!r.needsBirthDate };
+        if (!u || u.isAnonymous) u = await googleSignIn(role);
+        if (!u) return;   // a redirect is under way; init() finishes when the page comes back
+        await finishSignIn(role);
       } finally { state = { ...state, busy: false }; fire(); }
     },
     async completeProfile(birthDate) {

@@ -2131,6 +2131,7 @@ function toggleWidget(id){
   }else{
     openWidget(id);
     const od = dayRec(); od.opens = od.opens || {}; od.opens[id] = (od.opens[id] || 0) + 1; xSave();
+    if(window.TDUsage) window.TDUsage.track('widget_open', { widget: id });   // anonymous usage statistics (js/usage.js)
   }
   saveState();
   syncDock();

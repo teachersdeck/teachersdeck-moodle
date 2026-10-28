@@ -9,10 +9,10 @@
    Settings → "Share anonymous usage statistics" turns it off (and forgets the install id).
 
    Chrome extensions can't use the Firebase Analytics script (no remote code), so events go to GA's Measurement
-   Protocol with a plain request. Nothing is sent until MEASUREMENT_ID and API_SECRET are filled in below. */
+   Protocol with a plain request. To stop sending everywhere at once, empty MEASUREMENT_ID below. */
 (function(){
-  const MEASUREMENT_ID = '';   // "G-…": GA property 555390375 → Admin → Data streams → the apps' stream
-  const API_SECRET = '';       // that stream → Measurement Protocol API secrets
+  const MEASUREMENT_ID = 'G-M8LJNJ2D3P';   // GA property 555390375 → Admin → Data streams → "TeachersDeck apps"
+  const API_SECRET = '9nhlt-gERJecOlFmkKnsxQ';   // that stream → Measurement Protocol API secrets ("apps"); public by nature: it ships in the app
   const OFF = 'td_usage_off', CID = 'td_usage_cid', SES = 'td_usage_session';
   const ed = window.DECK_EDITION || {};
   const store = {

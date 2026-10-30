@@ -27,16 +27,17 @@
   const forced = /[?&]bento=1(&|$)/.test(location.search);
   const GAP = 12;
 
-  /* The tiles a first visit opens, and the sizes they start at (the picture this was designed from: a wide timer, a traffic
-     light, a name picker, points, groups and a wide homework tile). Any other widget's size comes from its usual size. */
+  /* The tiles a first visit (or Settings → Reset tiles) opens, and the sizes they start at. TeachersDeck: Clock and Timer
+     small beside a large Calendar, Assignments wide under them, Student Stats ('classactivity') across the full width.
+     Any other widget's size comes from its usual size. */
   const DEFAULTS = {
-    TeachersDeck: ['timer', 'traffic', 'namepicker', 'scoreboard', 'groupmaker', 'assignments'],
+    TeachersDeck: ['clock', 'timer', 'calendar', 'assignments', 'classactivity'],
     StudentDeck: ['clock', 'timer', 'todo', 'cards', 'idiom'],
     ParentDeck: ['summary', 'notes', 'homework', 'badges'],
     AdminDeck: ['schoolstats', 'points', 'teachers', 'pulse', 'joincodes'],
   };
   const START = {
-    TeachersDeck: { timer: 'wide', traffic: 'small', namepicker: 'small', scoreboard: 'small', groupmaker: 'small', assignments: 'wide', clock: 'small', dice: 'small' },
+    TeachersDeck: { clock: 'small', timer: 'small', calendar: 'large', assignments: 'wide', classactivity: 'full', traffic: 'small', namepicker: 'small', scoreboard: 'small', groupmaker: 'small', dice: 'small' },
     StudentDeck: { clock: 'small', timer: 'wide', todo: 'large', cards: 'large', idiom: 'wide' },
     ParentDeck: { summary: 'large', notes: 'wide', homework: 'wide', badges: 'small' },
     AdminDeck: { schoolstats: 'large', points: 'wide', teachers: 'wide' },
@@ -61,8 +62,8 @@
 
   /* ---- this device's tile sizes and order ---- */
   const KEY = 'bento_tiles:' + APP;
-  let saved = { sizes: {}, order: [] };
-  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && typeof s === 'object') saved = { sizes: s.sizes || {}, order: Array.isArray(s.order) ? s.order : [] }; } catch (e) {}
+  let saved = { sizes: {}, order: [], full: [] };   // full: full-page widgets open as tiles (TeachersDeck doesn't reopen those by itself)
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && typeof s === 'object') saved = { sizes: s.sizes || {}, order: Array.isArray(s.order) ? s.order : [], full: Array.isArray(s.full) ? s.full : [] }; } catch (e) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} };
 
   const isFull = (el) => el.classList.contains('full') || el.classList.contains('widget-full');
@@ -143,7 +144,22 @@
       const h = [...wid(it.el)].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);   // the Colour style: each widget keeps its colour
       it.el.style.setProperty('--bento-tint', `var(--bento-c${h % PALETTE})`);
     }
+    if (restored) {   // remember the full-page widgets open as tiles, so they come back next time
+      const full = tiles().filter(isFull).map(wid).filter(Boolean);
+      if (full.join() !== saved.full.join()) { saved.full = full; save(); }
+    }
     fitAll();
+  }
+
+  /* TeachersDeck closes full-page widgets (Stats & XP, Student Stats) on every new start, so they don't cover the page in
+     the floating layout. As tiles they're just tiles: reopen the ones that were open last time. */
+  let restored = false;
+  function restoreFull() {
+    if (restored) return;
+    restored = true;
+    if (typeof openWidget !== 'function') return;
+    const have = new Set(tiles().map(wid));
+    saved.full.forEach((id) => { if (!have.has(id)) try { openWidget(id); } catch (e) {} });
   }
 
   /* Tiles in order, each in the first place it fits (like Windows' Start); then any hole left in the grid is filled by
@@ -285,9 +301,10 @@
   document.addEventListener('focusin', (e) => { const b = dockItem(e); if (b && b.matches(':focus-visible')) showTip(b, 1600); });
 
   /* ---- first visit: open the default tiles ---- */
-  function seed() {
+  function seed(again) {   // again: Settings → Reset tiles
     const SEEDED = 'bento_seeded:' + APP;
-    try { if (localStorage.getItem(SEEDED)) return; localStorage.setItem(SEEDED, '1'); } catch (e) { return; }
+    try { if (localStorage.getItem(SEEDED) && !again) return; localStorage.setItem(SEEDED, '1'); } catch (e) { if (!again) return; }
+    if (again) saved = { sizes: {}, order: [], full: [] };
     if (typeof openWidget !== 'function' || !DEFAULTS[APP]) return;
     const want = DEFAULTS[APP], have = new Set(tiles().map(wid));
     // the tiles start as exactly the default set: whatever the app opened by itself on a first run gives way
@@ -318,9 +335,15 @@
         ${seg(T('Tiles', 'Ô gạch'), LAYOUTS, LAYOUT_NAMES(), prefs.layout).replace('class="bento-seg"', 'class="bento-seg" data-k="layout"')}
         <p class="bento-hint">${{ auto: T('Tiles on touch screens and small windows, floating windows with a mouse.', 'Ô gạch trên màn hình cảm ứng và cửa sổ nhỏ, cửa sổ nổi khi dùng chuột.'), tiles: T('Tiles everywhere, also with a mouse.', 'Luôn dùng ô gạch, kể cả khi dùng chuột.'), floating: T('Floating windows everywhere, also on touch screens. On a phone they don’t fit well.', 'Luôn dùng cửa sổ nổi, kể cả trên màn hình cảm ứng. Trên điện thoại sẽ hơi chật.') }[prefs.layout]}</p>
         <p class="drawer-label bento-set-label">${T('Tile style', 'Kiểu ô gạch')}</p>
-        ${seg(T('Tile style', 'Kiểu ô gạch'), THEMES, THEME_NAMES(), prefs.theme).replace('class="bento-seg"', 'class="bento-seg bento-seg-themes" data-k="theme"')}`;
+        ${seg(T('Tile style', 'Kiểu ô gạch'), THEMES, THEME_NAMES(), prefs.theme).replace('class="bento-seg"', 'class="bento-seg bento-seg-themes" data-k="theme"')}
+        <button type="button" class="bento-reset" data-reset>${T('Reset tiles', 'Đặt lại ô gạch')}</button>
+        <p class="bento-hint">${T('Opens the default tiles at their default sizes on this device; other open widgets close.', 'Mở lại các ô mặc định với cỡ mặc định trên thiết bị này; các tiện ích khác đang mở sẽ đóng.')}</p>`;
     };
     box.addEventListener('click', (e) => {
+      if (e.target.closest('[data-reset]')) {
+        if (!confirm(T('Reset the tiles to the defaults? Other open widgets will close.', 'Đặt lại ô gạch về mặc định? Các tiện ích khác đang mở sẽ đóng.'))) return;
+        seed(true); soon(); return;
+      }
       const b = e.target.closest('button[data-v]'); if (!b) return;
       prefs[b.closest('[data-k]').dataset.k] = b.dataset.v; savePrefs(); applyTheme(); update(); draw();
     });
@@ -342,7 +365,7 @@
     if (want !== on) {
       on = want;
       root.classList.toggle('bento', on);
-      if (on) { tiles().forEach((el) => { usual(el); dress(el); }); seed(); }
+      if (on) { tiles().forEach((el) => { usual(el); dress(el); }); restoreFull(); seed(); }
       else { root.classList.remove('bento-phone', 'bento-tablet'); tiles().forEach((el) => { setOpen(el, false); el.style.order = ''; }); closeMenu(); hideTip(); }
     }
     layout();

@@ -63,15 +63,22 @@ html.bento[data-bento-theme="colour"]:not([data-mode="light"]) #wall > .widget >
 .bento-seg button[aria-checked="true"]{ background:#e8a33d; color:#1b1408; }
 .bento-seg button:focus-visible{ outline:2px solid #e8a33d; outline-offset:1px; }
 .bento-hint{ margin:2px 2px 12px; font-size:12px; opacity:.7; line-height:1.4; }
+.bento-reset{
+  margin:10px 0 4px; padding:8px 14px; border-radius:10px; border:1px solid rgba(127,127,127,.35);
+  background:transparent; color:inherit; font:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.bento-reset:hover, .bento-reset:focus-visible{ background:rgba(127,127,127,.14); }
 
 /* ---------- The grid ---------- */
+/* The grid runs to the bottom of the screen and scrolls under the floating glass dock (no empty band above the dock);
+   its bottom padding lets the last row scroll clear of the dock. */
 html.bento #wall{
   position:fixed !important;
-  top:var(--bento-top,56px) !important; bottom:var(--bento-bottom,90px) !important;
+  top:var(--bento-top,56px) !important; bottom:0 !important;
   left:var(--bento-left,0px) !important; right:var(--bento-right,0px) !important;
   display:grid; grid-template-columns:repeat(var(--bento-cols,4),minmax(0,1fr));
   grid-auto-rows:var(--bento-row,200px); grid-auto-flow:row dense; gap:12px; align-content:start;
-  padding:var(--bento-pad,18px); padding-bottom:18px; box-sizing:border-box;
+  padding:var(--bento-pad,18px); padding-bottom:calc(var(--bento-bottom,90px) + 16px); box-sizing:border-box;
   overflow-x:hidden !important; overflow-y:auto !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
 }

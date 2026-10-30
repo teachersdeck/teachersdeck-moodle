@@ -260,6 +260,40 @@ const UniCourses = (() => {
         return out;
       });
     }
+    /* v2.20.0: attempts, scored the way the backend's quizzes.js scores them. Four classmates have taken the first quiz. */
+    const attempts = [];
+    const qnorm = (x) => String(x || '').trim().replace(/\s+/g, ' ').replace(/\.$/, '').toLowerCase();
+    function qscore(q, ans) {
+      if (q.type === 'mc') { const got = [...new Set(Array.isArray(ans) ? ans : [])].sort(), want = [...q.correct].sort(); return { score: got.length === want.length && got.every((x, i) => x === want[i]) ? q.points : 0, pending: false }; }
+      if (q.type === 'tf') return { score: ans === q.answer ? q.points : 0, pending: false };
+      if (!(q.accept || []).length) return { score: 0, pending: true };
+      return { score: qnorm(ans) && q.accept.some((x) => qnorm(x) === qnorm(ans)) ? q.points : 0, pending: false };
+    }
+    function qscoreAll(qs, answers, prev) {
+      const results = {}; let score = 0, pending = 0;
+      qs.forEach((q) => { const r = prev && prev[q.id] && prev[q.id].by ? prev[q.id] : qscore(q, (answers || {})[q.id]); results[q.id] = r; score += r.score || 0; if (r.pending) pending++; });
+      return { results, score: M.round2(score), points: M.round2(qs.reduce((x, q) => x + q.points, 0)), pending };
+    }
+    function quizGrade(c, quiz, uid) {
+      const done = attempts.filter((t) => t.c === c && t.quizId === quiz.id && t.uid === uid && t.status === 'submitted');
+      if (!done.length) return;
+      const best = done.reduce((b, t) => (t.score > b.score || (t.score === b.score && t.attempt > b.attempt) ? t : b));
+      grades[k(c, quiz.id, uid)] = { assignmentId: quiz.id, kind: 'quiz', uid, score: best.score, rubricScores: {}, feedback: '', latePenaltyPct: 0, finalScore: best.score,
+        points: best.points, released: !!quiz.resultsReleased, releasedAtMs: quiz.resultsReleased ? Date.now() : null, gradedAtMs: Date.now(), needsGrading: best.pending > 0 };
+    }
+    function finishDemo(c, t, timedOut) {
+      const quiz = quizzes[c].find((z) => z.id === t.quizId);
+      Object.assign(t, qscoreAll(quiz.questions, t.answers), { status: 'submitted', submittedAtMs: Date.now(), timedOut: !!timedOut, released: !!quiz.resultsReleased });
+      quizGrade(c, quiz, t.uid);
+    }
+    const closeDemo = (c) => attempts.filter((t) => t.c === c && t.status === 'open' && t.endsAtMs && t.endsAtMs + 30000 < Date.now()).forEach((t) => finishDemo(c, t, true));
+    [['d2', { q1: ['o1'], q2: false, q3: ['o1', 'o2', 'o4'], q4: 'APA' }], ['d3', { q1: ['o2'], q2: false, q3: ['o1', 'o2'], q4: 'apa.' }],
+      ['d4', { q1: ['o1'], q2: true, q3: ['o1', 'o2', 'o4'], q4: 'MLA' }], ['d5', { q1: ['o1'], q2: false, q3: ['o1', 'o2', 'o4'], q4: 'Harvard' }]].forEach(([uid, answers], i) => {
+      const quiz = quizzes.c1[0];
+      const t = { id: 't' + (i + 1), c: 'c1', quizId: quiz.id, uid, name: students.find((x) => x.uid === uid).name, attempt: 1, startedAtMs: at(-1, 10 + i, 0), endsAtMs: at(-1, 10 + i, 15),
+        order: quiz.questions.map((q) => q.id), optOrder: {}, answers, status: 'open' };
+      attempts.push(t); finishDemo('c1', t, false); t.submittedAtMs = at(-1, 10 + i, 9 + i);
+    });
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
@@ -419,6 +453,43 @@ const UniCourses = (() => {
         const list = banks[c] || (banks[c] = []); if (d.id) { Object.assign(list.find((x) => x.id === d.id), row); return { bankId: d.id, count: qs.length }; }
         const id = 'b' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row }); return { bankId: id, count: qs.length }; },
       async deleteBank(c, id) { await wait(); banks[c] = (banks[c] || []).filter((b) => b.id !== id); return { ok: true }; },
+      /* ---- v2.20.0 taking quizzes (demo) ---- */
+      async startQuiz(c, qid) { await wait(); need(c); if (courseRole(c) !== 'student') throw new Error('Quizzes are taken by the students in the course.'); closeDemo(c);
+        const quiz = (quizzes[c] || []).find((z) => z.id === qid && z.published); if (!quiz) throw new Error('Quiz not found.');
+        const mine = attempts.filter((t) => t.c === c && t.quizId === qid && t.uid === myUid()); const open = mine.find((t) => t.status === 'open'); const now = Date.now();
+        const strip = (t) => t.order.map((id) => quiz.questions.find((q) => q.id === id)).filter(Boolean).map((q) => ({ id: q.id, type: q.type, text: q.text, points: q.points,
+          ...(q.type === 'mc' ? { options: (t.optOrder[q.id] || q.options.map((o) => o.id)).map((id) => q.options.find((o) => o.id === id)).map((o) => ({ id: o.id, text: o.text })), multiple: q.correct.length > 1 } : {}) }));
+        if (open) return { attemptId: open.id, attempt: open.attempt, startedAtMs: open.startedAtMs, endsAtMs: open.endsAtMs, nowMs: now, questions: strip(open), answers: { ...open.answers }, resumed: true };
+        if (quiz.openAtMs && now < quiz.openAtMs) throw new Error('This quiz is not open yet.'); if (quiz.dueAtMs && now >= quiz.dueAtMs) throw new Error('This quiz has closed.');
+        if (quiz.attempts && mine.length >= quiz.attempts) throw new Error(quiz.attempts === 1 ? 'This quiz allows one attempt.' : `This quiz allows ${quiz.attempts} attempts.`);
+        const mix = (l) => { const x = [...l]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
+        const order = quiz.shuffle ? mix(quiz.questions.map((q) => q.id)) : quiz.questions.map((q) => q.id), optOrder = {};
+        quiz.questions.forEach((q) => { if (q.type === 'mc') optOrder[q.id] = quiz.shuffle ? mix(q.options.map((o) => o.id)) : q.options.map((o) => o.id); });
+        const ends = [quiz.timeLimitMin ? now + quiz.timeLimitMin * 60000 : null, quiz.dueAtMs].filter(Boolean);
+        const t = { id: 't' + Math.random().toString(36).slice(2, 7), c, quizId: qid, uid: myUid(), name: me.student.name, attempt: mine.length + 1, startedAtMs: now, endsAtMs: ends.length ? Math.min(...ends) : null, order, optOrder, answers: {}, status: 'open' };
+        attempts.push(t); return { attemptId: t.id, attempt: t.attempt, startedAtMs: now, endsAtMs: t.endsAtMs, nowMs: now, questions: strip(t), answers: {}, resumed: false }; },
+      async saveQuizAnswers(c, aid, answers, submit) { await wait(); const t = attempts.find((x) => x.id === aid && x.uid === myUid()); if (!t) throw new Error('Attempt not found.');
+        if (t.status !== 'open') return { saved: false, submitted: true, timedOut: !!t.timedOut };
+        if (t.endsAtMs && Date.now() > t.endsAtMs + 30000) { finishDemo(c, t, true); return { saved: false, submitted: true, timedOut: true }; }
+        Object.assign(t.answers, answers || {}); if (submit) { finishDemo(c, t, false); return { saved: true, submitted: true, timedOut: false }; } return { saved: true, submitted: false, timedOut: false }; },
+      async myQuizzes(c) { await wait(); need(c); closeDemo(c);
+        return { nowMs: Date.now(), quizzes: (quizzes[c] || []).filter((z) => z.published).map((z) => {
+          const mine = attempts.filter((t) => t.c === c && t.quizId === z.id && t.uid === myUid()).sort((a, b) => a.attempt - b.attempt); const rel = !!z.resultsReleased; const open = mine.find((t) => t.status === 'open');
+          const done = mine.filter((t) => t.status === 'submitted').map((t) => (rel ? { attempt: t.attempt, submittedAtMs: t.submittedAtMs, timedOut: !!t.timedOut, points: t.points, score: t.score, pending: t.pending,
+            questions: t.order.map((id) => z.questions.find((q) => q.id === id)).filter(Boolean).map((q) => { const r = t.results[q.id] || { score: 0 }; return { text: q.text, points: q.points, score: r.score, pending: !!r.pending, right: r.pending ? null : r.score >= q.points }; }) }
+            : { attempt: t.attempt, submittedAtMs: t.submittedAtMs, timedOut: !!t.timedOut, points: t.points }));
+          return { id: z.id, title: z.title, instructions: z.instructions, timeLimitMin: z.timeLimitMin, attempts: z.attempts, openAtMs: z.openAtMs, dueAtMs: z.dueAtMs, points: z.points, questionCount: z.questionCount,
+            used: mine.length, open: open ? { attemptId: open.id, endsAtMs: open.endsAtMs } : null, released: rel, best: rel && done.length ? Math.max(...done.map((t) => t.score)) : null, attemptsDone: done };
+        }).sort((a, b) => (a.dueAtMs || 9e15) - (b.dueAtMs || 9e15)) }; },
+      async quizResults(c, qid) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); closeDemo(c); const z = quizzes[c].find((x) => x.id === qid);
+        return { released: !!(z && z.resultsReleased), attempts: attempts.filter((t) => t.c === c && t.quizId === qid).map((t) => JSON.parse(JSON.stringify(t))).sort((a, b) => String(a.name).localeCompare(String(b.name)) || a.attempt - b.attempt) }; },
+      async gradeQuizAnswer(c, aid, qid, score) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); const t = attempts.find((x) => x.id === aid); const z = quizzes[c].find((x) => x.id === t.quizId);
+        const q = z.questions.find((x) => x.id === qid); const v = Number(score); if (!(v >= 0 && v <= q.points)) throw new Error(`The score must be from 0 to ${q.points}.`);
+        Object.assign(t, qscoreAll(z.questions, t.answers, { ...t.results, [qid]: { score: M.round2(v), pending: false, by: myUid() } })); quizGrade(c, z, t.uid); return { score: t.score, pending: t.pending }; },
+      async releaseQuizResults(c, qid) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); const z = quizzes[c].find((x) => x.id === qid); z.resultsReleased = true; let n = 0;
+        attempts.forEach((t) => { if (t.c === c && t.quizId === qid && t.status === 'submitted') t.released = true; });
+        Object.values(grades).forEach((g) => { if (g.assignmentId === qid && !g.released) { g.released = true; g.releasedAtMs = Date.now(); n++; } });
+        return { released: n, pending: attempts.filter((t) => t.c === c && t.quizId === qid && t.pending > 0).length }; },
     };
   })();
 
@@ -538,6 +609,13 @@ const UniCourses = (() => {
     async banks(c) { const s = await db.collection('courses').doc(c).collection('questionBanks').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title).localeCompare(String(b.title))); },
     saveBank: (c, b) => call('saveQuestionBank', { courseId: c, bankId: b.id || undefined, title: b.title, questions: b.questions || [] }),
     deleteBank: (c, id) => call('deleteQuestionBank', { courseId: c, bankId: id }),
+    /* ---- v2.20.0 taking quizzes: everything through functions (students can't read attempts or answers) ---- */
+    startQuiz: (c, qid) => call('startQuizAttempt', { courseId: c, quizId: qid }),
+    saveQuizAnswers: (c, aid, answers, submit) => call('saveQuizAnswers', { courseId: c, attemptId: aid, answers: answers || {}, submit: !!submit }),
+    myQuizzes: (c) => call('myQuizzes', { courseId: c }),
+    quizResults: (c, qid) => call('quizResults', { courseId: c, quizId: qid }),
+    gradeQuizAnswer: (c, aid, qid, score) => call('gradeQuizAnswer', { courseId: c, attemptId: aid, questionId: qid, score }),
+    releaseQuizResults: (c, qid) => call('releaseQuizResults', { courseId: c, quizId: qid }),
   };
 
   const B = DEMO ? D : R;

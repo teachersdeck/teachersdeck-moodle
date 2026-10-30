@@ -56,15 +56,30 @@ const TDCloud = (() => {
       session = user ? { uid:user.uid, displayName:user.displayName, email:user.email, photoURL:user.photoURL } : null;
       fireAuth();
     });
+    // v0.34.0 web app: coming back from a redirect sign-in (installed iPhone apps can't use pop-ups) finishes it here.
+    let pending = false;
+    try{ pending = sessionStorage.getItem('td_signin_redirect') === '1'; sessionStorage.removeItem('td_signin_redirect'); }catch(e){}
+    if(pending) auth.getRedirectResult().then(r=>{ if(r && r.user) return finishSignIn(r.user); }).catch(()=>{});
   }
 
+  // Pop-ups don't work in an app installed to the iPhone Home screen, and some phones block them: use a redirect there
+  // (the same rule as js/unicourses.js). The extension always uses the pop-up.
+  const standalone = ()=>{ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }catch(e){ return false; } };
+  const POPUP_FAILS = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/web-storage-unsupported', 'auth/cancelled-popup-request'];
   async function signIn(){
     if(!init()) throw new Error('not-configured');
     const provider = new firebase.auth.GoogleAuthProvider();
-    const cred = await auth.signInWithPopup(provider);
+    const redirect = async ()=>{ try{ sessionStorage.setItem('td_signin_redirect', '1'); }catch(e){} await auth.signInWithRedirect(provider); return null; };
+    if(standalone() && /iPhone|iPad|iPod/.test(navigator.userAgent || '')) return redirect();
+    let cred;
+    try{ cred = await auth.signInWithPopup(provider); }
+    catch(e){ if(POPUP_FAILS.includes(e && e.code) && !/^chrome-extension:/.test(location.protocol)) return redirect(); throw e; }
+    return finishSignIn(cred.user);
+  }
+  async function finishSignIn(user){
     await functions.httpsCallable('ensureUserProfile')({ role:'teacher' });
-    await cred.user.getIdToken(true); // pick up the new role custom claim before any Cloud Function call that requires it
-    session = { uid:cred.user.uid, displayName:cred.user.displayName, email:cred.user.email, photoURL:cred.user.photoURL };
+    await user.getIdToken(true); // pick up the new role custom claim before any Cloud Function call that requires it
+    session = { uid:user.uid, displayName:user.displayName, email:user.email, photoURL:user.photoURL };
     fireAuth();
     return session;
   }

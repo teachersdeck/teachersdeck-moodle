@@ -1,0 +1,233 @@
+/* =========================================================
+   Live tiles for phones and tablets (js/bento.js, TeachersDeck v0.34.0)
+   One file in four apps: TeachersDeck's copy is the one to edit; tools/check_shared.py keeps the copies in
+   studentdeck/, parentdeck/ and admindeck/ identical. Every rule needs html.bento, which js/bento.js sets only on a
+   touch screen or a window 700 px wide or less, so the floating layout with a mouse is untouched.
+   ========================================================= */
+html.bento{
+  --bento-bg:#0f141c;
+  --bento-tile:#1d2330;
+  --bento-tile-hi:#232a38;
+  --bento-line:rgba(255,255,255,.045);
+  --bento-label:#9aa3b2;
+  --bento-glass:rgba(24,30,40,.72);
+  --bento-glass-line:rgba(255,255,255,.09);
+  --bento-pop:#262d3a;
+  --bento-accent:#e8a33d;
+}
+html.bento[data-mode="light"]{
+  --bento-bg:#eef1f6;
+  --bento-tile:#ffffff;
+  --bento-tile-hi:#f7f9fc;
+  --bento-line:rgba(15,23,42,.07);
+  --bento-label:#5d6676;
+  --bento-glass:rgba(255,255,255,.78);
+  --bento-glass-line:rgba(15,23,42,.10);
+  --bento-pop:#ffffff;
+}
+html.bento:not([data-bento-theme="glass"]) body{ background:var(--bento-bg) !important; }
+
+/* ---------- Tile styles (Settings → Tile style) ---------- */
+/* Glass: frosted tiles over the app's own background (Settings → Theme's backgrounds show through) */
+html.bento[data-bento-theme="glass"]{
+  --bento-tile:rgba(255,255,255,.07); --bento-tile-hi:rgba(255,255,255,.11); --bento-line:rgba(255,255,255,.14); --bento-label:#c9d1dd;
+}
+html.bento[data-bento-theme="glass"][data-mode="light"]{
+  --bento-tile:rgba(255,255,255,.62); --bento-tile-hi:rgba(255,255,255,.75); --bento-line:rgba(255,255,255,.7); --bento-label:#4a5464;
+}
+html.bento[data-bento-theme="glass"] #wall > .widget{
+  backdrop-filter:blur(18px) saturate(1.35) !important; -webkit-backdrop-filter:blur(18px) saturate(1.35) !important;
+  box-shadow:0 8px 30px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+/* Colour: each widget its own colour, deep in Dark mode (white text), soft tints in Light mode */
+html.bento[data-bento-theme="colour"]{
+  --bento-c0:#0f766e; --bento-c1:#4338ca; --bento-c2:#b45309; --bento-c3:#be123c; --bento-c4:#047857; --bento-c5:#0369a1;
+  --bento-label:rgba(255,255,255,.82);
+}
+html.bento[data-bento-theme="colour"][data-mode="light"]{
+  --bento-c0:#d5f2ee; --bento-c1:#e1e3fb; --bento-c2:#fbe8d2; --bento-c3:#fbdbe2; --bento-c4:#d6f2e3; --bento-c5:#d6ebf8;
+  --bento-label:rgba(15,23,42,.62);
+}
+html.bento[data-bento-theme="colour"] #wall > .widget{ background:var(--bento-tint,var(--bento-tile)) !important; border-color:transparent !important; }
+html.bento[data-bento-theme="colour"] #wall > .widget:hover{ filter:brightness(1.06); background:var(--bento-tint,var(--bento-tile-hi)) !important; }
+html.bento[data-bento-theme="colour"]:not([data-mode="light"]) #wall > .widget > :is(.body,.widget-body){ color:#fff; }
+
+/* ---------- Settings → Tiles and Tile style (drawn by js/bento.js in every app) ---------- */
+.bento-set{ margin:0 0 18px; }
+.bento-set .bento-set-label{ margin-top:4px; }
+.bento-seg{ display:flex; gap:4px; padding:4px; border-radius:12px; background:rgba(127,127,127,.12); margin:6px 0 4px; }
+.bento-seg button{
+  flex:1; min-width:0; padding:8px 6px; border:0; border-radius:9px; background:transparent; color:inherit;
+  font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.bento-seg button[aria-checked="true"]{ background:#e8a33d; color:#1b1408; }
+.bento-seg button:focus-visible{ outline:2px solid #e8a33d; outline-offset:1px; }
+.bento-hint{ margin:2px 2px 12px; font-size:12px; opacity:.7; line-height:1.4; }
+
+/* ---------- The grid ---------- */
+html.bento #wall{
+  position:fixed !important;
+  top:var(--bento-top,56px) !important; bottom:var(--bento-bottom,90px) !important;
+  left:var(--bento-left,0px) !important; right:var(--bento-right,0px) !important;
+  display:grid; grid-template-columns:repeat(var(--bento-cols,4),minmax(0,1fr));
+  grid-auto-rows:var(--bento-row,200px); grid-auto-flow:row dense; gap:12px; align-content:start;
+  padding:var(--bento-pad,18px); padding-bottom:18px; box-sizing:border-box;
+  overflow-x:hidden !important; overflow-y:auto !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+html.bento #wall::-webkit-scrollbar{ display:none; }
+
+/* ---------- Tiles ---------- */
+html.bento #wall > .widget{
+  position:relative !important; inset:auto !important; z-index:auto !important;
+  width:auto !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-width:none !important;
+  grid-column:span var(--bento-span,1); grid-row:span var(--bento-rows,1);
+  border-radius:18px !important; border:1px solid var(--bento-line) !important; background:var(--bento-tile) !important;
+  box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  overflow:hidden; transform:none;
+  transition:background-color .18s ease, box-shadow .18s ease;
+}
+html.bento #wall > .widget:hover{ background:var(--bento-tile-hi) !important; }
+html.bento #wall > .widget[data-bento-size="full"]{ grid-column:1 / -1; }
+html.bento #wall > .widget:is(.min,.minimized){ grid-row:span 1; }
+html.bento #wall > .widget:is(.min,.minimized) > :is(.body,.widget-body){ display:flex !important; }
+
+/* Live-tile entrance: a quick flip into place */
+@media (prefers-reduced-motion: no-preference){
+  html.bento #wall > .widget.bento-new{ animation:bento-flip .55s cubic-bezier(.2,.8,.2,1) both; transform-origin:50% 0; }
+}
+@keyframes bento-flip{ from{ opacity:0; transform:perspective(900px) rotateX(-75deg) translateY(8px); } to{ opacity:1; transform:none; } }
+
+/* Title bar: a small grey label, top left, and ⋯ ⤢ at the right */
+html.bento #wall > .widget > :is(.head,.widget-head){
+  display:flex !important; align-items:center; gap:6px; min-height:0;
+  background:transparent !important; border:0 !important; padding:12px 8px 0 16px !important; cursor:default !important;
+  touch-action:auto !important; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  color:var(--bento-label) !important; font-size:12.5px !important; font-weight:500 !important; letter-spacing:.1px !important; text-transform:none !important;
+}
+html.bento #wall > .widget > :is(.head,.widget-head) :is(.title,.widget-title){
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:inherit !important; font:inherit !important;
+}
+/* The app's own title-bar buttons (close, minimise, pin, drag, toolbar) give way on a tile; they come back when it's opened */
+html.bento #wall > .widget:not(.bento-open) > :is(.head,.widget-head) > :is(button,.btn,.hbtn,a):not(.bento-btn),
+html.bento #wall > .widget:not(.bento-open) > .widget-head > .widget-head-actions,
+html.bento #wall > .widget :is(.grip,.resize,.widget-resize,.widget-drag){ display:none !important; }
+html.bento #wall > .widget > :is(.body,.widget-body){
+  padding:6px 16px 14px !important; overflow:auto !important; scrollbar-width:none; flex:1 1 auto; min-height:0;
+}
+html.bento #wall > .widget > :is(.body,.widget-body)::-webkit-scrollbar{ display:none; }
+
+.bento-btns{ display:none; }
+html.bento #wall > .widget .bento-btns{ display:flex; gap:2px; margin-left:auto; flex-shrink:0; }
+html.bento #wall > .widget .bento-btn{
+  display:flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0;
+  border:0; border-radius:9px; background:transparent; color:var(--bento-label); cursor:pointer;
+  opacity:.75; transition:opacity .15s ease, background-color .15s ease;
+}
+html.bento #wall > .widget .bento-btn:hover,
+html.bento #wall > .widget .bento-btn:focus-visible{ opacity:1; background:rgba(127,127,127,.16); }
+@media (hover:hover){
+  html.bento #wall > .widget:not(:hover):not(:focus-within):not(.bento-open) .bento-btn{ opacity:0; }
+}
+
+/* One tile opened over the whole wall */
+html.bento #wall > .widget.bento-open{
+  position:fixed !important; z-index:60 !important;
+  top:calc(var(--bento-top,56px) + 10px) !important; bottom:calc(var(--bento-bottom,90px) + 10px) !important;
+  left:calc(var(--bento-left,0px) + 10px) !important; right:calc(var(--bento-right,0px) + 10px) !important;
+  box-shadow:0 30px 80px rgba(0,0,0,.5) !important;
+}
+@media (prefers-reduced-motion: no-preference){
+  html.bento #wall > .widget.bento-open{ animation:bento-grow .22s ease-out both; }
+}
+@keyframes bento-grow{ from{ opacity:.6; transform:scale(.96); } to{ opacity:1; transform:none; } }
+
+/* ---------- Tile menu (⋯, press and hold, right-click) ---------- */
+.bento-menu{
+  position:fixed; z-index:3000; min-width:210px; padding:6px;
+  background:var(--bento-pop,#262d3a); color:inherit; border:1px solid var(--bento-glass-line,rgba(255,255,255,.09));
+  border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.45);
+  display:flex; flex-direction:column; gap:2px; font-size:13.5px;
+  animation:bento-pop .14s ease-out;
+}
+@keyframes bento-pop{ from{ opacity:0; transform:translateY(-4px) scale(.98); } to{ opacity:1; transform:none; } }
+.bento-menu button{
+  display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:9px;
+  background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer;
+}
+.bento-menu button:hover, .bento-menu button:focus-visible{ background:rgba(127,127,127,.16); outline:none; }
+.bento-menu-sizes{ display:grid; grid-template-columns:1fr 1fr; gap:2px; padding-bottom:6px; margin-bottom:4px; border-bottom:1px solid var(--bento-glass-line,rgba(255,255,255,.09)); }
+.bento-menu-sizes button[aria-checked="true"]{ background:rgba(232,163,61,.16); color:var(--bento-accent,#e8a33d); }
+.bento-sz{ display:inline-block; border:1.6px solid currentColor; border-radius:3px; flex-shrink:0; }
+.bento-sz-small{ width:9px; height:9px; }
+.bento-sz-wide{ width:18px; height:9px; }
+.bento-sz-large{ width:16px; height:16px; }
+.bento-sz-full{ width:22px; height:12px; }
+.bento-menu .bento-danger{ color:#e06565; }
+
+/* ---------- The dock: floating glass, icons only, the name above on hover or press-and-hold ---------- */
+html.bento #dock-wrap{ bottom:calc(14px + env(safe-area-inset-bottom)) !important; max-width:calc(100vw - 24px); }
+html.bento #dock-wrap .dock,
+html.bento :is(#dock-left,#dock-right){
+  background:var(--bento-glass) !important; border:1px solid var(--bento-glass-line) !important;
+  backdrop-filter:blur(18px) saturate(1.4) !important; -webkit-backdrop-filter:blur(18px) saturate(1.4) !important;
+  box-shadow:0 12px 40px rgba(0,0,0,.35) !important; border-radius:22px !important;
+}
+html.bento #dock-wrap .dock{ gap:4px !important; padding:8px !important; scrollbar-width:none; }
+html.bento #dock-wrap .dock::-webkit-scrollbar{ display:none; }
+@media (prefers-reduced-motion: no-preference){
+  html.bento #dock-wrap .dock{ animation:bento-float 4s ease-in-out infinite; }
+}
+@keyframes bento-float{ 0%,100%{ transform:translateY(-2px); } 50%{ transform:translateY(2px); } }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item{
+  width:50px !important; height:50px; padding:0 !important; margin:0 !important; gap:0 !important; flex:none;
+  display:flex !important; align-items:center; justify-content:center;
+  background:transparent !important; border-radius:14px !important; position:relative;
+  transition:transform .16s cubic-bezier(.2,.8,.2,1), background-color .15s ease !important;
+}
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item > span:not(.dock-ic){ display:none !important; }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item .dock-ic{ width:40px !important; height:40px !important; border-radius:12px !important; background:transparent !important; }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item .dock-ic svg{ width:21px !important; height:21px !important; }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item:hover{ transform:translateY(-2px) scale(1.1); background:rgba(127,127,127,.14) !important; }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item:active{ transform:scale(.95); }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item.active{ color:var(--bento-accent) !important; }
+html.bento :is(#dock-wrap,#dock-left,#dock-right) .dock-item.active::after{
+  content:''; position:absolute; left:50%; bottom:3px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:currentColor;
+}
+.bento-tip{
+  position:fixed; z-index:3001; pointer-events:none; padding:5px 9px; border-radius:7px;
+  background:var(--bento-pop,#262d3a); color:inherit; font-size:12px; white-space:nowrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.35); opacity:0; transform:translateY(3px); transition:opacity .12s ease, transform .12s ease;
+}
+html.bento .bento-tip{ color:#e8ecf2; }
+html.bento[data-mode="light"] .bento-tip{ color:#1d2330; }
+.bento-tip.on{ opacity:1; transform:none; }
+
+/* ---------- Full-screen widgets of TeachersDeck / AdminDeck kept above the grid when they're opened ---------- */
+/* AdminDeck hides its top bar while School Stats fills the screen; as a tile, the top bar stays */
+html.bento body.ss-fullscreen .topbar{ display:flex !important; }
+
+/* ---------- Phones ---------- */
+html.bento-phone #wall > .widget{ border-radius:16px !important; }
+html.bento-phone #wall > .widget.bento-open{ left:6px !important; right:6px !important; }
+html.bento-phone #wall > .widget > :is(.head,.widget-head){ padding:10px 4px 0 14px !important; }
+html.bento-phone #wall > .widget > :is(.body,.widget-body){ padding:4px 12px 12px !important; }
+/* TeachersDeck / AdminDeck: their top dock (class, language, Light / Dark, Settings) is hidden on narrow screens by the
+   app's own rules; on a phone it becomes a second row under the top bar, so Settings stays in reach. */
+html.bento-phone #dock-top.edge-dock-top:not([hidden]){
+  display:block !important; top:calc(var(--bento-bar,44px) + 4px); left:8px; right:8px; transform:none !important;
+  padding:6px 8px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
+}
+html.bento-phone #dock-top .edge-dock-items{ justify-content:flex-end; width:max-content; margin-left:auto; }
+/* Side docks don't fit beside a phone's tiles (every widget is still in the bottom dock or the app tray) */
+html.bento-phone :is(#dock-left,#dock-right){ display:none !important; }
+html.bento-phone #dock-wrap .dock-item{ width:46px !important; height:46px; }
+
+/* ---------- Phones held sideways (500 px tall or less): room for the tiles ---------- */
+html.bento-short :is(#dock-left,#dock-right){ display:none !important; }
+html.bento-short #dock-wrap{ bottom:calc(6px + env(safe-area-inset-bottom)) !important; }
+html.bento-short #dock-wrap .dock{ padding:4px 6px !important; }
+html.bento-short #dock-wrap .dock-item{ width:42px !important; height:42px; }
+html.bento-short #dock-wrap .app-tray-tab{ display:none; }
+html.bento-short #wall{ padding-top:10px; }

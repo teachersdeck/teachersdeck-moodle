@@ -162,6 +162,7 @@ if(!state.scoreboard){
 }
 if(!state.lang) state.lang = 'en';
 if(PF && PF.lang) state.lang = PF.lang;   // platform: ?lang= on a ClassIn link, or the Canvas launch's locale
+document.documentElement.lang = state.lang;   // from the start, not only after a switch: js/bento.js and UniDeck's Course mode read it
 if(!state.school) state.school = null;   // platform (Canvas): { schoolId, schoolName, pro }, kept by watchMySchool()
 if(!state.langPair) state.langPair = ['en','vi'];
 if(!state.dockVisible) state.dockVisible = {};
@@ -1539,15 +1540,15 @@ const WIDGETS = [
 ];
 /* UniDeck phase 1 (LectureDeck's Course mode): LectureDeck's own js/course-mode.js lists its widgets in window.UNI_WIDGETS
    ({ id, cat, title, desc, icon, w, h, render }). They join the registry only in the university edition, in a "Courses"
-   category of the app tray, with their labels added to STRINGS (English for now). TeachersDeck never loads that file. */
+   category of the app tray, with their labels added to STRINGS (English, and Vietnamese from titleVi/descVi). TeachersDeck never loads that file. */
 const UNI_WIDGET_DEFS = UNI ? (window.UNI_WIDGETS || []) : [];
 UNI_WIDGET_DEFS.forEach(w => {
   if(WIDGETS.some(x => x.id === w.id)) return;
-  STRINGS['uw_' + w.id] = STRINGS['uw_' + w.id] || { en: w.title };
-  STRINGS['wc_' + w.id] = STRINGS['wc_' + w.id] || { en: w.desc || '' };
+  STRINGS['uw_' + w.id] = STRINGS['uw_' + w.id] || { en: w.title, ...(w.titleVi ? { vi: w.titleVi } : {}) };   // titleVi / descVi: UniDeck's Vietnamese
+  STRINGS['wc_' + w.id] = STRINGS['wc_' + w.id] || { en: w.desc || '', ...(w.descVi ? { vi: w.descVi } : {}) };
   WIDGETS.push({ id:w.id, cat:w.cat || 'course', labelKey:'uw_' + w.id, icon:w.icon || 'clipboard', w:w.w, h:w.h, render:w.render, full:!!w.full });
 });
-if(UNI) STRINGS.cat_course = STRINGS.cat_course || { en:'Courses' };
+if(UNI) STRINGS.cat_course = STRINGS.cat_course || { en:'Courses', vi:'Khóa học' };
 /* UniDeck (LectureDeck): school-only widgets leave the registry in the university edition. They are built on StudentDeck's
    class join codes and points, ParentDeck's families, or primary-school routines, none of which UniDeck has: Cloud Class
    (Course builder replaces it), Reward Points, Notes Home, Class Activity, Progress Reports, Scrapbook Review, Board

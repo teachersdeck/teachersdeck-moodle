@@ -218,6 +218,48 @@ const UniCourses = (() => {
     const slots = { c1: [], c2: [], c3: [] }, bookings = { c1: {}, c2: {}, c3: {} };
     for (let i = 0; i < 6; i++) { const s = wk(3, 14, 0, 1) + i * 20 * 6e4; slots.c1.push({ id: 'o' + i, startAtMs: s, endAtMs: s + 20 * 6e4, location: 'Room B204', link: 'https://meet.example.com/eng201-office-hours', booked: false }); }
     [[1, 'd3', 'Chi Le', 'Essay 1 rubric'], [2, 'd1', 'An Nguyen', 'Narrowing my research question'], [4, 'd6', 'Hanh Do', '']].forEach(([i, uid, name, note]) => { slots.c1[i].booked = true; bookings.c1['o' + i] = { slotId: 'o' + i, uid, name, note, startAtMs: slots.c1[i].startAtMs, endAtMs: slots.c1[i].endAtMs, bookedAtMs: at(-1) }; });
+    /* v2.19.0: quizzes and question banks for the demo courses (the answers stay with the staff screens) */
+    const QZ = {
+      mc: (text, opts, right, points = 1) => ({ type: 'mc', text, points, options: opts.map((t, i) => ({ id: 'o' + (i + 1), text: t })), correct: [].concat(right).map((i) => 'o' + (i + 1)) }),
+      tf: (text, answer, points = 1) => ({ type: 'tf', text, answer, points }),
+      short: (text, accept, points = 1) => ({ type: 'short', text, accept, points }),
+    };
+    const qids = (qs) => qs.map((q, i) => ({ id: 'q' + (i + 1), ...q }));
+    const quizzes = {
+      c1: [{ id: 'z1', title: 'Week 3 check: finding sources', instructions: 'Four questions on choosing and judging sources. You can look at your notes.', category: 'assignments', timeLimitMin: 15, attempts: 2,
+        openAtMs: at(-2, 9, 0), dueAtMs: at(5, 23, 59), shuffle: true, published: true, points: 5, questionCount: 4, createdAtMs: at(-3, 10, 0),
+        questions: qids([QZ.mc('Which of these is a primary source?', ['A diary written during the event', 'A textbook chapter about the event', 'An encyclopedia entry'], 0),
+          QZ.tf('A thesis statement should be a question.', false),
+          QZ.mc('Which make a source more reliable? (Select all that apply.)', ['Peer review', 'A named author', 'Lots of shares online', 'A clear date'], [0, 1, 3], 2),
+          QZ.short('Which citation style puts (Author, year) in the text?', ['APA', 'APA style', 'Harvard'])]) },
+      { id: 'z2', title: 'Midterm practice', instructions: '', category: 'assignments', timeLimitMin: 0, attempts: 0, openAtMs: null, dueAtMs: at(8, 23, 59), shuffle: false, published: false,
+        points: 1, questionCount: 1, createdAtMs: at(-1, 15, 0), questions: qids([QZ.tf('Paraphrasing still needs a citation.', true)]) }],
+      c2: [],
+    };
+    const banks = {
+      c1: [{ id: 'b1', title: 'Citations and plagiarism', updatedAtMs: at(-6, 11, 0), questions: qids([QZ.tf('Common knowledge needs a citation.', false),
+        QZ.mc('You copy a sentence and cite it, but leave out the quotation marks. This is…', ['Fine', 'Plagiarism', 'Paraphrasing'], 1),
+        QZ.short('What is the list of sources at the end of an APA paper called?', ['References', 'Reference list'])]) }],
+      c2: [],
+    };
+    banks.c1.forEach((b) => { b.count = b.questions.length; });
+    function demoQuestions(list) {
+      return (list || []).map((q, i) => {
+        const where = `Question ${i + 1}`;
+        if (!String(q.text || '').trim()) throw new Error(`${where} needs its question.`);
+        const out = { id: q.id || 'q' + (i + 1), type: q.type, text: String(q.text).trim(), points: Number(q.points) || 1 };
+        if (q.type === 'mc') {
+          out.options = (q.options || []).filter((o) => String(o.text || '').trim());
+          out.correct = (q.correct || []).filter((id) => out.options.some((o) => o.id === id));
+          if (out.options.length < 2) throw new Error(`${where} needs at least two choices.`);
+          if (!out.correct.length) throw new Error(`${where}: mark the right choice.`);
+        } else if (q.type === 'tf') {
+          if (typeof q.answer !== 'boolean') throw new Error(`${where}: choose whether the answer is true or false.`);
+          out.answer = q.answer;
+        } else out.accept = (q.accept || []).map((a) => String(a).trim()).filter(Boolean);
+        return out;
+      });
+    }
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
@@ -358,6 +400,25 @@ const UniCourses = (() => {
         const id = 'k' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row, done: false, doneAtMs: null, createdByName: role() === 'teacher' ? me.teacher.name : me.student.name, createdAtMs: Date.now() }); return { taskId: id }; },
       async setTaskDone(c, gid, tid, done) { await wait(); const t = tasks[gid].find((x) => x.id === tid); t.done = !!done; t.doneAtMs = done ? Date.now() : null; return { ok: true }; },
       async deleteTask(c, gid, tid) { await wait(); tasks[gid] = tasks[gid].filter((x) => x.id !== tid); return { ok: true }; },
+      /* ---- v2.19.0 quizzes and question banks (demo; the real checks are in the backend's quizzes.js) ---- */
+      async quizzes(c) { await wait(); need(c); return (quizzes[c] || []).filter((q) => isStaff(c) || q.published).map(({ questions, ...q }) => ({ ...q })).sort((a, b) => (a.dueAtMs || 9e15) - (b.dueAtMs || 9e15)); },
+      async quizKey(c, id) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); const q = (quizzes[c] || []).find((x) => x.id === id); return q ? JSON.parse(JSON.stringify(q.questions)) : []; },
+      async saveQuiz(c, d) { await wait(); need(c); if (!isStaff(c)) throw new Error('Only course staff can do this.'); if (!String(d.title || '').trim()) throw new Error('Give the quiz a title.');
+        const qs = demoQuestions(d.questions); if (d.published && !qs.length) throw new Error('Add a question before publishing the quiz.');
+        if (d.openAtMs && d.dueAtMs && d.openAtMs >= d.dueAtMs) throw new Error('The quiz has to open before it is due.');
+        const w = courses[c].weights || {};
+        const row = { title: String(d.title).trim(), instructions: d.instructions || '', category: w[d.category] ? d.category : (w.quizzes ? 'quizzes' : 'assignments'),
+          timeLimitMin: Number(d.timeLimitMin) || 0, attempts: d.attempts === undefined ? 1 : Number(d.attempts) || 0, openAtMs: d.openAtMs || null, dueAtMs: d.dueAtMs || null, shuffle: !!d.shuffle, published: !!d.published,
+          questions: qs, points: M.round2(qs.reduce((a, q) => a + q.points, 0)), questionCount: qs.length, updatedAtMs: Date.now() };
+        const list = quizzes[c] || (quizzes[c] = []); if (d.id) { Object.assign(list.find((x) => x.id === d.id), row); return { quizId: d.id, points: row.points }; }
+        const id = 'z' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row, createdAtMs: Date.now() }); return { quizId: id, points: row.points }; },
+      async deleteQuiz(c, id) { await wait(); if (role() !== 'teacher') throw new Error('Only the course instructor can do this.'); quizzes[c] = (quizzes[c] || []).filter((q) => q.id !== id); return { ok: true }; },
+      async banks(c) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); return (banks[c] || []).map((b) => JSON.parse(JSON.stringify(b))).sort((a, b) => String(a.title).localeCompare(String(b.title))); },
+      async saveBank(c, d) { await wait(); if (!isStaff(c)) throw new Error('Only course staff can do this.'); if (!String(d.title || '').trim()) throw new Error('Give the question bank a title.');
+        const qs = demoQuestions(d.questions); const row = { title: String(d.title).trim(), questions: qs, count: qs.length, updatedAtMs: Date.now() };
+        const list = banks[c] || (banks[c] = []); if (d.id) { Object.assign(list.find((x) => x.id === d.id), row); return { bankId: d.id, count: qs.length }; }
+        const id = 'b' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row }); return { bankId: id, count: qs.length }; },
+      async deleteBank(c, id) { await wait(); banks[c] = (banks[c] || []).filter((b) => b.id !== id); return { ok: true }; },
     };
   })();
 
@@ -463,6 +524,20 @@ const UniCourses = (() => {
     saveTask: (c, gid, t) => call('saveTask', { courseId: c, groupId: gid, taskId: t.id || undefined, title: t.title, assigneeUid: t.assigneeUid || null, dueAtMs: t.dueAtMs || null }),
     setTaskDone: (c, gid, tid, done) => call('setTaskDone', { courseId: c, groupId: gid, taskId: tid, done: !!done }),
     deleteTask: (c, gid, tid) => call('deleteTask', { courseId: c, groupId: gid, taskId: tid }),
+    /* ---- v2.19.0 quizzes and question banks (answers live in quizKeys, which only course staff read) ---- */
+    async quizzes(c) {
+      const col = db.collection('courses').doc(c).collection('quizzes');
+      let s;
+      try { s = await col.get(); } catch (e) { if (e && e.code === 'permission-denied') s = await col.where('published', '==', true).get(); else throw e; }   // a student sees published quizzes only
+      return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.dueAtMs || 9e15) - (b.dueAtMs || 9e15));
+    },
+    async quizKey(c, id) { const s = await db.collection('courses').doc(c).collection('quizKeys').doc(id).get(); return s.exists ? s.data().questions || [] : []; },
+    saveQuiz: (c, q) => call('saveQuiz', { courseId: c, quizId: q.id || undefined, title: q.title, instructions: q.instructions || '', category: q.category, timeLimitMin: q.timeLimitMin || 0,
+      attempts: q.attempts, openAtMs: q.openAtMs || null, dueAtMs: q.dueAtMs || null, shuffle: !!q.shuffle, published: !!q.published, questions: q.questions || [] }),
+    deleteQuiz: (c, id) => call('deleteQuiz', { courseId: c, quizId: id }),
+    async banks(c) { const s = await db.collection('courses').doc(c).collection('questionBanks').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title).localeCompare(String(b.title))); },
+    saveBank: (c, b) => call('saveQuestionBank', { courseId: c, bankId: b.id || undefined, title: b.title, questions: b.questions || [] }),
+    deleteBank: (c, id) => call('deleteQuestionBank', { courseId: c, bankId: id }),
   };
 
   const B = DEMO ? D : R;

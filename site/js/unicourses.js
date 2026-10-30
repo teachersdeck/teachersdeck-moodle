@@ -294,6 +294,19 @@ const UniCourses = (() => {
         order: quiz.questions.map((q) => q.id), optOrder: {}, answers, status: 'open' };
       attempts.push(t); finishDemo('c1', t, false); t.submittedAtMs = at(-1, 10 + i, 9 + i);
     });
+    /* v2.21.0: supervisor notes. In the demo, An Nguyen shares with Dr Linh Vu (the demo lecturer). */
+    const sup = { enabled: true, includeThesis: true, invite: null, publishedAtMs: at(-1, 18, 0),
+      supervisors: { dt: { name: 'Dr Linh Vu', email: 'linh.vu@demo.uni.edu', linkedAtMs: at(-40, 10, 0), lastViewedAtMs: at(-1, 21, 5) } },
+      snapshot: { meetings: [
+        { id: 'm3', atMs: at(-1, 15, 0), title: 'Chapter 2 draft', agenda: ['Structure of the literature review', 'Which theories to keep'], notes: 'Keep the sociolinguistic and the pedagogical strands apart. Cut the section on bilingual memory.', actions: [{ id: 'a1', text: 'Reorganise chapter 2 into two strands', owner: 'me', dueAtMs: at(10), done: false }, { id: 'a2', text: 'Send two key papers on translanguaging', owner: 'supervisor', dueAtMs: at(3), done: false }] },
+        { id: 'm2', atMs: at(-15, 15, 0), title: 'Ethics and data', agenda: ['Ethics form', 'Recording consent'], notes: 'Ethics approved with one change: consent forms in Vietnamese too.', actions: [{ id: 'a3', text: 'Translate the consent form', owner: 'me', dueAtMs: at(-8), done: true }] },
+        { id: 'm1', atMs: at(-36, 10, 0), title: 'Research question', agenda: ['Narrowing the question'], notes: 'Focus on secondary schools in Hanoi.', actions: [{ id: 'a4', text: 'Rewrite the research question', owner: 'me', dueAtMs: at(-30), done: true }] }],
+        thesis: { title: 'Code-switching in Hanoi secondary classrooms', dueAtMs: at(210), wordGoal: 60000,
+          chapters: [{ id: 'c1', title: 'Introduction', status: 'revising', words: 5200, goal: 6000, dueAtMs: null }, { id: 'c2', title: 'Literature review', status: 'drafting', words: 8400, goal: 15000, dueAtMs: at(30) },
+            { id: 'c3', title: 'Methodology', status: 'planned', words: 0, goal: 10000, dueAtMs: at(70) }, { id: 'c4', title: 'Findings', status: 'planned', words: 0, goal: 18000, dueAtMs: null }],
+          milestones: [{ id: 'k1', title: 'Ethics approval', dueAtMs: at(-14), done: true }, { id: 'k2', title: 'Classroom recordings', dueAtMs: at(45), done: false }, { id: 'k3', title: 'Full draft to supervisor', dueAtMs: at(180), done: false }] } } };
+    const supOut = () => ({ enabled: sup.enabled, includeThesis: sup.includeThesis, publishedAtMs: sup.publishedAtMs,
+      supervisors: Object.entries(sup.supervisors).map(([uid, x]) => ({ uid, ...x })), invite: sup.invite && sup.invite.expiresAtMs > Date.now() ? { ...sup.invite } : null });
     const wait = () => new Promise((r) => setTimeout(r, 160));
     const role = () => state.role;
     const myUid = () => (role() === 'teacher' ? me.teacher.uid : me.student.uid);
@@ -453,6 +466,25 @@ const UniCourses = (() => {
         const list = banks[c] || (banks[c] = []); if (d.id) { Object.assign(list.find((x) => x.id === d.id), row); return { bankId: d.id, count: qs.length }; }
         const id = 'b' + Math.random().toString(36).slice(2, 7); list.push({ id, ...row }); return { bankId: id, count: qs.length }; },
       async deleteBank(c, id) { await wait(); banks[c] = (banks[c] || []).filter((b) => b.id !== id); return { ok: true }; },
+      /* ---- v2.21.0 supervisor notes (demo) ---- */
+      async supervisionStatus() { await wait(); return supOut(); },
+      async setSupervisionSharing(d) { await wait(); sup.enabled = !!d.enabled; if (typeof d.includeThesis === 'boolean') sup.includeThesis = d.includeThesis;
+        if (!sup.includeThesis) delete sup.snapshot.thesis; if (!sup.enabled) sup.invite = null; return supOut(); },
+      async publishSupervision(d) { await wait(); if (!sup.enabled) throw new Error('Turn on sharing with your supervisor first.');
+        sup.snapshot = { meetings: JSON.parse(JSON.stringify(d.meetings || [])).sort((a, b) => (b.atMs || 0) - (a.atMs || 0)), ...(sup.includeThesis && d.thesis ? { thesis: JSON.parse(JSON.stringify(d.thesis)) } : {}) };
+        sup.publishedAtMs = Date.now(); return { publishedAtMs: sup.publishedAtMs }; },
+      async createSupervisionInvite() { await wait(); if (!sup.enabled) throw new Error('Turn on sharing with your supervisor first.');
+        sup.invite = { code: 'SUPV-' + (1000 + Math.floor(Math.random() * 9000)), expiresAtMs: Date.now() + 7 * DAY }; return { ...sup.invite }; },
+      async cancelSupervisionInvite() { await wait(); sup.invite = null; return { ok: true }; },
+      async removeSupervisor(uid) { await wait(); delete sup.supervisors[uid]; return { ok: true }; },
+      async joinSupervision(code) { await wait(); if (!sup.invite || String(code).trim().toUpperCase() !== sup.invite.code) throw new Error('That code is not valid or has expired. Ask the student for a new one.');
+        sup.supervisors[myUid()] = { name: me.teacher.name, email: me.teacher.email, linkedAtMs: Date.now(), lastViewedAtMs: null }; sup.invite = null; return { studentUid: me.student.uid, studentName: me.student.name }; },
+      async mySupervisees() { await wait(); return { students: sup.supervisors[myUid()] ? [{ studentUid: me.student.uid, studentName: me.student.name, email: me.student.email, sharing: sup.enabled, publishedAtMs: sup.enabled ? sup.publishedAtMs : null }] : [] }; },
+      async supervisionView(sid) { await wait(); if (sid !== me.student.uid || !sup.supervisors[myUid()]) throw new Error('This student has not linked your account.');
+        sup.supervisors[myUid()].lastViewedAtMs = Date.now();
+        return { studentName: me.student.name, email: me.student.email, sharing: sup.enabled, publishedAtMs: sup.enabled ? sup.publishedAtMs : null,
+          meetings: sup.enabled ? JSON.parse(JSON.stringify(sup.snapshot.meetings)) : [], ...(sup.enabled && sup.includeThesis && sup.snapshot.thesis ? { thesis: JSON.parse(JSON.stringify(sup.snapshot.thesis)) } : {}) }; },
+      async leaveSupervision() { await wait(); delete sup.supervisors[myUid()]; return { ok: true }; },
       /* ---- v2.20.0 taking quizzes (demo) ---- */
       async startQuiz(c, qid) { await wait(); need(c); if (courseRole(c) !== 'student') throw new Error('Quizzes are taken by the students in the course.'); closeDemo(c);
         const quiz = (quizzes[c] || []).find((z) => z.id === qid && z.published); if (!quiz) throw new Error('Quiz not found.');
@@ -609,6 +641,17 @@ const UniCourses = (() => {
     async banks(c) { const s = await db.collection('courses').doc(c).collection('questionBanks').get(); return s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title).localeCompare(String(b.title))); },
     saveBank: (c, b) => call('saveQuestionBank', { courseId: c, bankId: b.id || undefined, title: b.title, questions: b.questions || [] }),
     deleteBank: (c, id) => call('deleteQuestionBank', { courseId: c, bankId: id }),
+    /* ---- v2.21.0 supervisor notes: a read-only copy the student chooses to share (functions only) ---- */
+    supervisionStatus: () => call('supervisionStatus', {}),
+    setSupervisionSharing: (d) => call('setSupervisionSharing', { enabled: !!d.enabled, ...(typeof d.includeThesis === 'boolean' ? { includeThesis: d.includeThesis } : {}) }),
+    publishSupervision: (d) => call('publishSupervision', { meetings: d.meetings || [], thesis: d.thesis || null }),
+    createSupervisionInvite: () => call('createSupervisionInvite', {}),
+    cancelSupervisionInvite: () => call('cancelSupervisionInvite', {}),
+    removeSupervisor: (uid) => call('removeSupervisionLink', { supervisorUid: uid }),
+    joinSupervision: (code) => call('joinSupervision', { code }),
+    mySupervisees: () => call('mySupervisees', {}),
+    supervisionView: (sid) => call('supervisionView', { studentUid: sid }),
+    leaveSupervision: (sid) => call('removeSupervisionLink', { studentUid: sid }),
     /* ---- v2.20.0 taking quizzes: everything through functions (students can't read attempts or answers) ---- */
     startQuiz: (c, qid) => call('startQuizAttempt', { courseId: c, quizId: qid }),
     saveQuizAnswers: (c, aid, answers, submit) => call('saveQuizAnswers', { courseId: c, attemptId: aid, answers: answers || {}, submit: !!submit }),

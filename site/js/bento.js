@@ -48,7 +48,7 @@
     LectureDeck: { clock: 'small', timer: 'small', calendar: 'large', courseassign: 'wide', coursestats: 'full' },
   };
   const SIZES = ['small', 'wide', 'large', 'full'];
-  const SIZE_NAMES = { small: 'Small', wide: 'Wide', large: 'Large', full: 'Full width' };
+  const SIZE_NAMES = new Proxy({ small: 'Small', wide: 'Wide', large: 'Large', full: 'Full width' }, { get: (o, k) => (vi() ? { small: 'Nhỏ', wide: 'Rộng', large: 'Lớn', full: 'Hết chiều ngang' } : o)[k] });
 
   /* ---- Settings → Tiles and Tile style (this device) ----
      Tiles: Automatic (tiles on a touch screen or a window 700 px wide or less, floating windows with a mouse), Tiles
@@ -206,7 +206,7 @@
     const h = head(el);
     if (!h || h.querySelector('.bento-btn')) return;
     const box = document.createElement('span'); box.className = 'bento-btns';
-    box.innerHTML = `<button type="button" class="bento-btn bento-more" aria-label="Tile options" title="Tile options" aria-haspopup="menu">${MORE}</button><button type="button" class="bento-btn bento-x" aria-label="Open full screen" title="Open full screen" aria-pressed="false">${EXPAND}</button>`;
+    box.innerHTML = `<button type="button" class="bento-btn bento-more" aria-label="${T('Tile options', 'Tùy chọn ô')}" title="${T('Tile options', 'Tùy chọn ô')}" aria-haspopup="menu">${MORE}</button><button type="button" class="bento-btn bento-x" aria-label="${T('Open full screen', 'Mở toàn màn hình')}" title="${T('Open full screen', 'Mở toàn màn hình')}" aria-pressed="false">${EXPAND}</button>`;
     box.querySelector('.bento-more').addEventListener('click', (e) => { e.stopPropagation(); menu(el, e.currentTarget); });
     box.querySelector('.bento-x').addEventListener('click', (e) => { e.stopPropagation(); setOpen(el, !el.classList.contains('bento-open')); });
     h.appendChild(box);
@@ -217,7 +217,7 @@
     for (const x of tiles()) if (x !== el && x.classList.contains('bento-open')) setOpen(x, false);
     el.classList.toggle('bento-open', open);
     const b = el.querySelector('.bento-x');
-    if (b) { b.innerHTML = open ? SHRINK : EXPAND; const l = open ? 'Back to the tiles' : 'Open full screen'; b.setAttribute('aria-label', l); b.title = l; b.setAttribute('aria-pressed', String(open)); }
+    if (b) { b.innerHTML = open ? SHRINK : EXPAND; const l = open ? T('Back to the tiles', 'Về các ô') : T('Open full screen', 'Mở toàn màn hình'); b.setAttribute('aria-label', l); b.title = l; b.setAttribute('aria-pressed', String(open)); }
     fit(el);
     if (!open) el.scrollIntoView({ block: 'nearest' });
   }
@@ -236,10 +236,10 @@
     const id = wid(el), size = el.dataset.bentoSize;
     pop = document.createElement('div');
     pop.className = 'bento-menu'; pop.setAttribute('role', 'menu');
-    pop.innerHTML = `<div class="bento-menu-sizes" role="group" aria-label="Size">${SIZES.map((s) => `<button type="button" role="menuitemradio" aria-checked="${s === size}" data-size="${s}"><i class="bento-sz bento-sz-${s}"></i>${SIZE_NAMES[s]}</button>`).join('')}</div>
-      <button type="button" role="menuitem" data-act="earlier">Move earlier</button><button type="button" role="menuitem" data-act="later">Move later</button>
-      <button type="button" role="menuitem" data-act="open">${el.classList.contains('bento-open') ? 'Back to the tiles' : 'Open full screen'}</button>
-      <button type="button" role="menuitem" data-act="close" class="bento-danger">Close</button>`;
+    pop.innerHTML = `<div class="bento-menu-sizes" role="group" aria-label="${T('Size', 'Cỡ')}">${SIZES.map((s) => `<button type="button" role="menuitemradio" aria-checked="${s === size}" data-size="${s}"><i class="bento-sz bento-sz-${s}"></i>${SIZE_NAMES[s]}</button>`).join('')}</div>
+      <button type="button" role="menuitem" data-act="earlier">${T('Move earlier', 'Chuyển lên trước')}</button><button type="button" role="menuitem" data-act="later">${T('Move later', 'Chuyển ra sau')}</button>
+      <button type="button" role="menuitem" data-act="open">${el.classList.contains('bento-open') ? T('Back to the tiles', 'Về các ô') : T('Open full screen', 'Mở toàn màn hình')}</button>
+      <button type="button" role="menuitem" data-act="close" class="bento-danger">${T('Close', 'Đóng')}</button>`;
     document.body.appendChild(pop);
     const r = (anchor || head(el) || el).getBoundingClientRect(), m = pop.getBoundingClientRect();
     pop.style.left = Math.max(8, Math.min(innerWidth - m.width - 8, r.right - m.width)) + 'px';

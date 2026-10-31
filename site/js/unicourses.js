@@ -52,6 +52,8 @@ const UniCourses = (() => {
     const provider = new firebase.auth.GoogleAuthProvider();
     const redirect = async () => { try { sessionStorage.setItem('ud_signin_role', role); } catch (e) {} await auth.signInWithRedirect(provider); return null; };
     if (standalone() && /iPhone|iPad|iPod/.test(navigator.userAgent || '')) return redirect();
+    // The installed extension can't use the pop-up: Chrome's own sign-in window instead (js/ext-signin.js).
+    if (window.ExtSignIn && ExtSignIn.isExtension()) return (await ExtSignIn.signIn(auth)).user;
     try { return (await auth.signInWithPopup(provider)).user; }
     catch (e) { if (POPUP_FAILS.includes(e && e.code) && !/^chrome-extension:/.test(location.protocol)) return redirect(); throw e; }
   }

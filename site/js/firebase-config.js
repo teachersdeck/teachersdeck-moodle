@@ -13,3 +13,9 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "705537559894",
   appId: "1:705537559894:web:bda1c214233e8c2a041af7"
 };
+
+/* Google sign-in inside the installed Chrome extension (js/ext-signin.js): the ID of the project's OAuth web client
+   ("Web client (auto created by Google Service)"), a public identifier. Its redirect URIs are listed in js/ext-signin.js. */
+window.GOOGLE_SIGNIN = {
+  googleClientId: "705537559894-ghnn9fc328k17iii6eibrk5e6vk6fm17.apps.googleusercontent.com"
+};

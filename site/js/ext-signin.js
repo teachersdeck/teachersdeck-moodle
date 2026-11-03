@@ -14,6 +14,8 @@
           LectureDeck (UniDeck)     https://lglogedbdfjcncfhmkbgkehljfnokbjd.chromiumapp.org/
           UniStudentDeck (UniDeck)  https://fogkpfopojnpdnckighkdbmbgfhedjhh.chromiumapp.org/
           ParentDeck (UniDeck)      https://kejenngageildampgdpkgchikecjpgpp.chromiumapp.org/
+          TinyTeachersDeck (Kinder) https://gpefhecchiadgmfkgokghmlpaloggedb.chromiumapp.org/
+          TinyParentDeck (Kinder)   https://jchohfpfmfkcbofccdgjoakcjpcbnkae.chromiumapp.org/
         StudentDeck signs in with a class code, not Google, so it needs none.
      2. Its ID (…apps.googleusercontent.com) goes in googleClientId in js/firebase-config.js (window.GOOGLE_SIGNIN).
    Until it is set, signing in from the installed app says so instead of failing silently. */

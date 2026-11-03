@@ -41,6 +41,7 @@
     UniStudentDeck: ['clock', 'timer', 'uassign', 'announce', 'grades'],
     LectureDeck: ['clock', 'timer', 'calendar', 'courseassign', 'coursestats'],
     TinyTeachersDeck: ['myclass', 'attendance', 'dailyreport', 'agenda', 'noteshome', 'calendar', 'timer', 'music', 'checklist'],
+    TinyParentDeck: ['today', 'kattend', 'knotes', 'absence', 'notices', 'askme'],
   };
   const START = {
     TeachersDeck: { clock: 'small', timer: 'small', calendar: 'large', assignments: 'wide', classactivity: 'full', traffic: 'small', namepicker: 'small', scoreboard: 'small', groupmaker: 'small', dice: 'small' },
@@ -50,6 +51,7 @@
     UniStudentDeck: { clock: 'small', timer: 'small', uassign: 'large', announce: 'wide', grades: 'wide', todo: 'wide' },
     LectureDeck: { clock: 'small', timer: 'small', calendar: 'large', courseassign: 'wide', coursestats: 'full' },
     TinyTeachersDeck: { myclass: 'full', attendance: 'wide', dailyreport: 'wide', agenda: 'wide', noteshome: 'wide', calendar: 'wide', timer: 'small', music: 'small', checklist: 'small' },
+    TinyParentDeck: { today: 'full', kattend: 'wide', knotes: 'wide', absence: 'wide', notices: 'wide', askme: 'wide' },
   };
   const SIZES = ['small', 'wide', 'large', 'full'];
   const SIZE_NAMES = new Proxy({ small: 'Small', wide: 'Wide', large: 'Large', full: 'Full width' }, { get: (o, k) => (vi() ? { small: 'Nhỏ', wide: 'Rộng', large: 'Lớn', full: 'Hết chiều ngang' } : o)[k] });
@@ -60,8 +62,11 @@
      background) or Colour (a colour per tile, like Windows Phone). Each works in Light and Dark mode (css/bento.css). */
   const PREFS = 'bento_prefs:' + APP;
   const LAYOUTS = ['auto', 'tiles', 'floating'], THEMES = ['midnight', 'glass', 'colour'];
-  let prefs = { layout: 'auto', theme: 'midnight' };
-  try { const p = JSON.parse(localStorage.getItem(PREFS) || 'null'); if (p) prefs = { layout: LAYOUTS.includes(p.layout) ? p.layout : 'auto', theme: THEMES.includes(p.theme) ? p.theme : 'midnight' }; } catch (e) {}
+  // TinyParentDeck (the parents' phone app for preschool) starts in tiles everywhere, desktop included; every other app
+  // starts on Automatic. Either way Settings → Tiles changes it on this device.
+  const LAYOUT0 = APP === 'TinyParentDeck' ? 'tiles' : 'auto';
+  let prefs = { layout: LAYOUT0, theme: 'midnight' };
+  try { const p = JSON.parse(localStorage.getItem(PREFS) || 'null'); if (p) prefs = { layout: LAYOUTS.includes(p.layout) ? p.layout : LAYOUT0, theme: THEMES.includes(p.theme) ? p.theme : 'midnight' }; } catch (e) {}
   const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch (e) {} };
   const vi = () => /^vi/i.test(root.lang || '');
   const T = (en, vn) => (vi() ? vn : en);

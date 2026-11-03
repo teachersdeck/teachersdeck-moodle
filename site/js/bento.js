@@ -29,23 +29,24 @@
 
   /* The tiles a first visit (or Settings → Reset tiles) opens, and the sizes they start at. TeachersDeck: Clock and Timer
      small beside a large Calendar, Assignments wide under them, Student Stats ('classactivity') across the full width.
+     Every app starts the same way: two small tiles side by side, then a large one, then wide ones.
      UniDeck's UniStudentDeck and LectureDeck (teachersdeck/unideck, synced from here) have their own sets, with their course
      widgets. TinyTeachersDeck (teachersdeck/kinderdeck-suite) opens the classroom day: My Class, Attendance, Daily Report and
      the plan first (an id it has not registered yet is skipped). Any other widget's size comes from its usual size. */
   const DEFAULTS = {
     TeachersDeck: ['clock', 'timer', 'calendar', 'assignments', 'classactivity'],
     StudentDeck: ['clock', 'timer', 'todo', 'cards', 'idiom'],
-    ParentDeck: ['summary', 'notes', 'homework', 'badges'],
-    AdminDeck: ['schoolstats', 'points', 'teachers', 'pulse', 'joincodes'],
+    ParentDeck: ['badges', 'attend', 'summary', 'notes', 'homework'],
+    AdminDeck: ['pulse', 'joincodes', 'schoolstats', 'points', 'teachers'],
     UniStudentDeck: ['clock', 'timer', 'uassign', 'announce', 'grades'],
     LectureDeck: ['clock', 'timer', 'calendar', 'courseassign', 'coursestats'],
     TinyTeachersDeck: ['myclass', 'attendance', 'dailyreport', 'agenda', 'noteshome', 'calendar', 'timer', 'music', 'checklist'],
   };
   const START = {
     TeachersDeck: { clock: 'small', timer: 'small', calendar: 'large', assignments: 'wide', classactivity: 'full', traffic: 'small', namepicker: 'small', scoreboard: 'small', groupmaker: 'small', dice: 'small' },
-    StudentDeck: { clock: 'small', timer: 'wide', todo: 'large', cards: 'large', idiom: 'wide' },
-    ParentDeck: { summary: 'large', notes: 'wide', homework: 'wide', badges: 'small' },
-    AdminDeck: { schoolstats: 'large', points: 'wide', teachers: 'wide' },
+    StudentDeck: { clock: 'small', timer: 'small', todo: 'large', cards: 'large', idiom: 'wide' },
+    ParentDeck: { badges: 'small', attend: 'small', summary: 'large', notes: 'wide', homework: 'wide' },
+    AdminDeck: { pulse: 'small', joincodes: 'small', schoolstats: 'large', points: 'wide', teachers: 'wide' },
     UniStudentDeck: { clock: 'small', timer: 'small', uassign: 'large', announce: 'wide', grades: 'wide', todo: 'wide' },
     LectureDeck: { clock: 'small', timer: 'small', calendar: 'large', courseassign: 'wide', coursestats: 'full' },
     TinyTeachersDeck: { myclass: 'full', attendance: 'wide', dailyreport: 'wide', agenda: 'wide', noteshome: 'wide', calendar: 'wide', timer: 'small', music: 'small', checklist: 'small' },
@@ -107,6 +108,11 @@
   /* ---- edges: keep the grid clear of the top bar, the dock and any side docks ---- */
   function edges() {
     const shown = (sel) => [...document.querySelectorAll(sel)].map((x) => x.getBoundingClientRect()).filter((r) => r.width && r.height);
+    // StudentDeck, UniStudentDeck, ParentDeck, AdminDeck: no top dock, so on a phone the top bar's buttons take a second row
+    // (css/bento.css), before the bar is measured below
+    root.classList.toggle('bento-row2', narrow.matches && !document.getElementById('dock-top'));
+    const brand = document.querySelector('header.top > .brand, header.topbar > .brand');
+    if (brand) root.style.setProperty('--bento-brand', Math.round(brand.getBoundingClientRect().right) + 'px');
     const bar = shown('header.top, header.topbar').reduce((m, r) => (r.top < 60 ? Math.max(m, r.bottom) : m), 0);
     root.style.setProperty('--bento-bar', Math.round(bar) + 'px');   // TeachersDeck / AdminDeck: their top dock sits under it on a phone
     const tdock = document.getElementById('dock-top');
@@ -374,7 +380,7 @@
       on = want;
       root.classList.toggle('bento', on);
       if (on) { tiles().forEach((el) => { usual(el); dress(el); }); restoreFull(); seed(); }
-      else { root.classList.remove('bento-phone', 'bento-tablet'); tiles().forEach((el) => { setOpen(el, false); el.style.order = ''; }); closeMenu(); hideTip(); }
+      else { root.classList.remove('bento-phone', 'bento-tablet', 'bento-row2'); tiles().forEach((el) => { setOpen(el, false); el.style.order = ''; }); closeMenu(); hideTip(); }
     }
     layout();
   }

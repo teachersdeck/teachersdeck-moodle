@@ -5,7 +5,6 @@
    touch screen or a window 700 px wide or less, so the floating layout with a mouse is untouched.
    ========================================================= */
 html.bento{
-  --bento-bg:#0f141c;
   --bento-tile:#1d2330;
   --bento-tile-hi:#232a38;
   --bento-line:rgba(255,255,255,.045);
@@ -16,7 +15,6 @@ html.bento{
   --bento-accent:#e8a33d;
 }
 html.bento[data-mode="light"]{
-  --bento-bg:#eef1f6;
   --bento-tile:#ffffff;
   --bento-tile-hi:#f7f9fc;
   --bento-line:rgba(15,23,42,.07);
@@ -25,7 +23,8 @@ html.bento[data-mode="light"]{
   --bento-glass-line:rgba(15,23,42,.10);
   --bento-pop:#ffffff;
 }
-html.bento:not([data-bento-theme="glass"]) body{ background:var(--bento-bg) !important; }
+/* The tiles sit on each app's own background (Settings → Theme; Dusk by default), as in TeachersDeck, whose background
+   is a layer of its own: StudentDeck, UniStudentDeck and ParentDeck paint theirs on body, so nothing here covers it. */
 
 /* ---------- Tile styles (Settings → Tile style) ---------- */
 /* Glass: frosted tiles over the app's own background (Settings → Theme's backgrounds show through) */
@@ -227,6 +226,33 @@ html.bento-phone #dock-top.edge-dock-top:not([hidden]){
   padding:6px 8px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
 }
 html.bento-phone #dock-top .edge-dock-items{ justify-content:flex-end; width:max-content; margin-left:auto; }
+/* StudentDeck, UniStudentDeck, ParentDeck and AdminDeck keep their buttons in the top bar itself (no top dock): on a
+   phone they move to the same second row, a glass strip under the name that scrolls sideways, as in TeachersDeck. The
+   name stays on the first row with the level pill beside it (js/bento.js: html.bento-row2, --bento-brand). */
+html.bento-phone.bento-row2 header:is(.top,.topbar){
+  height:auto !important; flex-wrap:wrap; align-items:center; justify-content:flex-start;
+  column-gap:16px; row-gap:6px; padding:18px 22px 0 !important; min-height:44px; box-sizing:border-box;
+}
+html.bento-phone.bento-row2 header:is(.top,.topbar) > .brand{ line-height:26px; }
+html.bento-phone.bento-row2 header:is(.top,.topbar) > :is(.hright,.top-actions){
+  order:9; flex:0 0 calc(100% + 28px); max-width:none; margin:0 -14px !important; box-sizing:border-box;
+  display:flex; align-items:center; gap:8px; min-height:52px; padding:6px 8px !important;
+  overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none;
+  background:var(--bento-glass) !important; border:1px solid var(--bento-glass-line); border-radius:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
+}
+html.bento-phone.bento-row2 header > :is(.hright,.top-actions)::-webkit-scrollbar{ display:none; }
+html.bento-phone.bento-row2 header > :is(.hright,.top-actions) > *{ flex-shrink:0; margin-top:0 !important; }
+html.bento-phone.bento-row2 header > :is(.hright,.top-actions)::before{ content:''; margin-left:auto; }   /* right-aligned while it fits; scrolls from the start when it doesn't */
+html.bento-phone.bento-row2 header > .hright > .ver{ display:none; }
+/* StudentDeck / UniStudentDeck: the level pill on the first row, right after the name, like TeachersDeck's */
+html.bento-phone.bento-row2 header.top > .hright > .xp-wrap{
+  position:absolute; top:18px; left:calc(var(--bento-brand,140px) + 16px); height:26px;
+}
+/* ParentDeck: the children's chips stay on the first row, beside the name */
+html.bento-phone.bento-row2 header.top > .kids{ flex:1 1 0; min-width:0; max-width:none; }
+/* StudentDeck's background picker opens under the strip instead of inside it (the strip scrolls, so it would be cut off) */
+html.bento-phone.bento-row2 header .swatch-pop{ position:fixed !important; top:calc(var(--bento-top,100px) + 6px) !important; right:8px !important; left:auto !important; }
 /* Side docks don't fit beside a phone's tiles (every widget is still in the bottom dock or the app tray) */
 html.bento-phone :is(#dock-left,#dock-right){ display:none !important; }
 html.bento-phone #dock-wrap .dock-item{ width:46px !important; height:46px; }

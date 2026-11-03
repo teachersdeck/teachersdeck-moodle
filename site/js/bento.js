@@ -30,7 +30,8 @@
   /* The tiles a first visit (or Settings → Reset tiles) opens, and the sizes they start at. TeachersDeck: Clock and Timer
      small beside a large Calendar, Assignments wide under them, Student Stats ('classactivity') across the full width.
      UniDeck's UniStudentDeck and LectureDeck (teachersdeck/unideck, synced from here) have their own sets, with their course
-     widgets. Any other widget's size comes from its usual size. */
+     widgets. TinyTeachersDeck (teachersdeck/kinderdeck-suite) opens the classroom day: My Class, Attendance, Daily Report and
+     the plan first (an id it has not registered yet is skipped). Any other widget's size comes from its usual size. */
   const DEFAULTS = {
     TeachersDeck: ['clock', 'timer', 'calendar', 'assignments', 'classactivity'],
     StudentDeck: ['clock', 'timer', 'todo', 'cards', 'idiom'],
@@ -38,6 +39,7 @@
     AdminDeck: ['schoolstats', 'points', 'teachers', 'pulse', 'joincodes'],
     UniStudentDeck: ['clock', 'timer', 'uassign', 'announce', 'grades'],
     LectureDeck: ['clock', 'timer', 'calendar', 'courseassign', 'coursestats'],
+    TinyTeachersDeck: ['myclass', 'attendance', 'dailyreport', 'agenda', 'noteshome', 'calendar', 'timer', 'music', 'checklist'],
   };
   const START = {
     TeachersDeck: { clock: 'small', timer: 'small', calendar: 'large', assignments: 'wide', classactivity: 'full', traffic: 'small', namepicker: 'small', scoreboard: 'small', groupmaker: 'small', dice: 'small' },
@@ -46,6 +48,7 @@
     AdminDeck: { schoolstats: 'large', points: 'wide', teachers: 'wide' },
     UniStudentDeck: { clock: 'small', timer: 'small', uassign: 'large', announce: 'wide', grades: 'wide', todo: 'wide' },
     LectureDeck: { clock: 'small', timer: 'small', calendar: 'large', courseassign: 'wide', coursestats: 'full' },
+    TinyTeachersDeck: { myclass: 'full', attendance: 'wide', dailyreport: 'wide', agenda: 'wide', noteshome: 'wide', calendar: 'wide', timer: 'small', music: 'small', checklist: 'small' },
   };
   const SIZES = ['small', 'wide', 'large', 'full'];
   const SIZE_NAMES = new Proxy({ small: 'Small', wide: 'Wide', large: 'Large', full: 'Full width' }, { get: (o, k) => (vi() ? { small: 'Nhỏ', wide: 'Rộng', large: 'Lớn', full: 'Hết chiều ngang' } : o)[k] });

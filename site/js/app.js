@@ -123,8 +123,8 @@ const state = loadState() || {
     { name:'Team Three', score:0 },
     { name:'Team Four', score:0 }
   ],
-  lang: 'en',
-  langPair: ['en','vi'],
+  lang: (window.DECK_EDITION && window.DECK_EDITION.kinder) ? 'vi' : 'en',   // TinyTeachersDeck (the Kinder edition) starts in Vietnamese
+  langPair: (window.DECK_EDITION && window.DECK_EDITION.kinder) ? ['vi','en'] : ['en','vi'],
   dockVisible: {},
   calendarEvents: [],
   notifsEnabled: false,
@@ -160,11 +160,11 @@ if(!state.scoreboard){
     { name:'Team Four', score:0 }
   ];
 }
-if(!state.lang) state.lang = 'en';
+if(!state.lang) state.lang = (window.DECK_EDITION && window.DECK_EDITION.kinder) ? 'vi' : 'en';
 if(PF && PF.lang) state.lang = PF.lang;   // platform: ?lang= on a ClassIn link, or the Canvas launch's locale
 document.documentElement.lang = state.lang;   // from the start, not only after a switch: js/bento.js and UniDeck's Course mode read it
 if(!state.school) state.school = null;   // platform (Canvas): { schoolId, schoolName, pro }, kept by watchMySchool()
-if(!state.langPair) state.langPair = ['en','vi'];
+if(!state.langPair) state.langPair = (window.DECK_EDITION && window.DECK_EDITION.kinder) ? ['vi','en'] : ['en','vi'];
 if(!state.dockVisible) state.dockVisible = {};
 if(!state.calendarEvents) state.calendarEvents = [];
 if(!state.assignments) state.assignments = [];   // Assignments widget — each entry also mirrors a linked event into state.calendarEvents (id `assign-<id>`), so the Calendar widget is the one canonical place due dates show up. Synced to classes/{id}/homework by TDCloud.syncHomework, same as the calendar is synced.
@@ -240,9 +240,11 @@ Object.keys(state.pillPlacement).forEach(id=>{
 /* Which app this is: this app's own js/edition.js (the first script on the page) sets window.DECK_EDITION — the app's
    name, its version and the edition. UNI = the university edition (UniDeck); U(schoolText, uniText) picks the wording
    for the current edition; APP = the app's name for anything shown to the user. This file is shared with UniDeck's copy
-   of the app (teachersdeck/unideck, tools/sync_shared.py): edit it here, keep one-app-only behaviour behind UNI or U(). */
+   of the app (teachersdeck/unideck, tools/sync_shared.py): edit it here, keep one-app-only behaviour behind UNI or U().
+   KINDER = the Kinder edition (TinyTeachersDeck, teachersdeck/kinderdeck-suite, synced the same way): a classroom app for
+   preschool teachers. It hides the school-age widgets, the XP system, Pro and Manage widgets; TeachersDeck never sets it. */
 const ED = window.DECK_EDITION || { name: 'TeachersDeck', version: '0.0.0', uni: false };
-const UNI = !!ED.uni, APP = ED.name || 'TeachersDeck', U = (school, uni) => (UNI ? uni : school);
+const UNI = !!ED.uni, KINDER = !!ED.kinder, APP = ED.name || 'TeachersDeck', U = (school, uni) => (UNI ? uni : school);
 const APP_VERSION = ED.version;
 
 /* ---------------- Students with Vietnamese-format names (v0.19.0) ----------------
@@ -371,7 +373,7 @@ const CARD_PROCESSOR_LABEL = 'Card (Stripe)'; // change if using a different pro
 // earlier testing mode. Set it to true at launch to require an activated licence. ?progate=1 in the address previews the
 // gate on this device without changing it. Never gated: anything in the teacher → student → parent → admin loop.
 const PRO_GATE_ENABLED = false;
-const PRO_GATE = PRO_GATE_ENABLED || new URLSearchParams(location.search).get('progate') === '1';
+const PRO_GATE = !KINDER && (PRO_GATE_ENABLED || new URLSearchParams(location.search).get('progate') === '1');   // Kinder: the school's licence unlocks everything
 const PRO_WIDGETS_DECIDED = [
   'lessonplanner', 'games', 'scoreboard', 'poll', 'exitticket', 'groupmaker', 'noise', 'music', 'videoplayer', 'soundboard', 'meet',
   'qrcode', 'hallpass', 'readinglog', 'ttsreader', 'unitconverter', 'announcements', 'instructions', 'convocards', 'idiomday', 'grammarref',
@@ -1541,11 +1543,15 @@ const WIDGETS = [
 /* UniDeck phase 1 (LectureDeck's Course mode): LectureDeck's own js/course-mode.js lists its widgets in window.UNI_WIDGETS
    ({ id, cat, title, desc, icon, w, h, render }). They join the registry only in the university edition, in a "Courses"
    category of the app tray, with their labels added to STRINGS (English, and Vietnamese from titleVi/descVi). TeachersDeck never loads that file. */
-const UNI_WIDGET_DEFS = UNI ? (window.UNI_WIDGETS || []) : [];
+const UNI_WIDGET_DEFS = (UNI ? (window.UNI_WIDGETS || []) : []).concat(KINDER ? (window.KINDER_WIDGETS || []) : []);   // Kinder: js/kinder-widgets.js, same shape
 UNI_WIDGET_DEFS.forEach(w => {
-  if(WIDGETS.some(x => x.id === w.id)) return;
-  STRINGS['uw_' + w.id] = STRINGS['uw_' + w.id] || { en: w.title, ...(w.titleVi ? { vi: w.titleVi } : {}) };   // titleVi / descVi: UniDeck's Vietnamese
-  STRINGS['wc_' + w.id] = STRINGS['wc_' + w.id] || { en: w.desc || '', ...(w.descVi ? { vi: w.descVi } : {}) };
+  // Kinder: a widget marked `replaces` takes the place of the TeachersDeck widget with the same id (Agenda Board becomes
+  // Today's Plan, Name Picker becomes Helper of the Day…), so saved layouts and dock places carry over.
+  const at = WIDGETS.findIndex(x => x.id === w.id), swap = at >= 0 && KINDER && w.replaces;
+  if(at >= 0 && !swap) return;
+  if(swap) WIDGETS.splice(at, 1);
+  STRINGS['uw_' + w.id] = (!swap && STRINGS['uw_' + w.id]) || { en: w.title, ...(w.titleVi ? { vi: w.titleVi } : {}) };   // titleVi / descVi: UniDeck's Vietnamese
+  STRINGS['wc_' + w.id] = (!swap && STRINGS['wc_' + w.id]) || { en: w.desc || '', ...(w.descVi ? { vi: w.descVi } : {}) };
   WIDGETS.push({ id:w.id, cat:w.cat || 'course', labelKey:'uw_' + w.id, icon:w.icon || 'clipboard', w:w.w, h:w.h, render:w.render, full:!!w.full });
 });
 if(UNI) STRINGS.cat_course = STRINGS.cat_course || { en:'Courses', vi:'Khóa học' };
@@ -1555,6 +1561,23 @@ if(UNI) STRINGS.cat_course = STRINGS.cat_course || { en:'Courses', vi:'Khóa h�
    Review and Hall Pass. Saved layouts and dock places for them are left untouched. TeachersDeck keeps them all. */
 const UNI_SCHOOL_ONLY = ['cloudclass', 'rewardpoints', 'noteshome', 'classactivity', 'progressreports', 'scrapreview', 'boardreview', 'hallpass'];
 if(UNI) for(let i = WIDGETS.length - 1; i >= 0; i--) if(UNI_SCHOOL_ONLY.includes(WIDGETS[i].id)) WIDGETS.splice(i, 1);
+/* Kinder edition (TinyTeachersDeck scope, section 4.3): 24 widgets leave the registry. They need student accounts, points,
+   XP or homework, are teacher XP, are school-age or English practice, or are not a preschool task. Hidden means hidden
+   everywhere: purgeKinderHidden() also forgets their open state, positions and dock places (their code and data stay).
+   KINDER_ORDER is the app-tray and first-run dock order; KINDER_STRINGS (js/kinder-strings.js) renames what stays. */
+const KINDER_HIDDEN = ['cloudclass', 'rewardpoints', 'assignments', 'boardreview', 'scrapreview', 'classactivity', 'classbuilder',
+  'stats', 'badgecase', 'exitticket', 'poll', 'readinglog', 'ttsreader', 'unitconverter', 'idiomday', 'grammarref', 'convocards',
+  'instructions', 'stopwatch', 'countdown', 'hallpass', 'meet', 'videoplayer', 'qrcode'];
+const KINDER_ORDER = ['myclass', 'attendance', 'dailyreport', 'agenda', 'noteshome', 'calendar', 'timer', 'music', 'checklist',
+  'clock', 'noise', 'soundboard', 'files', 'groupmaker', 'namepicker', 'lessonplanner', 'progressreports', 'announcements',
+  'games', 'drawdeck', 'scoreboard', 'traffic', 'dice'];
+if(KINDER){
+  for(let i = WIDGETS.length - 1; i >= 0; i--) if(KINDER_HIDDEN.includes(WIDGETS[i].id)) WIDGETS.splice(i, 1);
+  const rank = id => { const k = KINDER_ORDER.indexOf(id); return k < 0 ? 999 : k; };
+  WIDGETS.sort((a, b) => rank(a.id) - rank(b.id));
+  const KS = window.KINDER_STRINGS || {};
+  Object.keys(KS).forEach(k => { STRINGS[k] = { ...(STRINGS[k] || {}), ...KS[k] }; });
+}
 
 const wall = document.getElementById('wall');
 const dock = document.getElementById('dock');
@@ -1571,7 +1594,7 @@ const widgetEls = {}; // id -> {el, cleanup}
 const WPREF_KEY = 'td_widgets_v1';
 const wprefs = (() => { let s = null; try{ s = JSON.parse(localStorage.getItem(WPREF_KEY)); }catch(e){} s = (s && typeof s === 'object') ? s : {}; return { curated:!!s.curated, off:{ ...(s.off || {}) }, parked:{ ...(s.parked || {}) } }; })();
 const saveWprefs = () => { try{ localStorage.setItem(WPREF_KEY, JSON.stringify(wprefs)); }catch(e){} };
-const isOff = id => !!wprefs.off[id] || !!(PF && PF.hides(id));   // platform: the widgets this platform leaves out
+const isOff = id => !KINDER && (!!wprefs.off[id] || !!(PF && PF.hides(id)));   // Kinder: the school decides, so nothing is switched off here   // platform: the widgets this platform leaves out
 const WIDGET_TIERS = {
   core:   ['classbuilder', 'clock', 'timer', 'namepicker', 'groupmaker', 'scoreboard', 'poll', 'attendance', 'traffic', 'noise', 'agenda', 'files', 'calendar', 'assignments', 'progressreports', 'lessonplanner', 'cloudclass', 'rewardpoints', 'noteshome'],
   keep:   ['checklist', 'games', 'music', 'hallpass', 'qrcode', 'ttsreader', 'convocards', 'idiomday', 'grammarref', 'instructions', 'classactivity', 'stats', 'badgecase', 'drawdeck', 'scrapreview', 'boardreview'],
@@ -1583,8 +1606,15 @@ function widgetUsage(id){                         // what the teacher has actual
   Object.keys(days).sort().forEach(k => { const o = (days[k].opens || {})[id] || 0, s = (days[k].timeBy || {})[id] || 0; if(o || s) last = k; opens += o; secs += s; if(k >= cut){ o30 += o; s30 += s; } });
   return { opens, secs, o30, s30, last, any: opens > 0 || secs >= 30 || !!state.active[id] };
 }
+function purgeKinderHidden(){                     // Kinder: hidden means hidden everywhere (saved layouts from an older build too)
+  let changed = false;
+  [state.active, state.layout, state.dockPlacement, state.dockVisible, wprefs.off, wprefs.parked].forEach(o => {
+    if(o) KINDER_HIDDEN.forEach(id => { if(id in o){ delete o[id]; changed = true; } });
+  });
+  if(changed){ saveState(); saveWprefs(); }
+}
 function curateWidgetsOnce(){                     // first launch of this version: tidy away the recommended widgets the teacher has never touched
-  if(wprefs.curated || (PF && PF.fixedWidgets)) return 0;   // platform: its own widget list is the curation
+  if(KINDER || wprefs.curated || (PF && PF.fixedWidgets)) return 0;   // platform: its own widget list is the curation
   let n = 0; WIDGET_TIERS.shelve.forEach(id => { if(WIDGETS.some(w => w.id === id) && !widgetUsage(id).any){ wprefs.off[id] = true; n++; } });
   wprefs.curated = true; saveWprefs(); return n;
 }
@@ -1660,7 +1690,7 @@ function closeWidgetManager(){ const b = document.getElementById('wm-backdrop');
    launcher: the bottom dock, the left drawer, the right drawer, the top
    dock (icon-only, left-justified right after the brand name), or hidden.
    Bottom holds up to 10, everywhere else holds up to 5. ---------------- */
-const DOCK_CAPS = { bottom:10, left:5, right:5, top:5 };
+const DOCK_CAPS = { bottom:KINDER ? 5 : 10, left:5, right:5, top:5 };   // Kinder: five big icons on a phone
 
 function widgetsFor(loc){
   const list = WIDGETS.filter(w => state.dockPlacement[w.id] === loc && !isOff(w.id));
@@ -2131,8 +2161,10 @@ function toggleWidget(id){
     closeWidget(id);
   }else{
     openWidget(id);
-    const od = dayRec(); od.opens = od.opens || {}; od.opens[id] = (od.opens[id] || 0) + 1; xSave();
-    if(window.TDUsage) window.TDUsage.track('widget_open', { widget: id });   // anonymous usage statistics (js/usage.js)
+    if(!KINDER){   // Kinder: no activity table and no usage statistics
+      const od = dayRec(); od.opens = od.opens || {}; od.opens[id] = (od.opens[id] || 0) + 1; xSave();
+      if(window.TDUsage) window.TDUsage.track('widget_open', { widget: id });
+    }   // anonymous usage statistics (js/usage.js)
   }
   saveState();
   syncDock();
@@ -3113,12 +3145,13 @@ Object.assign(STRINGS, {
 const XKEY = 'td_xp_v1';
 function xFresh(){ return { xp:{ total:0, streak:0, last:'', log:[] }, stats:{ daily:{} }, totals:{}, feed:[], badges:{ earned:{}, init:false, bestStreak:0 }, docTime:{}, filesSort:'recent', docToReading:false, pdfTools:false }; }
 function xLoad(){
+  if(KINDER) return xFresh();   // Kinder: no XP system
   let s = {}; try{ s = JSON.parse(localStorage.getItem(XKEY)) || {}; }catch(e){}
   const f = xFresh();
   return { ...f, ...s, xp:{ ...f.xp, ...s.xp }, stats:{ ...f.stats, ...s.stats } };
 }
 const tdx = xLoad();
-function xSave(){ try{ localStorage.setItem(XKEY, JSON.stringify(tdx)); }catch(e){ /* not persisted */ } }
+function xSave(){ if(KINDER) return; try{ localStorage.setItem(XKEY, JSON.stringify(tdx)); }catch(e){ /* not persisted */ } }
 window.addEventListener('storage', e=>{      // another TeachersDeck tab changed the stats
   if(e.key !== XKEY || !e.newValue) return;
   const s = xLoad(); Object.keys(tdx).forEach(k=> delete tdx[k]); Object.assign(tdx, s);
@@ -3146,7 +3179,7 @@ function dayRec(d = xDayKey(Date.now())){
 }
 let statsRedraw = null, readingRedraw = null, filesRedraw = null, badgeCaseRedraw = null;
 const refreshStats = () => { statsRedraw && statsRedraw(); badgeCaseRedraw && badgeCaseRedraw(); };
-function stat(k, n = 1){ const r = dayRec(); r[k] = (r[k] || 0) + n; xSave(); refreshStats(); }
+function stat(k, n = 1){ if(KINDER) return; const r = dayRec(); r[k] = (r[k] || 0) + n; xSave(); refreshStats(); }
 
 /* ---------------- v0.16.0 — Activity tracking ----------------
    Every meaningful action in every widget is recorded here, not just the three that used to earn XP.
@@ -3211,6 +3244,7 @@ const dayActs = r => Object.keys(ACT).reduce((a, k) => a + actCount(r, k), 0);
 const widgetSecs = r => Object.entries(r.timeBy || {}).filter(([k]) => k !== DOC_KEY).reduce((a, [, c]) => a + c, 0);   // document time overlaps widget time, so it isn't added
 
 function logAct(kind, detail, n = 1, xp = 0){
+  if(KINDER) return;
   const r = dayRec(), now = Date.now(), d = detail ? String(detail).slice(0, 80) : '';
   r.acts = r.acts || {}; r.acts[kind] = (r.acts[kind] || 0) + n;
   const T = tdx.totals || (tdx.totals = {}); T[kind] = (T[kind] || 0) + n;
@@ -3309,7 +3343,7 @@ function bcCabinetHtml(shelfRows, filterAttr){   // shelfRows: [[groupLabel, til
   return `<div class="bgal bc-cabinet"${filterAttr ? ` data-f="${filterAttr}"` : ''}>${shelfRows.map(([label, html]) => `<section class="bc-shelf"><h5>${label}</h5><div class="bd-grid">${html}</div><div class="bc-ledge" aria-hidden="true"></div></section>`).join('')}</div>`;
 }
 const badgeQ = []; let badgeBusy = false;
-function popBadge(b){ badgeQ.push(b); if(!badgeBusy) nextBadgePop(); }
+function popBadge(b){ if(KINDER) return; badgeQ.push(b); if(!badgeBusy) nextBadgePop(); }
 function nextBadgePop(){
   const b = badgeQ.shift(); if(!b){ badgeBusy = false; return; }
   badgeBusy = true;
@@ -3329,6 +3363,7 @@ function grantBadge(b, silent){
   B.earned[b.id] = silent ? { t:Date.now(), old:1 } : { t:Date.now() }; return true;
 }
 function checkBadges(){
+  if(KINDER) return;
   const B = bdState(); B.bestStreak = Math.max(B.bestStreak || 0, tdx.xp.streak || 0);
   const c = badgeCtx(), fresh = BADGES.filter(b => !B.earned[b.id] && b.val(c) >= b.n), first = !B.init;
   if(first){                                                          // first run with history: award quietly, say so once
@@ -3347,6 +3382,7 @@ function openBadges(){                                                // header 
 
 const capSeen = new Set();
 function awardXP(source, amount){
+  if(KINDER) return 0;
   const rule = XP_RULES[source] || { cap:DEFAULT_CAP }, r = dayRec();
   let n = Math.round(amount * streakMult());
   if(r.xp >= SOFT_CEILING) n = Math.ceil(n / 2);                             // past ~150 XP a day, everything earns half
@@ -3367,6 +3403,7 @@ function drawXP(gain, up){
   if(up) toast(t('xp_level_up', { n:L.level }), 3500);
 }
 function touchDay(){                                                         // first visit of a day: streak + 5 XP
+  if(KINDER) return;
   const today = xDayKey(Date.now()), X = tdx.xp; if(X.last === today) return;
   X.streak = X.last === xDayKey(Date.now() - 864e5) ? X.streak + 1 : 1; X.last = today; dayRec(); xSave();
   logAct('daily', '', 1, awardXP('daily', 5));
@@ -8209,6 +8246,7 @@ function buildClassMenu(){
     btn.addEventListener('click', ()=> switchClass(c.id));
     menu.appendChild(btn);
   });
+  if(KINDER) return;   // Kinder: no new class, no Class Builder
   const sep = document.createElement('div');
   sep.className = 'class-menu-sep';
   menu.appendChild(sep);
@@ -9652,6 +9690,7 @@ const CB_TABS = ['classes', 'students', 'pick', 'cloud'];
 const cbBlankRow = () => ({ fam:'', mid:'', giv:'', en:'' });
 function cbDraftGet(){ if(!cbDraft) cbDraft = { name:'', rows:Array.from({ length:5 }, cbBlankRow), open:false }; return cbDraft; }
 function openClassBuilder(tab, opts){
+  if(KINDER) return;   // Kinder: the school owns the roster (KinderDeck)
   if(tab && CB_TABS.includes(tab)) cbTab = tab;
   if(opts && opts.newClass) cbDraftGet().open = true;
   const sd = document.getElementById('settings-drawer'); if(sd) sd.hidden = true;
@@ -10250,6 +10289,7 @@ function init(){
   // this is harmless if it's already gone.
   try{ indexedDB.deleteDatabase('widget-wall'); }catch(e){}
 
+  if(KINDER) purgeKinderHidden();
   const tidied = curateWidgetsOnce();
   ensureDockPlacement();
   buildLangToggle();
@@ -10271,8 +10311,7 @@ function init(){
     modeToggle = DeckMode.mountSwitch(document.getElementById('mode-toggle'), { label:t('mode_title'), light:t('mode_light'), dark:t('mode_dark') }, { compact:true });
     DeckMode.onChange(()=>{ applyTheme(); buildPresetSwatches(); });   // a preset background follows the mode; a teacher's own image doesn't change
   }
-  buildProStatus();
-  recheckLicenseIfNeeded();
+  if(!KINDER){ buildProStatus(); recheckLicenseIfNeeded(); }   // Kinder: no Pro card, prompts or licence checks
   const verEl = document.getElementById('app-version');
   if(verEl) verEl.textContent = `${t('version_label')} ${APP_VERSION}`;
   const xpPill = document.getElementById('xp-pill');

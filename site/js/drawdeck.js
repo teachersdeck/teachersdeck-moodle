@@ -14,6 +14,9 @@
    Optional capabilities, each off unless the host sets it (same pattern as share/assignBoard below):
      kidMode             simplifies the toolbar to pen/highlighter/eraser/shape/undo only (no mind map, no
                           flowchart, no math tools, no image/template/outline), for KeepDeck's Home board.
+     tracing             adds a Tracing section to Templates (letters, numbers, a name, pre-writing strokes, shapes) for
+                          preschool; TinyTeachersDeck turns it on. Tracing guides sit under the ink: the eraser leaves
+                          them, Select moves, resizes or deletes them.
      kidModeUnlock()     only used when kidMode is on. Called before a multi-object delete, a whole-board or
                           whole-page delete, or an export/import — return a (possibly async) truthy value to
                           allow it. No host.kidModeUnlock = the action is simply refused (toast only).
@@ -1143,6 +1146,17 @@
  }
 };
   Object.keys(L3).forEach(function (lang) { Object.keys(L3[lang]).forEach(function (k) { if (S[k]) S[k][lang] = L3[lang][k]; }); });
+  var S4 = {   // tracing (host.tracing; preschool)
+    dd_trace_hd:     { en: 'Tracing', vi: 'Tập tô' },
+    dd_trace_letter: { en: 'A letter…', vi: 'Chữ cái…' },
+    dd_trace_number: { en: 'A number…', vi: 'Chữ số…' },
+    dd_trace_name:   { en: 'A name or word…', vi: 'Tên hoặc từ…' },
+    dd_trace_name_q: { en: 'Name or word to trace:', vi: 'Tên hoặc từ để tô:' },
+    dd_trace_lines:  { en: 'Pre-writing strokes', vi: 'Các nét cơ bản' },
+    dd_trace_shapes: { en: 'Shapes', vi: 'Hình' },
+    dd_m_trace:      { en: 'Tracing', vi: 'Tập tô' }
+  };
+  Object.keys(S4).forEach(function (k) { S[k] = S4[k]; });
 
   /* ---------------- small helpers ---------------- */
   var NS = 'http://www.w3.org/2000/svg';
@@ -1233,7 +1247,7 @@
   function isLine(o) { return o.t === 'shape' && (o.k === 'line' || o.k === 'arrow'); }
   /* ---------------- math lesson tools (v0.24.0): number line, ruler, protractor, fraction bar, table ---------------- */
   var K = 40;   // world pixels per centimetre on the ruler
-  var MATH = { numline: 1, ruler: 1, protractor: 1, fracbar: 1, grid: 1, compass: 1 }, ROT = { numline: 1, ruler: 1, protractor: 1, compass: 1 };
+  var MATH = { numline: 1, ruler: 1, protractor: 1, fracbar: 1, grid: 1, compass: 1, trace: 1 }, ROT = { numline: 1, ruler: 1, protractor: 1, compass: 1 };
   function worldPt(o, lx, ly) {                // a point given relative to the object's top-left (before rotation) -> board position
     var a = o.a || 0, dx = lx - o.w / 2, dy = ly - o.h / 2;
     return { x: o.x + o.w / 2 + dx * Math.cos(a) - dy * Math.sin(a), y: o.y + o.h / 2 + dx * Math.sin(a) + dy * Math.cos(a) };
@@ -1254,13 +1268,72 @@
     if (o.t === 'protractor') { w = Math.max(200, w); return [w, w / 2 + 24]; }
     if (o.t === 'fracbar') return [Math.max(120, w), Math.max(30, h)];
     if (o.t === 'grid') return [Math.max(80, w), Math.max(60, h)];
+    if (o.t === 'trace') { w = Math.max(60, w); return [w, w * (o.h / o.w)]; }   // keeps its shape
     if (o.t === 'compass') { w = Math.max(80, w); return [w, w]; }   // always a perfect circle — drag any corner, the radius follows
     return [Math.max(30, w), Math.max(24, h)];
   }
   function resizable(o) { return (o.t === 'shape' && !isLine(o)) || o.t === 'image' || !!MATH[o.t]; }
   function fmtNum(v) { return String(Math.round(v * 1000) / 1000); }
   function fitFont(c, text, maxW, fs, weight) { c.font = weight + ' ' + fs + 'px ' + FONT; while (fs > 9 && c.measureText(text).width > maxW) { fs -= 1; c.font = weight + ' ' + fs + 'px ' + FONT; } return fs; }
+  /* ---------------- tracing guides (host.tracing) ----------------
+     { t:'trace', x, y, w, h, s, m }  letters: s drawn as dashed outlines on its own three guide lines; the first m
+                                      characters solid, as the model to look at
+     { t:'trace', x, y, w, h, p }     strokes and shapes: p = polylines as flat [x, y, x, y…] in 0..1 of the box, each
+                                      dashed, with a green dot where the child starts */
+  var TFONT = "'Segoe UI', Inter, system-ui, sans-serif";
+  function drawTrace(c, o, ink) {
+    var w = o.w, h = o.h, chalk = ink === '#ffffff', i, j;
+    c.save(); c.translate(o.x, o.y); c.lineCap = 'round'; c.lineJoin = 'round';
+    if (o.s != null) {
+      var fs = h / 1.45, base = fs * 1.1, chars = Array.from(o.s);
+      c.font = '600 ' + fs + 'px ' + TFONT; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      var capH = c.measureText('H').actualBoundingBoxAscent || fs * 0.7, xH = c.measureText('x').actualBoundingBoxAscent || fs * 0.52;
+      c.lineWidth = Math.max(1, fs * 0.012); c.strokeStyle = chalk ? 'rgba(255,255,255,.35)' : '#a9c0e4';
+      c.beginPath(); c.moveTo(0, base - capH); c.lineTo(w, base - capH); c.moveTo(0, base); c.lineTo(w, base); c.stroke();
+      c.setLineDash([fs * 0.08, fs * 0.07]); c.strokeStyle = chalk ? 'rgba(255,255,255,.25)' : '#e4a3a3';
+      c.beginPath(); c.moveTo(0, base - xH); c.lineTo(w, base - xH); c.stroke(); c.setLineDash([]);
+      var tw = 0; chars.forEach(function (ch) { tw += c.measureText(ch).width; });
+      var sx = tw ? (w - fs * 0.2) / tw : 1, x = 0;
+      c.translate(fs * 0.1, 0); c.scale(sx, 1);
+      c.lineWidth = Math.max(1.5, fs * 0.025); c.strokeStyle = chalk ? 'rgba(255,255,255,.7)' : '#7b8aa3'; c.fillStyle = chalk ? 'rgba(255,255,255,.45)' : '#b9c3d3';
+      for (i = 0; i < chars.length; i++) {
+        if (chars[i] !== ' ') {
+          if (i < (o.m || 0)) c.fillText(chars[i], x, base);
+          else { c.setLineDash([fs * 0.06, fs * 0.05]); c.strokeText(chars[i], x, base); c.setLineDash([]); }
+        }
+        x += c.measureText(chars[i]).width;
+      }
+    } else {
+      var lw = Math.max(3, Math.min(w, h) * 0.035);
+      c.lineWidth = lw; c.strokeStyle = chalk ? 'rgba(255,255,255,.7)' : '#7b8aa3'; c.setLineDash([lw * 1.6, lw * 1.5]);
+      (o.p || []).forEach(function (q) { c.beginPath(); for (j = 0; j < q.length; j += 2) { if (j) c.lineTo(q[j] * w, q[j + 1] * h); else c.moveTo(q[j] * w, q[j + 1] * h); } c.stroke(); });
+      c.setLineDash([]); c.fillStyle = '#43a047';
+      (o.p || []).forEach(function (q) { if (q.length > 1) { c.beginPath(); c.arc(q[0] * w, q[1] * h, lw * 1.5, 0, 6.2832); c.fill(); } });
+    }
+    c.restore();
+  }
+  var traceMeasure = null;
+  function traceText(str, model, fs) {          // a row of letters, sized to its text
+    str = String(str).normalize('NFC');
+    if (!traceMeasure) traceMeasure = document.createElement('canvas').getContext('2d');
+    traceMeasure.font = '600 ' + fs + 'px ' + TFONT;
+    var tw = 0; Array.from(str).forEach(function (ch) { tw += traceMeasure.measureText(ch).width; });
+    return { id: uid(), t: 'trace', x: 0, y: 0, w: r1(tw + fs * 0.2), h: r1(fs * 1.45), s: str, m: model };
+  }
+  function tracePoly(fn, n, x0, x1) {           // fn(u) -> [x, y] in 0..1, sampled n times between x0 and x1
+    var out = []; for (var i = 0; i <= n; i++) { var q = fn(x0 + (x1 - x0) * i / n); out.push(Math.round(q[0] * 1000) / 1000, Math.round(q[1] * 1000) / 1000); } return out;
+  }
+  function traceShape(k) {                      // one closed outline in 0..1, starting where a child would
+    var P = Math.PI;
+    if (k === 'circle') return tracePoly(function (u) { return [0.5 + 0.45 * Math.cos(-P / 4 - u * 2 * P), 0.5 + 0.45 * Math.sin(-P / 4 - u * 2 * P)]; }, 48, 0, 1);
+    if (k === 'square') return [0.08, 0.08, 0.08, 0.92, 0.92, 0.92, 0.92, 0.08, 0.08, 0.08];
+    if (k === 'triangle') return [0.5, 0.06, 0.06, 0.92, 0.94, 0.92, 0.5, 0.06];
+    if (k === 'diamond') return [0.5, 0.04, 0.12, 0.5, 0.5, 0.96, 0.88, 0.5, 0.5, 0.04];
+    if (k === 'star') { var st = []; for (var i = 0; i <= 10; i++) { var a = -P / 2 + i * P / 5, r = i % 2 ? 0.2 : 0.47; st.push(Math.round((0.5 + r * Math.cos(a)) * 1000) / 1000, Math.round((0.53 + r * Math.sin(a)) * 1000) / 1000); } return st; }
+    return tracePoly(function (u) { var t = u * 2 * P, x = 16 * Math.pow(Math.sin(t), 3), y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); return [0.5 + x / 36, 0.42 - y / 36]; }, 60, 0, 1);   // heart
+  }
   function drawMath(c, o, ink) {
+    if (o.t === 'trace') { drawTrace(c, o, ink); return; }
     c.save();
     if (o.a) { c.translate(o.x + o.w / 2, o.y + o.h / 2); c.rotate(o.a); c.translate(-o.w / 2, -o.h / 2); } else c.translate(o.x, o.y);
     var w = o.w, h = o.h, i;
@@ -2092,7 +2165,7 @@
     function eraseAt(p) {
       var r = eraseR(), hid = hidden(), rem = new Set(), out = [], changed = false;
       page.objs.forEach(function (o) {
-        if (hid.has(o.id)) { out.push(o); return; }
+        if (hid.has(o.id) || o.t === 'trace') { out.push(o); return; }
         if (o.t === 'stroke' && prefs.eraseParts) { var cut = cutStroke(o, p.x, p.y, r); if (cut) { changed = true; cut.forEach(function (n) { out.push(n); }); } else out.push(o); return; }
         var hit = (o.t === 'stroke' || o.t === 'conn') ? hitObj(o, p.x, p.y, r) : hitObj(o, p.x, p.y, 0);
         if (hit) { rem.add(o.id); changed = true; }
@@ -2206,7 +2279,7 @@
         extra += '<span class="dd-sep"></span>' + kinds.map(function (k) { return '<button type="button" class="dd-kind' + (shapeKind === k ? ' on' : '') + '" data-act="shape" data-v="' + k + '" title="' + esc(t('dd_s_' + k)) + '">' + esc(t('dd_s_' + k)) + '</button>'; }).join('') +
           '<label class="dd-chk"><input type="checkbox" data-act="fill"' + (prefs.fill ? ' checked' : '') + '> ' + esc(t('dd_fill')) + '</label>';
       }
-      if (sel.size === 1) { var po = byId().get(Array.from(sel)[0]); if (po && MATH[po.t] && po.t !== 'protractor') extra += '<span class="dd-sep"></span><button type="button" class="dd-kind on" data-act="props">' + esc(t('dd_props')) + '</button>'; }
+      if (sel.size === 1) { var po = byId().get(Array.from(sel)[0]); if (po && MATH[po.t] && po.t !== 'protractor' && po.t !== 'trace') extra += '<span class="dd-sep"></span><button type="button" class="dd-kind on" data-act="props">' + esc(t('dd_props')) + '</button>'; }
       if (tool === 'eraser') extra += '<span class="dd-sep"></span><button type="button" class="dd-kind' + (prefs.eraseParts ? ' on' : '') + '" data-act="erasemode" data-v="part">' + esc(t('dd_er_part')) + '</button><button type="button" class="dd-kind' + (prefs.eraseParts ? '' : ' on') + '" data-act="erasemode" data-v="whole">' + esc(t('dd_er_whole')) + '</button>';
       if (mode === 'mind') extra += '<span class="dd-sep"></span><button type="button" class="dd-kind' + ((board.layout || 'both') === 'both' ? ' on' : '') + '" data-act="layout" data-v="both">' + esc(t('dd_layout_both')) + '</button><button type="button" class="dd-kind' + (board.layout === 'right' ? ' on' : '') + '" data-act="layout" data-v="right">' + esc(t('dd_layout_right')) + '</button>';
       updateCursor();
@@ -2250,7 +2323,7 @@
       change(page.objs.concat([o])); sel = new Set([id]); tool = 'select'; renderChrome(); need();
     }
     function openProps(id) {
-      var o = byId().get(id); if (!o || !MATH[o.t] || o.t === 'protractor') return;
+      var o = byId().get(id); if (!o || !MATH[o.t] || o.t === 'protractor' || o.t === 'trace') return;
       function inp(key, label, val, type) { return '<label class="dd-fld"><span>' + esc(label) + '</span><input data-f="' + key + '" type="' + (type || 'text') + '" value="' + esc(val == null ? '' : val) + '"' + (type === 'number' ? ' step="any"' : '') + '></label>'; }
       function chk(key, label, on) { return '<label class="dd-fld dd-chkrow"><input data-f="' + key + '" type="checkbox"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; }
       var f = '';
@@ -2278,7 +2351,50 @@
     }
     var TEMPLATES = ['tchart', 'venn', 'kwl', 'story', 'place', '100', 'mult', 'fracwall', 'numline', 'coord', 'writing'];
     function openTplMenu(anchor) {
-      openPop(anchor, '<div class="dd-menu"><div class="dd-mh">' + esc(t('dd_tpl')) + '</div>' + TEMPLATES.map(function (k) { return menuItem('tplpick', k, t('tpl_' + k)); }).join('') + '</div>');
+      var tr = host.tracing ? '<div class="dd-mh">' + esc(t('dd_trace_hd')) + '</div>' + ['letter', 'number', 'name', 'lines', 'shapes'].map(function (k) { return menuItem('trace', k, t('dd_trace_' + k)); }).join('') + '<hr>' : '';
+      openPop(anchor, '<div class="dd-menu">' + tr + '<div class="dd-mh">' + esc(t('dd_tpl')) + '</div>' + TEMPLATES.map(function (k) { return menuItem('tplpick', k, t('tpl_' + k)); }).join('') + '</div>');
+    }
+    /* ----- tracing pages (host.tracing) ----- */
+    var VI_LETTERS = 'a ă â b c d đ e ê g h i k l m n o ô ơ p q r s t u ư v x y'.split(' ');
+    function openTracePick(kind) {
+      var anchor = rootEl.querySelector('[data-act="tpl"]'); if (!anchor) return;
+      var list = kind === 'number' ? ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] : /^vi/.test(document.documentElement.lang || '') ? VI_LETTERS : 'abcdefghijklmnopqrstuvwxyz'.split('');
+      openPop(anchor, '<div class="dd-menu"><div class="dd-mh">' + esc(t('dd_trace_' + kind)) + '</div><div class="dd-tracegrid">' + list.map(function (ch) { return '<button type="button" class="dd-mi dd-tch" data-act="tracepick" data-v="' + esc(ch) + '">' + esc(kind === 'number' ? ch : ch.toUpperCase() + ch) + '</button>'; }).join('') + '</div></div>');
+    }
+    function applyTrace(kind, v) {
+      var FS = 110, out = [], gap = 30, rows = [], P = Math.PI;
+      function rowOf(str, model) { return traceText(str, model, FS); }
+      function strip(polys) { return { id: uid(), t: 'trace', x: 0, y: 0, w: 900, h: 130, p: polys }; }
+      function each(n, fn) { var a = []; for (var i = 0; i < n; i++) a.push(fn(i, n)); return a; }
+      if (kind === 'glyph') {
+        var rep = function (ch) { return each(5, function () { return ch; }).join('  '); };
+        if (/^\d+$/.test(v)) {
+          rows.push(rowOf(rep(v), 1));
+          var n = +v; if (n) { var dots = strip(each(n, function (i) { return tracePoly(function (u) { var cx = (i + 0.5) / Math.max(n, 5); return [cx + (0.32 / Math.max(n, 5)) * Math.cos(-P / 2 - u * 2 * P), 0.5 + 0.32 * Math.sin(-P / 2 - u * 2 * P)]; }, 28, 0, 1); })); dots.w = 90 * Math.max(n, 5); dots.h = 90; rows.push(dots); }
+        } else rows.push(rowOf(rep(v.toUpperCase()), 1), rowOf(rep(v), 1));
+      } else if (kind === 'name') {
+        var nm = String(v || '').trim().slice(0, 24); if (!nm) return;
+        rows.push(rowOf(nm, Array.from(nm.normalize('NFC')).length), rowOf(nm, 0), rowOf(nm, 0));
+      } else if (kind === 'lines') {
+        rows.push(strip(each(10, function (i) { var x = 0.05 + i * 0.1; return [x, 0.12, x, 0.88]; })));                                   // | top to bottom
+        rows.push(strip(each(3, function (i) { var x = 0.03 + i * 0.33; return [x, 0.5, x + 0.27, 0.5]; })));                               // — left to right
+        rows.push(strip(each(8, function (i) { var x = 0.04 + i * 0.12; return [x, 0.12, x + 0.08, 0.88]; })));                             // \ down
+        rows.push(strip([tracePoly(function (u) { var k = u * 8, f = k - Math.floor(k); return [0.04 + u * 0.92, Math.floor(k) % 2 ? 0.15 + f * 0.7 : 0.85 - f * 0.7]; }, 64, 0, 1)]));   // zigzag
+        rows.push(strip([tracePoly(function (u) { return [0.04 + u * 0.92, 0.5 - 0.32 * Math.sin(u * 8 * P)]; }, 120, 0, 1)]));          // wave
+        rows.push(strip([tracePoly(function (u) { var t = P + u * 7 * 2 * P, span = 7 * 2 * P + 3.2; return [0.04 + 0.92 * ((t - P) - 1.6 * Math.sin(t) + 1.6) / span, 0.5 - 0.36 * Math.cos(t)]; }, 260, 0, 1)]));   // loops, as in joined-up e
+        rows.push(strip(each(6, function (i) { return tracePoly(function (u) { return [0.08 + i * 0.165 + 0.055 * Math.cos(-P / 4 - u * 2 * P), 0.5 + 0.38 * Math.sin(-P / 4 - u * 2 * P)]; }, 32, 0, 1); })));   // o o o
+      } else if (kind === 'shapes') {
+        var ks = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond'];
+        ks.forEach(function (k, i) { out.push({ id: uid(), t: 'trace', x: (i % 3) * 260, y: Math.floor(i / 3) * 260, w: 220, h: 220, p: [traceShape(k)] }); });
+      }
+      var y = 0; rows.forEach(function (o) { o.y = y; y += o.h + gap; out.push(o); });
+      if (!out.length) return;
+      var bx = [Infinity, Infinity, -Infinity, -Infinity]; out.forEach(function (o) { bx[0] = Math.min(bx[0], o.x); bx[1] = Math.min(bx[1], o.y); bx[2] = Math.max(bx[2], o.x + o.w); bx[3] = Math.max(bx[3], o.y + o.h); });
+      var c = toWorld(W / 2, Hh / 2), dx = c.x - (bx[0] + bx[2]) / 2, dy = c.y - (bx[1] + bx[3]) / 2;
+      out = out.map(function (o) { return Object.assign(o, { x: r1(o.x + dx), y: r1(o.y + dy) }); });
+      var was = page.objs.length;
+      change(page.objs.concat(out)); sel = new Set(); tool = 'pen'; renderChrome(); need();   // ready to trace
+      if (!was) setTimeout(fitView, 0);
     }
     function buildTemplate(key) {
       var c = toWorld(W / 2, Hh / 2), ink = board.bg === 'chalk' ? '#ffffff' : '#1a1a1a', out = [];
@@ -2500,6 +2616,8 @@
         case 'mathadd': addMath(v); break;
         case 'tpl': if (pop === el) { closePop(); break; } openTplMenu(el); break;
         case 'tplpick': applyTemplate(v); break;
+        case 'trace': if (v === 'letter' || v === 'number') openTracePick(v); else if (v === 'name') { var nm = prompt(t('dd_trace_name_q'), ''); if (nm) applyTrace('name', nm); } else applyTrace(v); break;
+        case 'tracepick': applyTrace('glyph', v); break;
         case 'props': if (sel.size === 1) openProps(Array.from(sel)[0]); break;
         case 'props-apply': applyProps(v); break;
         case 'imgcomputer': imgFileEl.value = ''; imgFileEl.click(); break;

@@ -91,3 +91,7 @@ body.dd-fs .dd-widget .widget-head{ display:none; }
 .dd-fld input[type=text], .dd-fld input[type=number], .dd-fld select{ background:var(--ink-0); color:var(--text-hi); border:1px solid var(--line); border-radius:9px; padding:9px 10px; font:inherit; font-size:14px; user-select:text; }
 .dd-fld input:focus, .dd-fld select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
 .dd-chkrow{ flex-direction:row; align-items:center; gap:8px; color:var(--text-hi); }
+
+/* tracing (host.tracing): the letter and number picker */
+.dd-tracegrid{ display:grid; grid-template-columns:repeat(6, 48px); gap:4px; padding:2px 4px 4px; }
+.dd-tch{ text-align:center; font-size:18px; padding:8px 0; }

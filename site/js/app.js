@@ -1477,6 +1477,7 @@ Object.assign(STRINGS, DrawDeck.strings);
 function renderDrawDeck(body, ctx){
   return DrawDeck.mount(body, {
     t, toast,
+    tracing: KINDER,   // TinyTeachersDeck: tracing pages for letters, numbers, names, strokes and shapes
     close: ()=>toggleWidget('drawdeck'),
     idb,
     watermark: (typeof Watermark !== 'undefined') ? Watermark : null,

@@ -550,7 +550,9 @@ function saveState(){
   // near-instantly, when nothing changed or no class is linked — see
   // TDCloud.syncCalendar in js/cloud.js). This is what lets StudentDeck and
   // ParentDeck see a teacher's calendar events.
-  if(typeof TDCloud !== 'undefined' && state.cloudClassId){
+  // Kinder (TinyTeachersDeck): no Cloud Class, no StudentDeck — the calendar stays on this device, and families get the
+  // class's news through Notices (classes/{id}/classNotices) instead.
+  if(!KINDER && typeof TDCloud !== 'undefined' && state.cloudClassId){
     TDCloud.syncCalendar(state.cloudClassId, state.calendarEvents);
     TDCloud.syncHomework(state.cloudClassId, state.assignments);
     // Progress Reports are NOT mirrored here — each one is sent once, straight to its one

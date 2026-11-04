@@ -50,6 +50,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .tile.static{background:transparent;box-shadow:none;color:var(--ink);cursor:default;width:auto;padding:0 2px}
 .play{display:grid;grid-template-columns:minmax(220px,330px) 1fr;gap:22px;align-items:start}
 @media(max-width:760px){.play{grid-template-columns:1fr}}
+@media(max-width:600px){.board{padding:10px 6px;gap:10px 14px}.word{gap:3px}.tile{width:clamp(22px,7vw,30px);height:clamp(32px,9.5vw,42px);font-size:clamp(1rem,4.6vw,1.3rem);border-radius:6px}}
 .wheelbox{position:relative;max-width:330px;margin:0 auto;width:100%;padding-top:10px}
 #wheel{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.45))}
 #pointer{position:absolute;left:50%;top:0;width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:30px solid var(--gold);transform:translateX(-50%);transform-origin:50% 0;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));z-index:2}

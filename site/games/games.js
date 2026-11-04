@@ -20,6 +20,24 @@ window.TD_BUILTIN_GAMES = [
     "instructions": "instructions.html"
   },
   {
+    "name": "Parts of Speech Blaster",
+    "folder": "Parts-of-Speech-Blaster",
+    "entry": "parts_of_speech_blaster.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Word Match-Up",
+    "folder": "Word-Match-Up",
+    "entry": "word_match_up.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Punctuation Rescue",
+    "folder": "Punctuation-Rescue",
+    "entry": "punctuation_rescue.html",
+    "instructions": "instructions.html"
+  },
+  {
     "name": "Number Ninja",
     "folder": "Number-Ninja",
     "entry": "number_ninja.html",

@@ -17,6 +17,10 @@
      tracing             adds a Tracing section to Templates (letters, numbers, a name, pre-writing strokes, shapes) for
                           preschool; TinyTeachersDeck turns it on. Tracing guides sit under the ink: the eraser leaves
                           them, Select moves, resizes or deletes them.
+     preschool           a preschool board (TinyTeachersDeck): drawing only (no mind map or flowchart), Maths keeps the
+                          number line, Templates keeps tracing, the number line and handwriting lines.
+     kidModeSwitch       a Kid Mode button in the top bar, for handing the screen to a child; leaving it needs
+                          kidModeUnlock() (an adult). It stays on, also when the board is closed and opened again.
      kidModeUnlock()     only used when kidMode is on. Called before a multi-object delete, a whole-board or
                           whole-page delete, or an export/import — return a (possibly async) truthy value to
                           allow it. No host.kidModeUnlock = the action is simply refused (toast only).
@@ -1157,6 +1161,12 @@
     dd_m_trace:      { en: 'Tracing', vi: 'Tập tô' }
   };
   Object.keys(S4).forEach(function (k) { S[k] = S4[k]; });
+  var S5 = {   // Kid Mode switch (host.kidModeSwitch)
+    dd_kid_on:   { en: 'Kid Mode: hand the screen to a child', vi: 'Chế độ bé: đưa màn hình cho bé' },
+    dd_kid_off:  { en: 'Leave Kid Mode (an adult)', vi: 'Thoát chế độ bé (người lớn)' },
+    dd_kid_hint: { en: 'Kid Mode: pens, colours, shapes and undo only. An adult leaves it with the button again.', vi: 'Chế độ bé: chỉ có bút, màu, hình và hoàn tác. Người lớn bấm lại nút để thoát.' }
+  };
+  Object.keys(S5).forEach(function (k) { S[k] = S5[k]; });
 
   /* ---------------- small helpers ---------------- */
   var NS = 'http://www.w3.org/2000/svg';
@@ -1178,6 +1188,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function icon(path) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg>'; }
   var IC = {
+    kid: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4 4 0 0 0 7 0"/><path d="M9 10h.01M15 10h.01"/>',
     math: '<rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/>',
     tpl: '<rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/>',
     image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/>',
@@ -1553,7 +1564,7 @@
   /* ---------------- mount ---------------- */
   function mount(body, host) {
     var t = host.t, toast = host.toast || function () { };
-    var kidMode = !!host.kidMode;
+    var kidMode = !!host.kidMode, pre = !!host.preschool;
     function requireUnlock(cb) {
       if (!kidMode) { cb(); return; }
       if (!host.kidModeUnlock) { toast(t('dd_kid_locked')); return; }
@@ -1571,6 +1582,7 @@
     var board = null, boards = [], pi = 0, page = null;
     var hist = new Map();                         // page id -> { u:[], r:[] }
     var mode = 'draw', tool = 'pen', shapeKind = prefs.shape, sel = new Set();
+    if (host.kidModeSwitch && prefs.kid) kidMode = true;   // Kid Mode stays on until an adult leaves it
     var view = { x: 0, y: 0, z: 1 };
     var drag = null, live = null, edit = null, spaceDown = false, focusMode = false, penSeen = 0;
     var pointers = new Map(), gesture = null, hoverId = null, cursorW = null;
@@ -1672,7 +1684,7 @@
     }
     function openBoard(b) {
       endEdit(true); board = b; boards = boards.filter(function (x) { return x.id !== b.id; }); boards.unshift(b);
-      mode = b.mode || 'draw'; gotoPage(Math.min(pi, b.pages.length - 1) || 0, true); prefs.last = b.id; savePrefs();
+      mode = pre ? 'draw' : b.mode || 'draw'; gotoPage(Math.min(pi, b.pages.length - 1) || 0, true); prefs.last = b.id; savePrefs();
       defaultInkForBg(); renderChrome();
     }
     function gotoPage(i, first) {
@@ -1896,7 +1908,7 @@
     }
     function topAt(x, y, filter) {
       var objs = page.objs, hid = hidden(), tol = 6 / view.z;
-      for (var i = objs.length - 1; i >= 0; i--) { var o = objs[i]; if (hid.has(o.id) || (filter && !filter(o))) continue; if (hitObj(o, x, y, tol)) return o; }
+      for (var i = objs.length - 1; i >= 0; i--) { var o = objs[i]; if (hid.has(o.id) || (filter && !filter(o)) || (kidMode && o.t === 'trace')) continue; if (hitObj(o, x, y, tol)) return o; }
       return null;
     }
     function badgeAt(x, y) {
@@ -2140,7 +2152,7 @@
       else if (d.kind === 'move') { if (d.moved) { var cur = page.objs; page.objs = d.before; pushHist(d.before); page.objs = cur; dirty(); } renderChrome(); need(); }
       else if (d.kind === 'resize' || d.kind === 'rotate') { if (page.objs !== d.before) { var c2 = page.objs; pushHist(d.before); page.objs = c2; dirty(); } need(); }
       else if (d.kind === 'marquee') {
-        if (d.rect) { var r = d.rect, hid = hidden(); page.objs.forEach(function (o) { if (hid.has(o.id) || o.t === 'conn') return; var b = bboxOf(o); if (b[2] >= r[0] && b[0] <= r[2] && b[3] >= r[1] && b[1] <= r[3]) sel.add(o.id); }); }
+        if (d.rect) { var r = d.rect, hid = hidden(); page.objs.forEach(function (o) { if (hid.has(o.id) || o.t === 'conn' || (kidMode && o.t === 'trace')) return; var b = bboxOf(o); if (b[2] >= r[0] && b[0] <= r[2] && b[3] >= r[1] && b[1] <= r[3]) sel.add(o.id); }); }
         renderChrome(); need();
       } else need();
     }
@@ -2259,10 +2271,10 @@
         '<span class="dd-pageno" title="' + esc(t('dd_page', { n: pi + 1, total: nPages })) + '">' + (pi + 1) + ' / ' + nPages + '</span>' +
         '<button type="button" class="dd-btn" data-act="nextpage" title="' + esc(t('dd_next_page')) + '"' + (pi < nPages - 1 ? '' : ' disabled') + '>▶</button>' +
         '<button type="button" class="dd-btn" data-act="addpage" title="' + esc(t('dd_add_page')) + '">' + icon(IC.plus) + '</button></div>' +
-        (kidMode ? '' : '<div class="dd-tabs" role="tablist">' + ['draw', 'mind', 'flow'].map(function (m) { return '<button type="button" role="tab" class="dd-tab' + (mode === m ? ' on' : '') + '" aria-selected="' + (mode === m) + '" data-act="mode" data-v="' + m + '">' + esc(t('dd_mode_' + m)) + '</button>'; }).join('') + '</div>') +
+        (kidMode || pre ? '' : '<div class="dd-tabs" role="tablist">' + ['draw', 'mind', 'flow'].map(function (m) { return '<button type="button" role="tab" class="dd-tab' + (mode === m ? ' on' : '') + '" aria-selected="' + (mode === m) + '" data-act="mode" data-v="' + m + '">' + esc(t('dd_mode_' + m)) + '</button>'; }).join('') + '</div>') +
         '<div class="dd-grp">' + btn('undo', null, 'undo', t('dd_undo'), false, h.u.length ? '' : 'dis') + btn('redo', null, 'redo', t('dd_redo'), false, h.r.length ? '' : 'dis') + '</div>' +
         '<div class="dd-grp">' + btn('zout', null, 'minus', t('dd_zoom_out')) + '<button type="button" class="dd-btn dd-zoom" data-act="zreset" title="' + esc(t('dd_zoom_reset')) + '">' + Math.round(view.z * 100) + '%</button>' + btn('zin', null, 'plus', t('dd_zoom_in')) + btn('zfit', null, 'fit', t('dd_zoom_fit')) + '</div>' +
-        '<div class="dd-grp dd-right">' + (kidMode ? '' : btn('tpl', null, 'tpl', t('dd_tpl'))) + btn('bgmenu', null, 'bg', t('dd_bg')) + (!kidMode && mode === 'mind' ? btn('outline', null, 'outline', t('dd_outline')) : '') + btn('more', null, 'more', '⋯') + btn('focus', null, 'focus', t('dd_focus')) + btn('fullscreen', null, 'full', t('doc_fullscreen')) + '</div>';
+        '<div class="dd-grp dd-right">' + (host.kidModeSwitch ? btn('kid', null, 'kid', t(kidMode ? 'dd_kid_off' : 'dd_kid_on'), kidMode) : '') + (kidMode ? '' : btn('tpl', null, 'tpl', t('dd_tpl'))) + btn('bgmenu', null, 'bg', t('dd_bg')) + (!kidMode && mode === 'mind' ? btn('outline', null, 'outline', t('dd_outline')) : '') + btn('more', null, 'more', '⋯') + btn('focus', null, 'focus', t('dd_focus')) + btn('fullscreen', null, 'full', t('doc_fullscreen')) + '</div>';
       var rail = btn('tool', 'select', 'select', t('dd_t_select'), tool === 'select') + btn('tool', 'hand', 'hand', t('dd_t_hand'), tool === 'hand') +
         btn('tool', 'pen', 'pen', t('dd_t_pen'), tool === 'pen') + btn('tool', 'hl', 'hl', t('dd_t_hl'), tool === 'hl') + btn('tool', 'eraser', 'eraser', t('dd_t_eraser'), tool === 'eraser');
       if (!kidMode) rail += btn('tool', 'text', 'text', t('dd_t_text'), tool === 'text') + btn('image', null, 'image', t('dd_t_image')) + btn('math', null, 'math', t('dd_t_math'));
@@ -2347,12 +2359,17 @@
       closeModal(); change(replaceObj(page.objs, id, patch));
     }
     function openMathMenu(anchor) {
-      openPop(anchor, '<div class="dd-menu"><div class="dd-mh">' + esc(t('dd_t_math')) + '</div>' + ['numline', 'ruler', 'protractor', 'fracbar', 'grid', 'compass'].map(function (k) { return menuItem('mathadd', k, t('dd_m_' + k)); }).join('') + '</div>');
+      openPop(anchor, '<div class="dd-menu"><div class="dd-mh">' + esc(t('dd_t_math')) + '</div>' + (pre ? ['numline'] : ['numline', 'ruler', 'protractor', 'fracbar', 'grid', 'compass']).map(function (k) { return menuItem('mathadd', k, t('dd_m_' + k)); }).join('') + '</div>');
     }
     var TEMPLATES = ['tchart', 'venn', 'kwl', 'story', 'place', '100', 'mult', 'fracwall', 'numline', 'coord', 'writing'];
     function openTplMenu(anchor) {
       var tr = host.tracing ? '<div class="dd-mh">' + esc(t('dd_trace_hd')) + '</div>' + ['letter', 'number', 'name', 'lines', 'shapes'].map(function (k) { return menuItem('trace', k, t('dd_trace_' + k)); }).join('') + '<hr>' : '';
-      openPop(anchor, '<div class="dd-menu">' + tr + '<div class="dd-mh">' + esc(t('dd_tpl')) + '</div>' + TEMPLATES.map(function (k) { return menuItem('tplpick', k, t('tpl_' + k)); }).join('') + '</div>');
+      openPop(anchor, '<div class="dd-menu">' + tr + '<div class="dd-mh">' + esc(t('dd_tpl')) + '</div>' + (pre ? ['numline', 'writing'] : TEMPLATES).map(function (k) { return menuItem('tplpick', k, t('tpl_' + k)); }).join('') + '</div>');
+    }
+    function setKid(on) {
+      kidMode = on; prefs.kid = on; savePrefs(); closePop(); endEdit(true);
+      if (on) { sel = new Set(); if (['text', 'conn', 'select'].indexOf(tool) > -1) tool = 'pen'; if (mode !== 'draw') setMode('draw'); toast(t('dd_kid_hint')); }
+      renderChrome(); need();
     }
     /* ----- tracing pages (host.tracing) ----- */
     var VI_LETTERS = 'a ă â b c d đ e ê g h i k l m n o ô ơ p q r s t u ư v x y'.split(' ');
@@ -2628,6 +2645,7 @@
         case 'outline-build': buildOutline(modalEl.querySelector('textarea').value); break;
         case 'modal-close': closeModal(); break;
         case 'focus': setFocus(!focusMode); break;
+        case 'kid': if (kidMode) requireUnlock(function () { setKid(false); }); else setKid(true); break;
         case 'fullscreen': if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () { toast(t('doc_fullscreen_fail')); }); break;
       }
     });

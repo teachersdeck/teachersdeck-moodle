@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tug of War | TeachersDeck</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 :root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
 *{box-sizing:border-box}
@@ -46,12 +46,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .rope{margin:8px auto 26px;max-width:640px}
 .rope-names{display:flex;justify-content:space-between;font-family:'Baloo 2';font-weight:700;font-size:1.1rem;margin-bottom:8px}
 #sideA{color:var(--pink)}#sideB{color:var(--blue)}
-#track{position:relative;height:14px;background:var(--panel2);border-radius:999px;display:flex;justify-content:space-between;align-items:center;padding:0 6px}
-.notch{width:6px;height:6px;border-radius:50%;background:var(--muted);opacity:.6}
-.notch.mid{background:var(--ink);opacity:1;width:8px;height:8px}
-#track.edgeA{box-shadow:0 0 0 3px var(--pink) inset}
-#track.edgeB{box-shadow:0 0 0 3px var(--blue) inset}
-#flag{position:absolute;top:50%;width:26px;height:26px;background:var(--gold);border:3px solid var(--stage);border-radius:50%;transform:translate(-50%,-50%);transition:left .35s ease;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+#arena{display:block;width:100%;height:auto;overflow:visible}
 .card{margin:22px auto;max-width:720px;text-align:center;background:var(--stage);border:4px solid var(--panel2);border-radius:20px;padding:34px 16px;transition:border-color .15s}
 .card.ok{border-color:var(--ok)}.card.no{border-color:var(--bad)}
 #q{font-family:'Baloo 2';font-weight:800;font-size:clamp(1.9rem,6vw,3.2rem);line-height:1.15}
@@ -68,7 +63,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 <div class="top"><span id="prog"></span><span id="turn"></span><span id="time" class="disp"></span></div>
 <div class="rope">
   <div class="rope-names"><span id="sideA">Team 1</span><span id="sideB">Team 2</span></div>
-  <div id="track"><div id="flag"></div></div>
+  <svg id="arena" viewBox="0 0 640 176" role="img" aria-label="The rope: each right answer pulls it one step"></svg>
 </div>
 <div class="card" id="card"><div id="q">Ready?</div></div>
 <div class="choices" id="choices"></div>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Spelling Bee Showdown | TeachersDeck</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 :root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
 *{box-sizing:border-box}
@@ -57,6 +57,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .answer{max-width:720px;margin:0 auto;min-height:74px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px;background:var(--stage);border:3px dashed var(--panel2);border-radius:16px;padding:6px 14px;font-family:'Baloo 2';font-weight:800;font-size:2.4rem;letter-spacing:.06em;color:var(--gold);transition:border-color .15s}
 .answer.ok{border-style:solid;border-color:var(--ok);color:var(--ok)}
 .answer.no{border-style:solid;border-color:var(--bad);color:var(--bad)}
+.answer .cell{display:inline-grid;place-items:center;width:1.12em;height:1.28em;margin:2px 1px;font-size:.82em;line-height:1;letter-spacing:0;background:#2c2a52;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);transition:background .25s,color .25s}
+.answer .cell.honey{background:linear-gradient(#ffe07a,#f0a020);color:#3a2400}
+.answer.no .cell{background:#4a2030}
 .caret{width:3px;height:1.9rem;margin-left:3px;background:var(--blue);animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 .kb{max-width:720px;margin:12px auto 0;display:flex;flex-direction:column;gap:7px}

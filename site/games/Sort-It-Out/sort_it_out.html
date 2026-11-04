@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sort It Out | TeachersDeck</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 :root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
 *{box-sizing:border-box}
@@ -45,7 +45,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 #instr{text-align:center;color:var(--muted);margin-bottom:14px}
 .tray{background:var(--stage);border:2px dashed var(--panel2);border-radius:14px;padding:12px;min-height:56px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
 .bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
-.bin{background:var(--stage);border:2px solid var(--panel2);border-radius:14px;padding:10px;min-height:120px;cursor:pointer}
+.bin{background:var(--stage);border:2px solid var(--panel2);border-radius:14px;padding:10px;min-height:120px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .3s}
+.bin .fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(0deg,rgba(61,219,176,.32),rgba(61,219,176,.05));border-top:2px solid rgba(61,219,176,.55);transition:height .5s ease-out;pointer-events:none}
+.bin h3,.bin .bin-list{position:relative;z-index:1}
+.bin.full{border-color:var(--mint)}.bin.full h3::after{content:" ¹3";color:var(--mint)}
 .bin h3{font-size:.95rem;color:var(--gold);margin-bottom:8px;text-align:center}
 .bin-list{display:flex;flex-wrap:wrap;gap:6px;min-height:40px}
 .org{background:var(--panel2);border:2px solid var(--blue);border-radius:10px;padding:7px 12px;font-weight:700;font-size:.92rem;cursor:pointer}

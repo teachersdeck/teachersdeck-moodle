@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sort It Out | TeachersDeck</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--stage);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:'Baloo 2','Inter',sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:3px solid var(--gold)}
+.hdr h1{font-size:1.7rem;color:var(--gold);margin-right:auto}
+.lv{display:flex;gap:4px;background:var(--stage);padding:4px;border-radius:999px}
+.lv button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;color:var(--muted)}
+.lv button.on[data-l=easy]{background:var(--ok);color:#06210f}
+.lv button.on[data-l=moderate]{background:var(--gold);color:#2a2000}
+.lv button.on[data-l=hard]{background:var(--bad);color:#2b0806}
+.hbtn{border:2px solid var(--muted);background:transparent;padding:6px 14px;border-radius:999px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:18px 20px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.stage{background:var(--panel);border-radius:var(--r);padding:22px;min-height:460px}
+.btn{border:0;border-radius:12px;padding:12px 22px;font-weight:700;background:var(--gold);color:#2a2000;font-size:1.05rem}
+.btn.ghost{background:transparent;border:2px solid var(--muted);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.side{background:var(--panel);border-radius:var(--r);padding:16px;align-self:start}
+.side h2{font-size:1.25rem;margin-bottom:10px}
+.team{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;background:var(--panel2);border:3px solid transparent;border-radius:12px;padding:10px;margin-bottom:10px;cursor:pointer}
+.team.act{border-color:var(--gold)}
+.team .nm{font-family:'Baloo 2';font-weight:700;font-size:1.15rem;outline:none;min-width:0}
+.team .sc{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--gold);grid-row:span 2}
+.team .pm{display:flex;gap:6px}
+.team .pm button{border:0;width:34px;height:30px;border-radius:8px;background:var(--stage);font-weight:800}
+.side .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.side .row button{flex:1;font-size:.85rem;padding:8px 10px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:var(--stage);padding:12px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.ftr{text-align:center;color:var(--muted);font-size:.8rem;padding:14px}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shake{animation:shake .3s}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+#turn{font-family:'Baloo 2';font-size:1.4rem;color:var(--ink)}
+#instr{text-align:center;color:var(--muted);margin-bottom:14px}
+.tray{background:var(--stage);border:2px dashed var(--panel2);border-radius:14px;padding:12px;min-height:56px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.bin{background:var(--stage);border:2px solid var(--panel2);border-radius:14px;padding:10px;min-height:120px;cursor:pointer}
+.bin h3{font-size:.95rem;color:var(--gold);margin-bottom:8px;text-align:center}
+.bin-list{display:flex;flex-wrap:wrap;gap:6px;min-height:40px}
+.org{background:var(--panel2);border:2px solid var(--blue);border-radius:10px;padding:7px 12px;font-weight:700;font-size:.92rem;cursor:pointer}
+.org:hover{background:var(--blue);color:#06183a}
+.org.sel{border-color:var(--gold);background:var(--gold);color:#2a2000}
+.org.placed{background:var(--ok);border-color:var(--ok);color:#06210f;cursor:pointer}
+.org.placed:hover{opacity:.8}
+#tally{text-align:center;color:var(--muted);margin-top:14px;font-weight:600}
+#msg{text-align:center;font-family:'Baloo 2';font-size:1.3rem;min-height:2.2rem;margin-top:14px}
+.ctl{text-align:center;margin-top:10px}
+</style></head><body>
+<div id="td-header"></div>
+<div class="wrap">
+<main class="stage">
+<div class="top"><span></span><span id="turn"></span><span></span></div>
+<p id="instr"></p>
+<div class="tray" id="tray"></div>
+<div class="bins" id="bins"></div>
+<div id="tally"></div>
+<div id="msg" role="status"></div>
+<div class="ctl" id="ctl"></div>
+</main>
+<aside id="td-teams"></aside>
+</div>
+<div class="ftr">A TeachersDeck game</div>
+<div id="toast" role="status"></div>
+<script src="sort_it_out.js"></script>
+</body></html>

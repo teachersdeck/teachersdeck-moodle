@@ -10,5 +10,35 @@
     "folder": "Spelling-Bee-Showdown",
     "entry": "spelling_bee_showdown.html",
     "instructions": "instructions.html"
+  },
+  {
+    "name": "Scrambled Sentences",
+    "folder": "Scrambled-Sentences",
+    "entry": "scrambled_sentences.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Number Ninja",
+    "folder": "Number-Ninja",
+    "entry": "number_ninja.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Food Chain Builder",
+    "folder": "Food-Chain-Builder",
+    "entry": "food_chain_builder.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Tug of War",
+    "folder": "Tug-of-War",
+    "entry": "tug_of_war.html",
+    "instructions": "instructions.html"
+  },
+  {
+    "name": "Sort It Out",
+    "folder": "Sort-It-Out",
+    "entry": "sort_it_out.html",
+    "instructions": "instructions.html"
   }
 ]

@@ -4234,7 +4234,8 @@ function renderGames(body){
       `;
       tile.querySelector('.game-tile-name').textContent = g.name || g.folder;
       tile.addEventListener('click', async ()=>{
-        const url = `games/${g.folder}/${g.entry}`;
+        // The app's language goes along: games that speak it (Maths and Science: English and Vietnamese) follow it.
+        const url = `games/${g.folder}/${g.entry}?lang=${encodeURIComponent(state.lang || 'en')}`;
         track('game', g.name || g.folder);
         // Opened straight from a folder (file://), the browser won't let a
         // page fetch() sibling files, so the reachability check below would
@@ -4257,7 +4258,7 @@ function renderGames(body){
       if(helpBtn){
         helpBtn.addEventListener('click', async e=>{
           e.stopPropagation();
-          const url = `games/${g.folder}/${g.instructions}`;
+          const url = `games/${g.folder}/${state.lang === 'vi' && g.instructions_vi ? g.instructions_vi : g.instructions}`;
           if(location.protocol === 'file:'){ window.open(url, '_blank'); return; }
           try{
             const res = await fetch(url, { method:'HEAD' });

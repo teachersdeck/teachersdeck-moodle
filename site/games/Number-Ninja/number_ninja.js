@@ -4,6 +4,15 @@ const LV=['easy','moderate','hard'],LN={easy:'Easy',moderate:'Moderate',hard:'Ha
 let cfg,level='easy',teams=[],act=0,muted=false,ac;
 const $=(s,r=document)=>r.querySelector(s);
 const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* language: a game that lists langs:['en','vi'] in TD.init follows ?lang= from the app (kept for the next visit) and has a
+   switch in its header; other games stay English. TD.L(en, vi) picks a string; TD.num(x) writes 0,5 and −3 in Vietnamese;
+   elements with data-vi get that text in Vietnamese. */
+const UI={vi:{Easy:'Dễ',Moderate:'Vừa',Hard:'Khó','How to play':'Cách chơi','Sound on':'Âm thanh: bật','Sound off':'Âm thanh: tắt',Teams:'Các đội','+ Team':'+ Đội','Reset scores':'Đặt lại điểm',Podium:'Bục vinh quang','Send to Scoreboard':'Gửi sang Bảng điểm',
+'Six teams is the maximum':'Tối đa sáu đội','Scores reset':'Đã đặt lại điểm','Scores sent to the Scoreboard widget':'Đã gửi điểm sang Bảng điểm',Team:'Đội','Motion: full':'Hiệu ứng: đầy đủ','Motion: reduced':'Hiệu ứng: giảm','Motion: off':'Hiệu ứng: tắt',
+'the podium':'bục vinh quang',Close:'Đóng','in a row!':'câu đúng liên tiếp!','Animations: full, reduced or off':'Hiệu ứng: đầy đủ, giảm hoặc tắt',Difficulty:'Độ khó'}};
+let lang='en';const want=(()=>{const q=new URLSearchParams(location.search).get('lang');if(q==='en'||q==='vi'){store.set('td_game_lang',q);return q}return store.get('td_game_lang','en')})();
+const U=s=>(UI[lang]&&UI[lang][s])||s,L=(en,vi)=>lang==='vi'&&vi!=null?vi:en;
+const num=x=>{let s=String(+(+x).toFixed(4));if(lang==='vi')s=s.replace('.',',');return s.replace(/^-/,'−')};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)}
 function tone(f,d,t='sine',at=0,v=.15,f2){if(muted)return;ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),s=ac.currentTime+at;o.type=t;o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(ac.destination);o.start(s);o.stop(s+d)}
 function sfx(k){if(k==='ok'){tone(660,.12);tone(880,.18,'sine',.1);fx.sparkle();fx.mascot('cheer');fx.streakHit()}
@@ -14,7 +23,7 @@ else if(k==='pop'){tone(520,.08,'sine',0,.12,900)}
 else if(k==='whoosh'){tone(300,.3,'triangle',0,.06,1400)}
 else if(k==='fanfare'){[[523,0],[523,.14],[659,.28],[784,.42],[1047,.62]].forEach(([f,t])=>tone(f,t>.6?.5:.16,'triangle',t,.13))}
 else if(k==='drum'){for(let i=0;i<12;i++)tone(140+i*4,.06,'triangle',i*.07,.05+i*.006)}}
-function speak(text){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}
+function speak(text){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang==='vi'?'vi-VN':'en-US';u.rate=.85;speechSynthesis.speak(u)}
 function saveTeams(){store.set('td_teams_'+cfg.id,{teams,act})}
 function renderTeams(){const box=$('#td-teams .list');box.innerHTML='';teams.forEach((t,i)=>{const d=document.createElement('div');d.className='team'+(i===act?' act':'');
 d.innerHTML=`<span class="nm" contenteditable="true" spellcheck="false"></span><span class="sc">${t.score}</span><span class="pm"><button aria-label="minus one">−1</button><button aria-label="plus one">+1</button></span>`;
@@ -23,19 +32,22 @@ d.onclick=()=>{act=i;saveTeams();renderTeams()};
 const b=d.querySelectorAll('.pm button');b[0].onclick=e=>{e.stopPropagation();award(-1,i)};b[1].onclick=e=>{e.stopPropagation();award(1,i)};box.appendChild(d)});}
 function award(n,i=act){const was=teams[i].score;teams[i].score=Math.max(0,was+n);saveTeams();renderTeams();fx.scored(i,was,teams[i].score)}
 function nextTeam(){act=(act+1)%teams.length;fx.streakReset();saveTeams();renderTeams()}
-function sendScores(){store.set('td_scoreboard_transfer',{teams:teams.map(t=>({name:t.name,score:t.score})),from:cfg.title,ts:Date.now()});toast('Scores sent to the Scoreboard widget')}
-function init(c){cfg=c;
+function sendScores(){store.set('td_scoreboard_transfer',{teams:teams.map(t=>({name:t.name,score:t.score})),from:cfg.title,ts:Date.now()});toast(U('Scores sent to the Scoreboard widget'))}
+function init(c){cfg=c;lang=(c.langs||['en']).includes(want)?want:'en';document.documentElement.lang=lang;
 const q=new URLSearchParams(location.search).get('level');
 level=LV.includes(q)?q:store.get('td_level_'+c.id,'easy');
-const s=store.get('td_teams_'+c.id,null);teams=s?s.teams:[{name:'Team 1',score:0},{name:'Team 2',score:0}];act=s?s.act:0;
+const s=store.get('td_teams_'+c.id,null);teams=s?s.teams:[{name:U('Team')+' 1',score:0},{name:U('Team')+' 2',score:0}];act=s?s.act:0;
 $('#td-header').className='hdr';
-$('#td-header').innerHTML=`<h1>${c.title}</h1><div class="lv" role="group" aria-label="Difficulty">${LV.map(l=>`<button data-l="${l}">${LN[l]}</button>`).join('')}</div><a class="hbtn" href="instructions.html" target="_blank" rel="noopener">How to play</a><button class="hbtn" id="mute">Sound on</button><button class="hbtn" id="motion" title="Animations: full, reduced or off"></button>`;
+const multi=(c.langs||[]).length>1;
+$('#td-header').innerHTML=`<h1>${c.title}</h1><div class="lv" role="group" aria-label="${U('Difficulty')}">${LV.map(l=>`<button data-l="${l}">${U(LN[l])}</button>`).join('')}</div><a class="hbtn" href="${lang==='vi'&&multi?'instructions.vi.html':'instructions.html'}" target="_blank" rel="noopener">${U('How to play')}</a><button class="hbtn" id="mute">${U('Sound on')}</button><button class="hbtn" id="motion" title="${U('Animations: full, reduced or off')}"></button>${multi?`<button class="hbtn" id="langB" lang="${lang==='vi'?'en':'vi'}">${lang==='vi'?'English':'Tiếng Việt'}</button>`:''}`;
+if(multi)$('#langB').onclick=()=>{const u=new URL(location.href);u.searchParams.set('lang',lang==='vi'?'en':'vi');u.searchParams.set('level',level);location.replace(u.href)};
+if(lang==='vi')document.querySelectorAll('[data-vi]').forEach(e=>e.textContent=e.dataset.vi);
 $('#td-teams').className='side';
-$('#td-teams').innerHTML=`<h2>Teams</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">+ Team</button><button class="btn ghost" id="rstT">Reset scores</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} Podium</button><button class="btn" id="sendT">Send to Scoreboard</button></div>`;
-$('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=muted?'Sound off':'Sound on';if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
+$('#td-teams').innerHTML=`<h2>${U('Teams')}</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">${U('+ Team')}</button><button class="btn ghost" id="rstT">${U('Reset scores')}</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} ${U('Podium')}</button><button class="btn" id="sendT">${U('Send to Scoreboard')}</button></div>`;
+$('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=U(muted?'Sound off':'Sound on');if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
 $('#motion').onclick=()=>fx.cycleMotion();
-$('#addT').onclick=()=>{if(teams.length<6){teams.push({name:'Team '+(teams.length+1),score:0});saveTeams();renderTeams()}else toast('Six teams is the maximum')};
-$('#rstT').onclick=()=>{teams.forEach(t=>t.score=0);saveTeams();renderTeams();toast('Scores reset')};
+$('#addT').onclick=()=>{if(teams.length<6){teams.push({name:U('Team')+' '+(teams.length+1),score:0});saveTeams();renderTeams()}else toast(U('Six teams is the maximum'))};
+$('#rstT').onclick=()=>{teams.forEach(t=>t.score=0);saveTeams();renderTeams();toast(U('Scores reset'))};
 $('#sendT').onclick=sendScores;
 $('#podT').onclick=()=>fx.podium();
 document.querySelectorAll('.lv button').forEach(b=>b.onclick=()=>setLevel(b.dataset.l));
@@ -97,8 +109,8 @@ function start(){const st=document.createElement('style');st.textContent=CSS;doc
 cv=document.createElement('canvas');cv.id='td-fx';cv.setAttribute('aria-hidden','true');document.body.appendChild(cv);cx=cv.getContext('2d');size();addEventListener('resize',size);
 mascotMake();label();document.addEventListener('visibilitychange',()=>{if(sceneEl)sceneEl.getAnimations({subtree:true}).forEach(a=>document.hidden?a.pause():a.play());if(document.hidden){parts=[];cancelAnimationFrame(raf);raf=0;cx.clearRect(0,0,cv.width,cv.height)}})}
 function size(){const r=devicePixelRatio||1;cv.width=innerWidth*r;cv.height=innerHeight*r;cx.setTransform(r,0,0,r,0,0)}
-function label(){const b=$('#motion');if(b)b.textContent=MN[motion];document.documentElement.dataset.motion=motion}
-function cycleMotion(){motion=MOT[(MOT.indexOf(motion)+1)%3];store.set('td_motion',motion);label();toast(MN[motion]);if(!full()){parts=[]}sceneMove()}
+function label(){const b=$('#motion');if(b)b.textContent=U(MN[motion]);document.documentElement.dataset.motion=motion}
+function cycleMotion(){motion=MOT[(MOT.indexOf(motion)+1)%3];store.set('td_motion',motion);label();toast(U(MN[motion]));if(!full()){parts=[]}sceneMove()}
 /* particles: one canvas over the page, drawn only while something is moving, at most 160 pieces */
 const COL=['#f5c542','#3ddbb0','#4da3ff','#ff6fae','#ffffff'];
 function add(p){if(parts.length<160)parts.push(p)}
@@ -125,7 +137,7 @@ function count(el,a,i){if(!el)return;const end=()=>teams[i]?teams[i].score:a;if(
 const fin=()=>{if(!over){over=true;if(el.isConnected)el.textContent=end()}};setTimeout(fin,d+100);
 (function step(t){if(over)return;const k=Math.min(1,(t-t0)/d),b=end();el.textContent=Math.round(a+(b-a)*(1-Math.pow(1-k,3)));if(k<1&&el.isConnected)requestAnimationFrame(step);else fin()})(t0)}
 /* streaks: counted from sfx('ok') / sfx('bad'), reset on a new team or level; a badge at 3, 5, 10 and every 5 after */
-function streakHit(){streak++;if(streak===3||streak===5||(streak>=10&&streak%5===0))badge('\u{1F525} '+streak+' in a row!')}
+function streakHit(){streak++;if(streak===3||streak===5||(streak>=10&&streak%5===0))badge('\u{1F525} '+streak+' '+U('in a row!'))}
 function streakReset(){streak=0}
 function badge(text){if(still())return;const d=document.createElement('div');d.className='td-streak';d.textContent=text;document.body.appendChild(d);sfx('pop');
 const a=full()?anim(d,[{transform:'translateX(-50%) scale(.3)',opacity:0},{transform:'translateX(-50%) scale(1.15)',opacity:1,offset:.18},{transform:'translateX(-50%) scale(1)',offset:.3},{transform:'translateX(-50%) scale(1)',opacity:1,offset:.85},{transform:'translateX(-50%) translateY(-20px)',opacity:0}],{duration:1600}):anim(d,[{transform:'translateX(-50%)',opacity:0},{opacity:1,offset:.15},{opacity:1,offset:.85},{transform:'translateX(-50%)',opacity:0}],{duration:1600});
@@ -144,7 +156,7 @@ if(left<=5&&left>0&&full())anim(w,[{transform:'scale(1)'},{transform:'scale(1.08
 function podium(){$('.td-pod')&&$('.td-pod').remove();const order=teams.map((t,i)=>({...t,i})).sort((a,b)=>b.score-a.score),top=order.slice(0,3),rest=order.slice(3);
 const M=['\u{1F947}','\u{1F948}','\u{1F949}'],place=[1,0,2].filter(p=>p<top.length);
 const o=document.createElement('div');o.className='td-pod';o.setAttribute('role','dialog');o.setAttribute('aria-label','Podium');
-o.innerHTML=`<div class="box"><h2>${cfg.title}: the podium</h2><div class="cols"></div><p class="rest"></p><div class="acts"><button class="btn" data-a="send">Send to Scoreboard</button><button class="btn ghost" data-a="close">Close</button></div></div>`;
+o.innerHTML=`<div class="box"><h2>${cfg.title}: ${U('the podium')}</h2><div class="cols"></div><p class="rest"></p><div class="acts"><button class="btn" data-a="send">${U('Send to Scoreboard')}</button><button class="btn ghost" data-a="close">${U('Close')}</button></div></div>`;
 const cols=$('.cols',o);place.forEach(p=>{const t=top[p],c=document.createElement('div');c.className='col p'+(p+1);c.innerHTML='<div class="medal"></div><div class="nm"></div><div class="bar"></div>';$('.medal',c).textContent=M[Math.min(2,order.filter(o=>o.score>t.score).length)];$('.nm',c).textContent=t.name;$('.bar',c).textContent=t.score;cols.appendChild(c)});
 $('.rest',o).textContent=rest.map(t=>`${order.filter(o=>o.score>t.score).length+1}. ${t.name} ${t.score}`).join('   ');
 const close=()=>{o.remove();removeEventListener('keydown',esc)},esc=e=>{if(e.key==='Escape')close()};
@@ -209,7 +221,7 @@ done(anim(d,k,{duration:ms,easing:'ease-in-out'}),()=>d.remove(),ms)}
 /* a line or arrow draws itself from the left */
 function drawIn(el,delay=0){if(still()||!el)return;anim(el,full()?[{transform:'scaleX(0)',transformOrigin:'left center'},{transform:'scaleX(1)',transformOrigin:'left center'}]:[{opacity:0},{opacity:1}],{duration:300,delay,easing:'ease-out',fill:'backwards'})}
 return{start,cycleMotion,sparkle,confetti,flash,shake,scored,streakHit,streakReset,banner,ring,podium,mascot,scene,moves,pop,deal,slash,glow,wave,puff,critter,drawIn,get motion(){return motion}}})();
-return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
+return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,L,num,get lang(){return lang},get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
 
 const $=s=>document.querySelector(s);
 const CFG={easy:{time:90,pts:1,pen:0,opts:3},moderate:{time:60,pts:1,pen:1,opts:4},hard:{time:60,pts:2,pen:1,opts:0}};
@@ -218,7 +230,7 @@ const GEN={
 easy:()=>{const t=rnd(0,2);if(t===0){const a=rnd(1,10),b=rnd(1,20-a>10?10:20-a);return[a+' + '+b,a+b]}if(t===1){const a=rnd(5,20),b=rnd(1,a);return[a+' \u2212 '+b,a-b]}const a=[2,5,10][rnd(0,2)],b=rnd(1,10);return[a+' \u00D7 '+b,a*b]},
 moderate:()=>{const t=rnd(0,4);if(t===0){const a=rnd(10,99),b=rnd(10,99);return[a+' + '+b,a+b]}if(t===1){const a=rnd(10,60),b=rnd(10,99);return[a+' \u2212 '+b,a-b]}
 if(t===2){const a=rnd(2,12),b=rnd(2,12);return[a+' \u00D7 '+b,a*b]}if(t===3){const d=rnd(2,12),q=rnd(2,12);return[d*q+' \u00F7 '+d,q]}
-const d=rnd(2,5),n=rnd(1,d-1),w=d*rnd(2,10);return[n+'/'+d+' of '+w,w/d*n]},
+const d=rnd(2,5),n=rnd(1,d-1),w=d*rnd(2,10);return[n+'/'+d+TD.L(' of ',' của ')+w,w/d*n]},
 hard:()=>{const t=rnd(0,5);let a,b,c,d;
 if(t===0){a=rnd(2,20);b=rnd(2,9);c=rnd(2,9);return[a+' + '+b+' \u00D7 '+c,a+b*c]}
 if(t===1){a=rnd(2,12);b=rnd(2,12);c=rnd(2,9);return['('+a+' + '+b+') \u00D7 '+c,(a+b)*c]}
@@ -227,25 +239,25 @@ if(t===3){a=rnd(2,6);b=rnd(1,20);return[a+'\u00B3 \u2212 '+b,a*a*a-b]}
 if(t===4){a=rnd(2,9);b=rnd(2,9);c=rnd(2,9);d=rnd(2,9);return[a+' \u00D7 '+b+' \u2212 '+c+' \u00D7 '+d,a*b-c*d]}
 a=rnd(1,8);b=rnd(1,8);return['('+a+' + '+b+')\u00B2',(a+b)*(a+b)]}};
 let run=false,left,timer,ans,right,streak,best,gain,ring;
-function reset(){clearInterval(timer);run=false;lamps(0);$('#choices').innerHTML='';$('#q').textContent='Ready?';$('#card').className='card';
-$('#turn').textContent=TD.team.name+"'s turn";$('#time').textContent=CFG[TD.level].time+'s';$('#time').classList.remove('low');ring=ring||TD.fx.ring($('#time'));ring.reset();$('#prog').textContent=TD.level==='hard'?'Type the answer, press Enter':'Tap the answer or press 1\u20139';
-$('#ctl').innerHTML='<button class="btn" id="go">Start round</button>';$('#go').onclick=begin;$('#msg').textContent='';['nr','ns','nb'].forEach(i=>$('#'+i).textContent=0)}
+function reset(){clearInterval(timer);run=false;lamps(0);$('#choices').innerHTML='';$('#q').textContent=TD.L('Ready?','Sẵn sàng?');$('#card').className='card';
+$('#turn').textContent=TD.L(TD.team.name+"'s turn",'Lượt của '+TD.team.name);$('#time').textContent=CFG[TD.level].time+'s';$('#time').classList.remove('low');ring=ring||TD.fx.ring($('#time'));ring.reset();$('#prog').textContent=TD.level==='hard'?TD.L('Type the answer, press Enter','Gõ đáp án rồi nhấn Enter'):TD.L('Tap the answer or press 1\u20139','Chạm vào đáp án hoặc nhấn 1\u20139');
+$('#ctl').innerHTML='<button class="btn" id="go">'+TD.L('Start round','Bắt đầu lượt')+'</button>';$('#go').onclick=begin;$('#msg').textContent='';['nr','ns','nb'].forEach(i=>$('#'+i).textContent=0)}
 function begin(){run=true;left=CFG[TD.level].time;right=streak=best=gain=0;$('#ctl').innerHTML='';$('#msg').textContent='';['nr','ns','nb'].forEach(i=>$('#'+i).textContent=0);
-$('#turn').textContent=TD.team.name+"'s turn";TD.fx.banner(TD.team.name,'Go! '+left+' seconds');clock();timer=setInterval(()=>{left--;clock();if(left<=5&&left>0)TD.sfx('tick');if(left<=0)end()},1000);ask()}
+$('#turn').textContent=TD.L(TD.team.name+"'s turn",'Lượt của '+TD.team.name);TD.fx.banner(TD.team.name,TD.L('Go! '+left+' seconds','Bắt đầu! '+left+' giây'));clock();timer=setInterval(()=>{left--;clock();if(left<=5&&left>0)TD.sfx('tick');if(left<=0)end()},1000);ask()}
 function clock(){$('#time').textContent=left+'s';$('#time').classList.toggle('low',left<=10);ring.set(left,CFG[TD.level].time)}
 function ask(){const g=GEN[TD.level]();ans=g[1];$('#q').textContent=g[0]+' = ?';const c=CFG[TD.level],box=$('#choices');box.innerHTML='';
 if(c.opts){const s=new Set([ans]);let sp=Math.max(3,Math.round(Math.abs(ans)*.2));while(s.size<c.opts){const d=rnd(1,sp)*(rnd(0,1)?1:-1),v=ans+d;if(!(TD.level==='easy'&&v<0))s.add(v)}
 TD.shuffle([...s]).forEach((v,i)=>{const b=document.createElement('button');b.className='ch';b.textContent=v;b.onclick=()=>answer(v);box.append(b)});TD.fx.deal(box)}
-else{box.innerHTML='<input id="num" type="text" inputmode="numeric" autocomplete="off" aria-label="Your answer">';const n=$('#num');n.focus();n.onkeydown=e=>{if(e.key==='Enter'&&n.value.trim()!==''){answer(Number(n.value.trim()))}}}}
+else{box.innerHTML='<input id="num" type="text" inputmode="numeric" autocomplete="off" aria-label="'+TD.L('Your answer','Đáp án')+'">';const n=$('#num');n.focus();n.onkeydown=e=>{if(e.key==='Enter'&&n.value.trim()!==''){answer(Number(n.value.trim()))}}}}
 function answer(v){if(!run)return;const c=CFG[TD.level],ok=v===ans,card=$('#card');
 card.className='card '+(ok?'ok':'no');setTimeout(()=>{if(run)card.className='card'},250);
-if(ok){right++;streak++;best=Math.max(best,streak);let p=c.pts;if(TD.level==='hard'&&streak%5===0){p++;TD.toast('Streak bonus +1')}TD.fx.slash(card);TD.award(p);gain+=p;TD.sfx('ok')}
+if(ok){right++;streak++;best=Math.max(best,streak);let p=c.pts;if(TD.level==='hard'&&streak%5===0){p++;TD.toast(TD.L('Streak bonus +1','Thưởng chuỗi +1'))}TD.fx.slash(card);TD.award(p);gain+=p;TD.sfx('ok')}
 else{streak=0;TD.sfx('bad');if(c.pen){TD.award(-c.pen);gain-=c.pen}}
 lamps(streak);
 $('#nr').textContent=right;$('#ns').textContent=streak;$('#nb').textContent=best;ask()}
-function end(){clearInterval(timer);run=false;$('#choices').innerHTML='';$('#q').textContent='Time!';TD.sfx('win');
-const who=TD.team.name;$('#msg').textContent=who+': '+right+' right, best streak '+best+', net '+(gain>=0?'+':'')+gain+' points';
-TD.nextTeam();$('#ctl').innerHTML='<button class="btn" id="go">Next team: '+TD.team.name+'</button>'+(TD.teamIndex===0?' <button class="btn ghost" id="pod">\u{1F3C6} Everyone has played: podium</button>':'');$('#go').onclick=reset;if($('#pod'))$('#pod').onclick=()=>TD.fx.podium()}
+function end(){clearInterval(timer);run=false;$('#choices').innerHTML='';$('#q').textContent=TD.L('Time!','Hết giờ!');TD.sfx('win');
+const who=TD.team.name;$('#msg').textContent=TD.L(who+': '+right+' right, best streak '+best+', net '+(gain>=0?'+':'')+gain+' points',who+': '+right+' câu đúng, chuỗi dài nhất '+best+', tổng '+(gain>=0?'+':'')+gain+' điểm');
+TD.nextTeam();$('#ctl').innerHTML='<button class="btn" id="go">'+TD.L('Next team: ','Đội tiếp theo: ')+TD.team.name+'</button>'+(TD.teamIndex===0?' <button class="btn ghost" id="pod">\u{1F3C6} '+TD.L('Everyone has played: podium','Tất cả đã chơi: xem bục vinh quang')+'</button>':'');$('#go').onclick=reset;if($('#pod'))$('#pod').onclick=()=>TD.fx.podium()}
 document.addEventListener('keydown',e=>{if(!run||TD.level==='hard')return;const n=Number(e.key);if(n>=1&&n<=9){const b=document.querySelectorAll('.ch')[n-1];if(b)b.click()}});
 /* the dojo at night: the lanterns glow brighter with every answer in a row */
 const lantern=x=>`<g><circle class="halo" cx="${x}" cy="735" r="150" fill="url(#nn-lan)" opacity=".12" style="transition:opacity .6s"/><rect x="${x-7}" y="770" width="14" height="70" fill="#2a1a12"/><rect x="${x-34}" y="836" width="68" height="12" rx="4" fill="#2a1a12"/><path d="M${x-44} 688h88l-14-18h-60z" fill="#2a1a12"/><rect x="${x-30}" y="688" width="60" height="84" rx="12" fill="#e9a23b"/><rect x="${x-30}" y="688" width="60" height="84" rx="12" fill="#ffdd8a" class="halo" opacity=".12" style="transition:opacity .6s"/><path d="M${x} 688v84M${x-30} 716h60M${x-30} 744h60" stroke="#8a5a1c" stroke-width="2"/></g>`;
@@ -265,4 +277,4 @@ ${lantern(150)}${lantern(420)}${lantern(1180)}${lantern(1450)}
 ${petal(130,17,0)}${petal(420,21,-6)}${petal(760,19,-11)}${petal(1040,23,-3)}${petal(1380,18,-14)}${petal(1540,25,-8)}</svg>`;
 const dojo=TD.fx.scene(DOJO);
 function lamps(n){dojo.querySelectorAll('.halo').forEach(h=>h.style.opacity=Math.min(.95,.12+n*.14))}
-TD.init({id:'number-ninja',title:'Number Ninja',onLevel:()=>reset()});
+TD.init({id:'number-ninja',title:'Number Ninja',langs:['en','vi'],onLevel:()=>reset()});

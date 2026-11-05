@@ -4,6 +4,15 @@ const LV=['easy','moderate','hard'],LN={easy:'Easy',moderate:'Moderate',hard:'Ha
 let cfg,level='easy',teams=[],act=0,muted=false,ac;
 const $=(s,r=document)=>r.querySelector(s);
 const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* language: a game that lists langs:['en','vi'] in TD.init follows ?lang= from the app (kept for the next visit) and has a
+   switch in its header; other games stay English. TD.L(en, vi) picks a string; TD.num(x) writes 0,5 and −3 in Vietnamese;
+   elements with data-vi get that text in Vietnamese. */
+const UI={vi:{Easy:'Dễ',Moderate:'Vừa',Hard:'Khó','How to play':'Cách chơi','Sound on':'Âm thanh: bật','Sound off':'Âm thanh: tắt',Teams:'Các đội','+ Team':'+ Đội','Reset scores':'Đặt lại điểm',Podium:'Bục vinh quang','Send to Scoreboard':'Gửi sang Bảng điểm',
+'Six teams is the maximum':'Tối đa sáu đội','Scores reset':'Đã đặt lại điểm','Scores sent to the Scoreboard widget':'Đã gửi điểm sang Bảng điểm',Team:'Đội','Motion: full':'Hiệu ứng: đầy đủ','Motion: reduced':'Hiệu ứng: giảm','Motion: off':'Hiệu ứng: tắt',
+'the podium':'bục vinh quang',Close:'Đóng','in a row!':'câu đúng liên tiếp!','Animations: full, reduced or off':'Hiệu ứng: đầy đủ, giảm hoặc tắt',Difficulty:'Độ khó'}};
+let lang='en';const want=(()=>{const q=new URLSearchParams(location.search).get('lang');if(q==='en'||q==='vi'){store.set('td_game_lang',q);return q}return store.get('td_game_lang','en')})();
+const U=s=>(UI[lang]&&UI[lang][s])||s,L=(en,vi)=>lang==='vi'&&vi!=null?vi:en;
+const num=x=>{let s=String(+(+x).toFixed(4));if(lang==='vi')s=s.replace('.',',');return s.replace(/^-/,'−')};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)}
 function tone(f,d,t='sine',at=0,v=.15,f2){if(muted)return;ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),s=ac.currentTime+at;o.type=t;o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(ac.destination);o.start(s);o.stop(s+d)}
 function sfx(k){if(k==='ok'){tone(660,.12);tone(880,.18,'sine',.1);fx.sparkle();fx.mascot('cheer');fx.streakHit()}
@@ -14,7 +23,7 @@ else if(k==='pop'){tone(520,.08,'sine',0,.12,900)}
 else if(k==='whoosh'){tone(300,.3,'triangle',0,.06,1400)}
 else if(k==='fanfare'){[[523,0],[523,.14],[659,.28],[784,.42],[1047,.62]].forEach(([f,t])=>tone(f,t>.6?.5:.16,'triangle',t,.13))}
 else if(k==='drum'){for(let i=0;i<12;i++)tone(140+i*4,.06,'triangle',i*.07,.05+i*.006)}}
-function speak(text){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}
+function speak(text){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang==='vi'?'vi-VN':'en-US';u.rate=.85;speechSynthesis.speak(u)}
 function saveTeams(){store.set('td_teams_'+cfg.id,{teams,act})}
 function renderTeams(){const box=$('#td-teams .list');box.innerHTML='';teams.forEach((t,i)=>{const d=document.createElement('div');d.className='team'+(i===act?' act':'');
 d.innerHTML=`<span class="nm" contenteditable="true" spellcheck="false"></span><span class="sc">${t.score}</span><span class="pm"><button aria-label="minus one">−1</button><button aria-label="plus one">+1</button></span>`;
@@ -23,19 +32,22 @@ d.onclick=()=>{act=i;saveTeams();renderTeams()};
 const b=d.querySelectorAll('.pm button');b[0].onclick=e=>{e.stopPropagation();award(-1,i)};b[1].onclick=e=>{e.stopPropagation();award(1,i)};box.appendChild(d)});}
 function award(n,i=act){const was=teams[i].score;teams[i].score=Math.max(0,was+n);saveTeams();renderTeams();fx.scored(i,was,teams[i].score)}
 function nextTeam(){act=(act+1)%teams.length;fx.streakReset();saveTeams();renderTeams()}
-function sendScores(){store.set('td_scoreboard_transfer',{teams:teams.map(t=>({name:t.name,score:t.score})),from:cfg.title,ts:Date.now()});toast('Scores sent to the Scoreboard widget')}
-function init(c){cfg=c;
+function sendScores(){store.set('td_scoreboard_transfer',{teams:teams.map(t=>({name:t.name,score:t.score})),from:cfg.title,ts:Date.now()});toast(U('Scores sent to the Scoreboard widget'))}
+function init(c){cfg=c;lang=(c.langs||['en']).includes(want)?want:'en';document.documentElement.lang=lang;
 const q=new URLSearchParams(location.search).get('level');
 level=LV.includes(q)?q:store.get('td_level_'+c.id,'easy');
-const s=store.get('td_teams_'+c.id,null);teams=s?s.teams:[{name:'Team 1',score:0},{name:'Team 2',score:0}];act=s?s.act:0;
+const s=store.get('td_teams_'+c.id,null);teams=s?s.teams:[{name:U('Team')+' 1',score:0},{name:U('Team')+' 2',score:0}];act=s?s.act:0;
 $('#td-header').className='hdr';
-$('#td-header').innerHTML=`<h1>${c.title}</h1><div class="lv" role="group" aria-label="Difficulty">${LV.map(l=>`<button data-l="${l}">${LN[l]}</button>`).join('')}</div><a class="hbtn" href="instructions.html" target="_blank" rel="noopener">How to play</a><button class="hbtn" id="mute">Sound on</button><button class="hbtn" id="motion" title="Animations: full, reduced or off"></button>`;
+const multi=(c.langs||[]).length>1;
+$('#td-header').innerHTML=`<h1>${c.title}</h1><div class="lv" role="group" aria-label="${U('Difficulty')}">${LV.map(l=>`<button data-l="${l}">${U(LN[l])}</button>`).join('')}</div><a class="hbtn" href="${lang==='vi'&&multi?'instructions.vi.html':'instructions.html'}" target="_blank" rel="noopener">${U('How to play')}</a><button class="hbtn" id="mute">${U('Sound on')}</button><button class="hbtn" id="motion" title="${U('Animations: full, reduced or off')}"></button>${multi?`<button class="hbtn" id="langB" lang="${lang==='vi'?'en':'vi'}">${lang==='vi'?'English':'Tiếng Việt'}</button>`:''}`;
+if(multi)$('#langB').onclick=()=>{const u=new URL(location.href);u.searchParams.set('lang',lang==='vi'?'en':'vi');u.searchParams.set('level',level);location.replace(u.href)};
+if(lang==='vi')document.querySelectorAll('[data-vi]').forEach(e=>e.textContent=e.dataset.vi);
 $('#td-teams').className='side';
-$('#td-teams').innerHTML=`<h2>Teams</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">+ Team</button><button class="btn ghost" id="rstT">Reset scores</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} Podium</button><button class="btn" id="sendT">Send to Scoreboard</button></div>`;
-$('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=muted?'Sound off':'Sound on';if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
+$('#td-teams').innerHTML=`<h2>${U('Teams')}</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">${U('+ Team')}</button><button class="btn ghost" id="rstT">${U('Reset scores')}</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} ${U('Podium')}</button><button class="btn" id="sendT">${U('Send to Scoreboard')}</button></div>`;
+$('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=U(muted?'Sound off':'Sound on');if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
 $('#motion').onclick=()=>fx.cycleMotion();
-$('#addT').onclick=()=>{if(teams.length<6){teams.push({name:'Team '+(teams.length+1),score:0});saveTeams();renderTeams()}else toast('Six teams is the maximum')};
-$('#rstT').onclick=()=>{teams.forEach(t=>t.score=0);saveTeams();renderTeams();toast('Scores reset')};
+$('#addT').onclick=()=>{if(teams.length<6){teams.push({name:U('Team')+' '+(teams.length+1),score:0});saveTeams();renderTeams()}else toast(U('Six teams is the maximum'))};
+$('#rstT').onclick=()=>{teams.forEach(t=>t.score=0);saveTeams();renderTeams();toast(U('Scores reset'))};
 $('#sendT').onclick=sendScores;
 $('#podT').onclick=()=>fx.podium();
 document.querySelectorAll('.lv button').forEach(b=>b.onclick=()=>setLevel(b.dataset.l));
@@ -97,8 +109,8 @@ function start(){const st=document.createElement('style');st.textContent=CSS;doc
 cv=document.createElement('canvas');cv.id='td-fx';cv.setAttribute('aria-hidden','true');document.body.appendChild(cv);cx=cv.getContext('2d');size();addEventListener('resize',size);
 mascotMake();label();document.addEventListener('visibilitychange',()=>{if(sceneEl)sceneEl.getAnimations({subtree:true}).forEach(a=>document.hidden?a.pause():a.play());if(document.hidden){parts=[];cancelAnimationFrame(raf);raf=0;cx.clearRect(0,0,cv.width,cv.height)}})}
 function size(){const r=devicePixelRatio||1;cv.width=innerWidth*r;cv.height=innerHeight*r;cx.setTransform(r,0,0,r,0,0)}
-function label(){const b=$('#motion');if(b)b.textContent=MN[motion];document.documentElement.dataset.motion=motion}
-function cycleMotion(){motion=MOT[(MOT.indexOf(motion)+1)%3];store.set('td_motion',motion);label();toast(MN[motion]);if(!full()){parts=[]}sceneMove()}
+function label(){const b=$('#motion');if(b)b.textContent=U(MN[motion]);document.documentElement.dataset.motion=motion}
+function cycleMotion(){motion=MOT[(MOT.indexOf(motion)+1)%3];store.set('td_motion',motion);label();toast(U(MN[motion]));if(!full()){parts=[]}sceneMove()}
 /* particles: one canvas over the page, drawn only while something is moving, at most 160 pieces */
 const COL=['#f5c542','#3ddbb0','#4da3ff','#ff6fae','#ffffff'];
 function add(p){if(parts.length<160)parts.push(p)}
@@ -125,7 +137,7 @@ function count(el,a,i){if(!el)return;const end=()=>teams[i]?teams[i].score:a;if(
 const fin=()=>{if(!over){over=true;if(el.isConnected)el.textContent=end()}};setTimeout(fin,d+100);
 (function step(t){if(over)return;const k=Math.min(1,(t-t0)/d),b=end();el.textContent=Math.round(a+(b-a)*(1-Math.pow(1-k,3)));if(k<1&&el.isConnected)requestAnimationFrame(step);else fin()})(t0)}
 /* streaks: counted from sfx('ok') / sfx('bad'), reset on a new team or level; a badge at 3, 5, 10 and every 5 after */
-function streakHit(){streak++;if(streak===3||streak===5||(streak>=10&&streak%5===0))badge('\u{1F525} '+streak+' in a row!')}
+function streakHit(){streak++;if(streak===3||streak===5||(streak>=10&&streak%5===0))badge('\u{1F525} '+streak+' '+U('in a row!'))}
 function streakReset(){streak=0}
 function badge(text){if(still())return;const d=document.createElement('div');d.className='td-streak';d.textContent=text;document.body.appendChild(d);sfx('pop');
 const a=full()?anim(d,[{transform:'translateX(-50%) scale(.3)',opacity:0},{transform:'translateX(-50%) scale(1.15)',opacity:1,offset:.18},{transform:'translateX(-50%) scale(1)',offset:.3},{transform:'translateX(-50%) scale(1)',opacity:1,offset:.85},{transform:'translateX(-50%) translateY(-20px)',opacity:0}],{duration:1600}):anim(d,[{transform:'translateX(-50%)',opacity:0},{opacity:1,offset:.15},{opacity:1,offset:.85},{transform:'translateX(-50%)',opacity:0}],{duration:1600});
@@ -144,7 +156,7 @@ if(left<=5&&left>0&&full())anim(w,[{transform:'scale(1)'},{transform:'scale(1.08
 function podium(){$('.td-pod')&&$('.td-pod').remove();const order=teams.map((t,i)=>({...t,i})).sort((a,b)=>b.score-a.score),top=order.slice(0,3),rest=order.slice(3);
 const M=['\u{1F947}','\u{1F948}','\u{1F949}'],place=[1,0,2].filter(p=>p<top.length);
 const o=document.createElement('div');o.className='td-pod';o.setAttribute('role','dialog');o.setAttribute('aria-label','Podium');
-o.innerHTML=`<div class="box"><h2>${cfg.title}: the podium</h2><div class="cols"></div><p class="rest"></p><div class="acts"><button class="btn" data-a="send">Send to Scoreboard</button><button class="btn ghost" data-a="close">Close</button></div></div>`;
+o.innerHTML=`<div class="box"><h2>${cfg.title}: ${U('the podium')}</h2><div class="cols"></div><p class="rest"></p><div class="acts"><button class="btn" data-a="send">${U('Send to Scoreboard')}</button><button class="btn ghost" data-a="close">${U('Close')}</button></div></div>`;
 const cols=$('.cols',o);place.forEach(p=>{const t=top[p],c=document.createElement('div');c.className='col p'+(p+1);c.innerHTML='<div class="medal"></div><div class="nm"></div><div class="bar"></div>';$('.medal',c).textContent=M[Math.min(2,order.filter(o=>o.score>t.score).length)];$('.nm',c).textContent=t.name;$('.bar',c).textContent=t.score;cols.appendChild(c)});
 $('.rest',o).textContent=rest.map(t=>`${order.filter(o=>o.score>t.score).length+1}. ${t.name} ${t.score}`).join('   ');
 const close=()=>{o.remove();removeEventListener('keydown',esc)},esc=e=>{if(e.key==='Escape')close()};
@@ -209,7 +221,7 @@ done(anim(d,k,{duration:ms,easing:'ease-in-out'}),()=>d.remove(),ms)}
 /* a line or arrow draws itself from the left */
 function drawIn(el,delay=0){if(still()||!el)return;anim(el,full()?[{transform:'scaleX(0)',transformOrigin:'left center'},{transform:'scaleX(1)',transformOrigin:'left center'}]:[{opacity:0},{opacity:1}],{duration:300,delay,easing:'ease-out',fill:'backwards'})}
 return{start,cycleMotion,sparkle,confetti,flash,shake,scored,streakHit,streakReset,banner,ring,podium,mascot,scene,moves,pop,deal,slash,glow,wave,puff,critter,drawIn,get motion(){return motion}}})();
-return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
+return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,L,num,get lang(){return lang},get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
 
 const $=s=>document.querySelector(s);
 /* Tug of War is a 2-side pull, so it always races the FIRST TWO teams in the roster
@@ -230,7 +242,7 @@ const GEN={
     if(t===0){const n=rnd(2,15);return[n+'\u00B2',n*n]}
     if(t===1){const n=rnd(2,15);return['\u221A'+(n*n),n]}
     const primes=[2,3,5,7,11,13];let n;do{n=rnd(20,90)}while(primes.includes(n));
-    let p=primes.find(x=>n%x===0);if(!p){p=2;n=90}return['Largest factor of '+n+' (other than '+n+' itself)',n/p]}
+    let p=primes.find(x=>n%x===0);if(!p){p=2;n=90}return[TD.L('Largest factor of '+n+' (other than '+n+' itself)','Ước lớn nhất của '+n+' (khác '+n+')'),n/p]}
 };
 let pos=0,pull=0,run=false,timer,left,rounds,winner;
 /* TD's kit doesn't expose the raw teams array, only the active one (TD.team) — so
@@ -238,7 +250,7 @@ let pos=0,pull=0,run=false,timer,left,rounds,winner;
    already writes to (td_teams_<id>), read once at init and again whenever the kit's
    own +1/\u22121/rename controls might have changed it (before each question). */
 function store(){try{return JSON.parse(localStorage.getItem('td_teams_tug-of-war'))}catch(e){return null}}
-function names(){const s=store();const t=s&&s.teams;return[t&&t[0]?t[0].name:'Team 1',t&&t[1]?t[1].name:'Team 2']}
+function names(){const s=store();const t=s&&s.teams;return[t&&t[0]?t[0].name:TD.L('Team 1','Đội 1'),t&&t[1]?t[1].name:TD.L('Team 2','Đội 2')]}
 /* the arena: two players hold the rope; each step of pos moves the rope, knot and players STEP units.
    The win lines sit where the knot is after three steps. Final positions are set as styles, and the
    animations only run between them, so nothing depends on an animation finishing. */
@@ -263,32 +275,32 @@ shown=pos}
 function tumble(){const [w,l]=winner===0?['kidA','kidB']:['kidB','kidA'],f=l==='kidA'?1:-1,lose=$('#'+l+' .lean');lose.style.transform=`rotate(${75*f}deg) translateY(10px)`;
 if(TD.fx.motion==='full'){lose.animate([{transform:'rotate(0)'},{transform:`rotate(${40*f}deg)`,offset:.5},{transform:`rotate(${75*f}deg) translateY(10px)`}],{duration:700,easing:'cubic-bezier(.5,0,.8,1)'});
 $('#'+w+' .lean').animate([{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:900,delay:300});setTimeout(()=>TD.fx.puff(...feet(l)),450)}}
-function reset(){clearInterval(timer);run=false;pos=0;pull=0;rounds=0;$('#choices').innerHTML='';$('#q').textContent='Ready?';$('#card').className='card';
-drawRope();$('#turn').textContent=names()[pull]+"'s pull";$('#time').textContent=CFG[TD.level].time+'s';$('#time').classList.remove('low');
-$('#prog').textContent=TD.level==='hard'?'Type the answer, press Enter':'Tap the answer or press 1\u20139';
-$('#ctl').innerHTML='<button class="btn" id="go">Start tug of war</button>';$('#go').onclick=begin;$('#msg').textContent=''}
+function reset(){clearInterval(timer);run=false;pos=0;pull=0;rounds=0;$('#choices').innerHTML='';$('#q').textContent=TD.L('Ready?','Sẵn sàng?');$('#card').className='card';
+drawRope();$('#turn').textContent=TD.L(names()[pull]+"'s pull",'Lượt kéo của '+names()[pull]);$('#time').textContent=CFG[TD.level].time+'s';$('#time').classList.remove('low');
+$('#prog').textContent=TD.level==='hard'?TD.L('Type the answer, press Enter','Gõ đáp án rồi nhấn Enter'):TD.L('Tap the answer or press 1\u20139','Chạm vào đáp án hoặc nhấn 1\u20139');
+$('#ctl').innerHTML='<button class="btn" id="go">'+TD.L('Start tug of war','Bắt đầu kéo co')+'</button>';$('#go').onclick=begin;$('#msg').textContent=''}
 function begin(){run=true;$("#ctl").innerHTML="";drawRope();ask()}
 function ask(){clearInterval(timer);left=CFG[TD.level].time;clock();
-$('#turn').textContent=names()[pull]+"'s pull";
+$('#turn').textContent=TD.L(names()[pull]+"'s pull",'Lượt kéo của '+names()[pull]);
 timer=setInterval(()=>{left--;clock();if(left<=3&&left>0)TD.sfx('tick');if(left<=0)settle(false)},1000);
 const g=GEN[TD.level]();ans=g[1];$('#q').textContent=g[0]+' = ?';const c=CFG[TD.level],box=$('#choices');box.innerHTML='';
 if(c.opts){const s=new Set([ans]);let sp=Math.max(3,Math.round(Math.abs(ans)*.2)||3);while(s.size<c.opts){const d=rnd(1,sp)*(rnd(0,1)?1:-1),v=ans+d;if(v>0)s.add(v)}
 TD.shuffle([...s]).forEach(v=>{const b=document.createElement('button');b.className='ch';b.textContent=v;b.onclick=()=>settle(v===ans);box.append(b)});TD.fx.deal(box)}
-else{box.innerHTML='<input id="num" type="text" inputmode="numeric" autocomplete="off" aria-label="Your answer">';const n=$('#num');n.focus();
+else{box.innerHTML='<input id="num" type="text" inputmode="numeric" autocomplete="off" aria-label="'+TD.L('Your answer','Đáp án')+'">';const n=$('#num');n.focus();
 n.onkeydown=e=>{if(e.key==='Enter'&&n.value.trim()!==''){settle(Number(n.value.trim())===ans)}}}}
 let ans;
 function settle(correct){clearInterval(timer);const c=CFG[TD.level],card=$('#card');
 card.className='card '+(correct?'ok':'no');setTimeout(()=>{card.className='card'},250);
 const dir=pull===0?-1:1,prev=pos;
-if(correct){pos=Math.max(POS_MIN,Math.min(POS_MAX,pos+dir));TD.award(c.pts,pull);TD.sfx('ok');$('#msg').textContent=names()[pull]+' pulls it their way! +'+c.pts}
-else{TD.sfx('bad');if(c.pen){pos=Math.max(POS_MIN,Math.min(POS_MAX,pos-dir));TD.award(-c.pen,pull);$('#msg').textContent='Missed \u2014 the rope slips back. '+(c.pen?'\u2212'+c.pen:'')}
-else $('#msg').textContent='Missed \u2014 no movement at Easy.'}
+if(correct){pos=Math.max(POS_MIN,Math.min(POS_MAX,pos+dir));TD.award(c.pts,pull);TD.sfx('ok');$('#msg').textContent=TD.L(names()[pull]+' pulls it their way! +'+c.pts,names()[pull]+' kéo dây về phía mình! +'+c.pts)}
+else{TD.sfx('bad');if(c.pen){pos=Math.max(POS_MIN,Math.min(POS_MAX,pos-dir));TD.award(-c.pen,pull);$('#msg').textContent=TD.L('Missed \u2014 the rope slips back. ','Trượt rồi: dây bị kéo ngược lại. ')+(c.pen?'\u2212'+c.pen:'')}
+else $('#msg').textContent=TD.L('Missed \u2014 no movement at Easy.','Trượt rồi: ở mức Dễ dây không di chuyển.')}
 drawRope({moved:pos!==prev,dir:Math.sign(pos-prev)});rounds++;
 if(pos<=POS_MIN||pos>=POS_MAX){winner=pos<=POS_MIN?0:1;return win()}
 pull=1-pull;setTimeout(()=>{if(run){$('#msg').textContent='';ask()}},900)}
-function win(){run=false;clearInterval(timer);TD.sfx('win');tumble();$('#choices').innerHTML='';$('#q').textContent=names()[winner]+' wins the tug of war! \ud83c\udfc6';
-TD.award(2,winner);$('#msg').textContent=names()[winner]+' gets a +2 bonus for pulling the rope all the way.';
-$('#ctl').innerHTML='<button class="btn" id="go">New round</button>';$('#go').onclick=reset}
+function win(){run=false;clearInterval(timer);TD.sfx('win');tumble();$('#choices').innerHTML='';$('#q').textContent=TD.L(names()[winner]+' wins the tug of war! \ud83c\udfc6',names()[winner]+' thắng kéo co! \ud83c\udfc6');
+TD.award(2,winner);$('#msg').textContent=TD.L(names()[winner]+' gets a +2 bonus for pulling the rope all the way.',names()[winner]+' được thưởng +2 vì kéo dây về hết phía mình.');
+$('#ctl').innerHTML='<button class="btn" id="go">'+TD.L('New round','Ván mới')+'</button>';$('#go').onclick=reset}
 function clock(){$('#time').textContent=left+'s';$('#time').classList.toggle('low',left<=5)}
 document.addEventListener('keydown',e=>{if(!run||TD.level==='hard')return;const n=Number(e.key);if(n>=1&&n<=9){const b=document.querySelectorAll('.ch')[n-1];if(b)b.click()}});
 /* sports day at dusk: hills, drifting clouds and bunting */
@@ -300,4 +312,4 @@ ${cloud(260,180,1.2,60)}${cloud(900,120,1,-50)}${cloud(1380,230,1.3,40)}
 <path d="M-40 700Q300 600 640 690T1300 660T1660 690V900H-40z" fill="#245a3e"/><path d="M-40 760Q400 690 800 760T1660 740V900H-40z" fill="#1d4a33"/>
 ${flags(60)}<rect y="820" width="1600" height="80" fill="#163a28"/></svg>`;
 TD.fx.scene(FIELD);
-TD.init({id:'tug-of-war',title:'Tug of War',onLevel:()=>reset()});
+TD.init({id:'tug-of-war',title:'Tug of War',langs:['en','vi'],onLevel:()=>reset()});

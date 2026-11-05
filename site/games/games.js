@@ -41,18 +41,48 @@ window.TD_BUILTIN_GAMES = [
     "name": "Number Ninja",
     "folder": "Number-Ninja",
     "entry": "number_ninja.html",
-    "instructions": "instructions.html"
-  },
-  {
-    "name": "Food Chain Builder",
-    "folder": "Food-Chain-Builder",
-    "entry": "food_chain_builder.html",
-    "instructions": "instructions.html"
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
   },
   {
     "name": "Tug of War",
     "folder": "Tug-of-War",
     "entry": "tug_of_war.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Fraction Pizza",
+    "folder": "Fraction-Pizza",
+    "entry": "fraction_pizza.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Number Line Leap",
+    "folder": "Number-Line-Leap",
+    "entry": "number_line_leap.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Shape Detective",
+    "folder": "Shape-Detective",
+    "entry": "shape_detective.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Times Table Tower",
+    "folder": "Times-Table-Tower",
+    "entry": "times_table_tower.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Food Chain Builder",
+    "folder": "Food-Chain-Builder",
+    "entry": "food_chain_builder.html",
     "instructions": "instructions.html"
   },
   {

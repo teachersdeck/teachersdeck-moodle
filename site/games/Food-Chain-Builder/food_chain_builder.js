@@ -234,40 +234,45 @@ const ECO=[
 {name:'Pond',prod:['weed'],energy:10000,easy:['weed','snail','duck'],
  o:{weed:['\u{1F33F}','Pond weed'],snail:['\u{1F40C}','Snail'],larva:['\u{1F41B}','Insect larva'],fish:['\u{1F41F}','Small fish'],frog:['\u{1F438}','Frog'],duck:['\u{1F986}','Duck'],otter:['\u{1F9A6}','Otter']},
  e:[['weed','snail'],['weed','larva'],['snail','duck'],['larva','fish'],['larva','frog'],['fish','otter'],['frog','otter'],['fish','duck']]}];
+/* Vietnamese names for the organisms, ecosystems and roles (the game logic keeps the English keys) */
+const VI={Grass:'Cỏ',Grasshopper:'Châu chấu',Mouse:'Chuột',Rabbit:'Thỏ',Frog:'Ếch',Snake:'Rắn',Hawk:'Diều hâu',Fox:'Cáo',Phytoplankton:'Thực vật phù du',Krill:'Tôm krill','Small fish':'Cá nhỏ',Squid:'Mực',Seal:'Hải cẩu',Shark:'Cá mập',Orca:'Cá voi sát thủ',
+'Pond weed':'Rong ao',Snail:'Ốc',Duck:'Vịt',Otter:'Rái cá','Insect larva':'Ấu trùng côn trùng',Grassland:'Đồng cỏ',Ocean:'Đại dương',Pond:'Ao'};
+const ROLE_VI=['Sinh vật sản xuất','Sinh vật tiêu thụ bậc 1','Sinh vật tiêu thụ bậc 2','Sinh vật tiêu thụ bậc 3','Sinh vật tiêu thụ bậc 4'];
+const tr=s=>TD.L(s,VI[s]);
 const ROLE=['Producer','Primary consumer','Secondary consumer','Tertiary consumer','Quaternary consumer'];
 const CFG={easy:{pts:1,pen:0,min:3},moderate:{pts:2,pen:1,min:4},hard:{pts:2,pen:1,min:4}};
 let order,idx,eco,chain,locked,stage;
 function start(){order=TD.shuffle(ECO);idx=-1;next()}
 function next(){idx++;
-if(idx>=order.length){TD.sfx('win');$('#task').textContent='Round complete! \u{1F3C6}';$('#chain').innerHTML='';$('#tray').innerHTML='';$('#en').style.display='none';$('#prog').textContent='';$('#turn').textContent='';$('#msg').textContent='Check the scores, then play again.';
-['check','clear','listen'].forEach(i=>$('#'+i).hidden=true);$('#nextb').hidden=false;$('#nextb').textContent='Play again';$('#nextb').onclick=()=>{$('#check').hidden=false;$('#clear').hidden=false;start()};return}
+if(idx>=order.length){TD.sfx('win');$('#task').textContent=TD.L('Round complete! \u{1F3C6}','Hoàn thành vòng chơi! \u{1F3C6}');$('#chain').innerHTML='';$('#tray').innerHTML='';$('#en').style.display='none';$('#prog').textContent='';$('#turn').textContent='';$('#msg').textContent=TD.L('Check the scores, then play again.','Xem điểm rồi chơi lại nhé.');
+['check','clear','listen'].forEach(i=>$('#'+i).hidden=true);$('#nextb').hidden=false;$('#nextb').textContent=TD.L('Play again','Chơi lại');$('#nextb').onclick=()=>{$('#check').hidden=false;$('#clear').hidden=false;start()};return}
 eco=order[idx];chain=[];locked=false;stage='chain';const L=TD.level;TD.fx.scene(SCENES[eco.name]);
-$('#prog').textContent='Ecosystem '+(idx+1)+' of '+order.length;$('#turn').textContent=TD.team.name+"'s turn";
-$('#task').textContent=eco.name+': build a food chain'+(L==='easy'?' with 3 links':' with at least 4 links');
+$('#prog').textContent=TD.L('Ecosystem '+(idx+1)+' of '+order.length,'Hệ sinh thái '+(idx+1)+'/'+order.length);$('#turn').textContent=TD.L(TD.team.name+"'s turn",'Lượt của '+TD.team.name);
+$('#task').textContent=tr(eco.name)+TD.L(': build a food chain'+(L==='easy'?' with 3 links':' with at least 4 links'),': lập chuỗi thức ăn '+(L==='easy'?'có 3 mắt xích':'có ít nhất 4 mắt xích'));
 $('#msg').textContent='';$('#chain').className='chain';$('#en').style.display='none';
-$('#nextb').hidden=true;$('#nextb').textContent='Next ecosystem';$('#nextb').onclick=()=>{TD.nextTeam();next()};
-$('#check').hidden=false;$('#check').textContent='Check chain';$('#clear').hidden=false;$('#listen').hidden=L!=='easy';
-$('#sub').textContent=L==='easy'?'Start with the plant. Arrows show the direction of energy: eaten \u2192 eater':'Start with a producer and follow who eats whom. Arrows show the direction of energy.';
+$('#nextb').hidden=true;$('#nextb').textContent=TD.L('Next ecosystem','Hệ sinh thái tiếp theo');$('#nextb').onclick=()=>{TD.nextTeam();next()};
+$('#check').hidden=false;$('#check').textContent=TD.L('Check chain','Kiểm tra chuỗi');$('#clear').hidden=false;$('#listen').hidden=L!=='easy';
+$('#sub').textContent=L==='easy'?TD.L('Start with the plant. Arrows show the direction of energy: eaten \u2192 eater','Bắt đầu từ cây xanh. Mũi tên chỉ hướng của năng lượng: bị ăn \u2192 con ăn'):TD.L('Start with a producer and follow who eats whom. Arrows show the direction of energy.','Bắt đầu từ sinh vật sản xuất và lần theo con nào ăn con nào. Mũi tên chỉ hướng của năng lượng.');
 tray=TD.shuffle(L==='easy'?eco.easy:Object.keys(eco.o));draw()}
 let tray=[];
-function card(id,fn,role){const [em,nm]=eco.o[id],b=document.createElement('button');b.className='org';b.innerHTML='<span class="e">'+em+'</span><span class="n">'+nm+'</span><span class="r">'+(role||'')+'</span>';b.dataset.k=id;b.onclick=fn;return b}
+function card(id,fn,role){const em=eco.o[id][0],nmv=nm(id),b=document.createElement('button');b.className='org';b.innerHTML='<span class="e">'+em+'</span><span class="n">'+nmv+'</span><span class="r">'+(role||'')+'</span>';b.dataset.k=id;b.onclick=fn;return b}
 function draw(showRoles){const c=$('#chain'),t=$('#tray');c.innerHTML='';t.innerHTML='';
-chain.forEach((id,i)=>{if(i)c.insertAdjacentHTML('beforeend','<span class="arr">\u2192</span>');c.append(card(id,()=>{if(locked)return;const m=TD.fx.moves($('.stage'));chain=chain.slice(0,i);draw();m()},showRoles?ROLE[i]:''))});
+chain.forEach((id,i)=>{if(i)c.insertAdjacentHTML('beforeend','<span class="arr">\u2192</span>');c.append(card(id,()=>{if(locked)return;const m=TD.fx.moves($('.stage'));chain=chain.slice(0,i);draw();m()},showRoles?TD.L(ROLE[i],ROLE_VI[i]):''))});
 tray.filter(id=>!chain.includes(id)).forEach(id=>t.append(card(id,()=>{if(locked||stage!=='chain')return;const m=TD.fx.moves($('.stage'));chain.push(id);TD.sfx('tick');draw();m();const a=$('#chain').querySelectorAll('.arr');TD.fx.drawIn(a[a.length-1],250)})))}
-function nm(id){return eco.o[id][1]}
-function validate(){const L=CFG[TD.level];if(!chain.length)return'Add some organisms first.';
-if(!eco.prod.includes(chain[0]))return nm(chain[0])+' is not a producer. A food chain starts with a plant or algae.';
-for(let i=1;i<chain.length;i++)if(!eco.e.some(p=>p[0]===chain[i-1]&&p[1]===chain[i]))return nm(chain[i])+' does not eat '+nm(chain[i-1])+'.';
-if(chain.length<L.min)return'Add more links. You need at least '+L.min+'.';return''}
+function nm(id){return tr(eco.o[id][1])}
+function validate(){const L=CFG[TD.level];if(!chain.length)return TD.L('Add some organisms first.','Hãy thêm sinh vật trước.');
+if(!eco.prod.includes(chain[0]))return nm(chain[0])+TD.L(' is not a producer. A food chain starts with a plant or algae.',' không phải sinh vật sản xuất. Chuỗi thức ăn bắt đầu từ thực vật hoặc tảo.');
+for(let i=1;i<chain.length;i++)if(!eco.e.some(p=>p[0]===chain[i-1]&&p[1]===chain[i]))return nm(chain[i])+TD.L(' does not eat ',' không ăn ')+nm(chain[i-1])+'.';
+if(chain.length<L.min)return TD.L('Add more links. You need at least '+L.min+'.','Hãy thêm mắt xích. Cần ít nhất '+L.min+'.');return''}
 function win(){const c=CFG[TD.level];locked=true;TD.sfx('ok');TD.award(c.pts);$('#chain').className='chain good';draw(true);TD.fx.wave($('#chain'));TD.fx.glow($('#chain'));
-$('#msg').textContent='Correct! +'+c.pts+' points'+(TD.level==='hard'?' so far':'');$('#check').hidden=true;$('#nextb').hidden=false;if(TD.level==='easy')TD.speak(chain.map(nm).join(', eaten by '))}
+$('#msg').textContent=TD.L('Correct! +'+c.pts+' points'+(TD.level==='hard'?' so far':''),'Đúng rồi! +'+c.pts+' điểm');$('#check').hidden=true;$('#nextb').hidden=false;if(TD.level==='easy')TD.speak(chain.map(nm).join(TD.L(', eaten by ',', bị ăn bởi ')))}
 $('#check').onclick=()=>{if(locked)return;const c=CFG[TD.level];
-if(stage==='energy'){const need=eco.energy*Math.pow(.1,chain.length-1),v=Number($('#enin').value.trim().replace(/,/g,''));if($('#enin').value.trim()==='')return;
-if(Math.abs(v-need)<1e-9){TD.sfx('ok');TD.award(1);locked=true;$('#msg').textContent='Correct! Each step passes on only 10% of the energy. +1 point';$('#check').hidden=true;$('#en').style.display='none';$('#nextb').hidden=false}
-else{TD.sfx('bad');if(c.pen)TD.award(-c.pen);$('#msg').textContent='Not quite. Each step keeps only 10%.'+(c.pen?' \u22121':'')}return}
+if(stage==='energy'){const need=eco.energy*Math.pow(.1,chain.length-1),v=Number($('#enin').value.trim().replace(/[,.\s]/g,''));if($('#enin').value.trim()==='')return;
+if(Math.abs(v-need)<1e-9){TD.sfx('ok');TD.award(1);locked=true;$('#msg').textContent=TD.L('Correct! Each step passes on only 10% of the energy. +1 point','Đúng rồi! Mỗi bậc chỉ truyền lại 10% năng lượng. +1 điểm');$('#check').hidden=true;$('#en').style.display='none';$('#nextb').hidden=false}
+else{TD.sfx('bad');if(c.pen)TD.award(-c.pen);$('#msg').textContent=TD.L('Not quite. Each step keeps only 10%.','Chưa đúng. Mỗi bậc chỉ giữ lại 10%.')+(c.pen?' \u22121':'')}return}
 const err=validate();
 if(err){TD.sfx('bad');$('#chain').classList.remove('shake');void $('#chain').offsetWidth;$('#chain').classList.add('shake');if(c.pen)TD.award(-c.pen);$('#msg').textContent=err+(c.pen?' \u22121':'');return}
-if(TD.level==='hard'){TD.sfx('ok');TD.award(c.pts);stage='energy';$('#chain').className='chain good';draw(true);$('#enq').textContent=nm(chain[0])+' captures '+eco.energy.toLocaleString()+' kJ. How much energy reaches the '+nm(chain[chain.length-1])+'?';$('#en').style.display='block';$('#enin').value='';$('#enin').focus();$('#check').textContent='Check energy';$('#msg').textContent='Chain correct! +'+c.pts+'. Now the energy question.';$('#clear').hidden=true}
+if(TD.level==='hard'){TD.sfx('ok');TD.award(c.pts);stage='energy';$('#chain').className='chain good';draw(true);$('#enq').textContent=TD.L(nm(chain[0])+' captures '+eco.energy.toLocaleString('en')+' kJ. How much energy reaches the '+nm(chain[chain.length-1])+'?',nm(chain[0])+' thu được '+eco.energy.toLocaleString('vi')+' kJ. Bao nhiêu năng lượng đến được '+nm(chain[chain.length-1])+'?');$('#en').style.display='block';$('#enin').value='';$('#enin').focus();$('#check').textContent=TD.L('Check energy','Kiểm tra năng lượng');$('#msg').textContent=TD.L('Chain correct! +'+c.pts+'. Now the energy question.','Chuỗi đúng rồi! +'+c.pts+'. Giờ đến câu hỏi về năng lượng.');$('#clear').hidden=true}
 else win()};
 $('#enin').onkeydown=e=>{if(e.key==='Enter')$('#check').click()};
 $('#clear').onclick=()=>{if(locked)return;chain=[];draw()};
@@ -290,4 +295,4 @@ Pond:`<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="ht
 <rect y="640" width="1600" height="260" fill="#0b4a48"/><g fill="#2f7a4a"><ellipse cx="300" cy="760" rx="90" ry="22"/><ellipse cx="560" cy="820" rx="70" ry="18"/><ellipse cx="1100" cy="780" rx="100" ry="24"/><ellipse cx="1380" cy="840" rx="80" ry="20"/></g><circle cx="320" cy="752" r="14" fill="#ff9fc4"/><circle cx="1120" cy="770" r="16" fill="#fff"/>
 <g fill="#22492e">${[60,90,120,1480,1510,1540].map((x,i)=>`<path data-fx="drift:${8+i}:${4+i%3}" d="M${x} 900v-${260+i*30}h8v${260+i*30}z"/><ellipse cx="${x+4}" cy="${640-i*30}" rx="9" ry="30" fill="#5a3a22"/>`).join('')}</g>
 ${fly(260,520,9)}${fly(700,460,12)}${fly(980,560,10)}${fly(1240,480,11)}${fly(1450,600,8)}</svg>`};
-TD.init({id:'food-chain-builder',title:'Food Chain Builder',onLevel:()=>start()});
+TD.init({id:'food-chain-builder',title:'Food Chain Builder',langs:['en','vi'],onLevel:()=>start()});

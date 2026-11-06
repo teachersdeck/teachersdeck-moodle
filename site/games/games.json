@@ -81,12 +81,42 @@
     "name": "Food Chain Builder",
     "folder": "Food-Chain-Builder",
     "entry": "food_chain_builder.html",
-    "instructions": "instructions.html"
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
   },
   {
     "name": "Sort It Out",
     "folder": "Sort-It-Out",
     "entry": "sort_it_out.html",
-    "instructions": "instructions.html"
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Solar System Order",
+    "folder": "Solar-System-Order",
+    "entry": "solar_system_order.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Matter Lab",
+    "folder": "Matter-Lab",
+    "entry": "matter_lab.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Body Builder",
+    "folder": "Body-Builder",
+    "entry": "body_builder.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
+  },
+  {
+    "name": "Circuit Spark",
+    "folder": "Circuit-Spark",
+    "entry": "circuit_spark.html",
+    "instructions": "instructions.html",
+    "instructions_vi": "instructions.vi.html"
   }
 ]

@@ -63,21 +63,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 <main class="stage">
 <div class="top"><span id="prog"></span><span id="turn"></span></div>
 <div id="task"></div>
-<div id="sub">Arrows show the direction of energy: eaten &rarr; eater</div>
+<div id="sub" data-vi="Mũi tên chỉ hướng của năng lượng: bị ăn → con ăn">Arrows show the direction of energy: eaten &rarr; eater</div>
 <div id="chain" class="chain" aria-label="Your food chain"></div>
 <div id="tray" class="tray" aria-label="Organisms"></div>
 <div id="en"><div id="enq" style="margin-bottom:8px;font-weight:600"></div><input id="enin" type="text" inputmode="numeric" autocomplete="off" aria-label="Energy in kJ"> kJ</div>
 <div class="ctl">
 <button class="btn" id="check">Check chain</button>
-<button class="btn ghost" id="clear">Clear</button>
-<button class="btn ghost" id="listen" hidden>Listen</button>
+<button class="btn ghost" id="clear" data-vi="Xóa">Clear</button>
+<button class="btn ghost" id="listen" hidden data-vi="Nghe">Listen</button>
 <button class="btn" id="nextb" hidden>Next ecosystem</button>
 </div>
 <div id="msg" role="status"></div>
 </main>
 <aside id="td-teams"></aside>
 </div>
-<div class="ftr">A TeachersDeck game</div>
+<div class="ftr" data-vi="Một trò chơi TeachersDeck">A TeachersDeck game</div>
 <div id="toast" role="status"></div>
 <script src="food_chain_builder.js"></script>
 </body></html>

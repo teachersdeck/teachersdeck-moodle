@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Solar System Order | TeachersDeck</title>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--stage);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:'Baloo 2','Inter',sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:3px solid var(--gold)}
+.hdr h1{font-size:1.7rem;color:var(--gold);margin-right:auto}
+.lv{display:flex;gap:4px;background:var(--stage);padding:4px;border-radius:999px}
+.lv button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;color:var(--muted)}
+.lv button.on[data-l=easy]{background:var(--ok);color:#06210f}
+.lv button.on[data-l=moderate]{background:var(--gold);color:#2a2000}
+.lv button.on[data-l=hard]{background:var(--bad);color:#2b0806}
+.hbtn{border:2px solid var(--muted);background:transparent;padding:6px 14px;border-radius:999px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:18px 20px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.stage{background:var(--panel);border-radius:var(--r);padding:22px;min-height:460px}
+.btn{border:0;border-radius:12px;padding:12px 22px;font-weight:700;background:var(--gold);color:#2a2000;font-size:1.05rem}
+.btn.ghost{background:transparent;border:2px solid var(--muted);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.side{background:var(--panel);border-radius:var(--r);padding:16px;align-self:start}
+.side h2{font-size:1.25rem;margin-bottom:10px}
+.team{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;background:var(--panel2);border:3px solid transparent;border-radius:12px;padding:10px;margin-bottom:10px;cursor:pointer}
+.team.act{border-color:var(--gold)}
+.team .nm{font-family:'Baloo 2';font-weight:700;font-size:1.15rem;outline:none;min-width:0}
+.team .sc{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--gold);grid-row:span 2}
+.team .pm{display:flex;gap:6px}
+.team .pm button{border:0;width:34px;height:30px;border-radius:8px;background:var(--stage);font-weight:800}
+.side .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.side .row button{flex:1;font-size:.85rem;padding:8px 10px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:var(--stage);padding:12px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.ftr{text-align:center;color:var(--muted);font-size:.8rem;padding:14px}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shake{animation:shake .3s}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-weight:600}
+#time{font-size:2.4rem;color:var(--gold)}#time.low{color:var(--bad)}
+#turn{font-family:'Baloo 2';font-size:1.4rem;color:var(--ink)}
+.stats{display:flex;gap:22px;justify-content:center;margin-top:14px;color:var(--muted);font-weight:600}
+.stats b{color:var(--gold);font-family:'Baloo 2';font-size:1.5rem}
+#msg{text-align:center;font-family:'Baloo 2';font-size:1.3rem;min-height:2.1rem;margin-top:12px}
+.ctl{text-align:center;margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#q{text-align:center;font-family:'Baloo 2';font-weight:800;font-size:clamp(1.3rem,2.9vw,2rem);line-height:1.25;margin:8px 0 12px;min-height:1.3em}
+.choices{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.ch{font-family:'Baloo 2';font-weight:800;font-size:clamp(1.05rem,2vw,1.4rem);min-width:120px;padding:10px 18px;background:var(--panel2);border:3px solid var(--blue);border-radius:16px}
+.ch:hover{background:var(--blue);color:#06183a}.ch.yes{background:var(--ok);border-color:var(--ok);color:#06210f}.ch.no{background:#4a2030;border-color:var(--bad)}
+.view{display:flex;justify-content:center}.view svg{width:min(100%,560px);height:auto;background:rgba(5,10,30,.45);border-radius:18px;border:3px solid var(--panel2)}
+
+#sys{position:relative}
+.tray{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;min-height:56px}
+.pl{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border-radius:999px;border:2px solid var(--panel2);background:var(--stage);font-family:'Baloo 2';font-weight:800;font-size:1.05rem;color:var(--ink);cursor:pointer}
+.pl:hover{border-color:var(--blue)}.pl i{display:inline-block;border-radius:50%;flex:none}
+</style></head><body>
+<div id="td-header"></div>
+<div class="wrap">
+<main class="stage">
+<div class="top"><span id="prog"></span><span id="turn"></span><span id="time" class="disp"></span></div>
+<div id="q" data-vi="Sẵn sàng?">Ready?</div>
+<div class="view" id="sys"><svg id="orbit" viewBox="0 0 560 220" role="img" aria-label="The Sun and the planets"></svg></div>
+<div class="tray" id="tray"></div>
+<div class="choices" id="choices"></div>
+<div class="ctl" id="ctl"></div>
+<div class="stats"><span><span data-vi="Đúng">Right</span> <b id="nr">0</b></span><span><span data-vi="Chuỗi">Streak</span> <b id="ns">0</b></span><span><span data-vi="Chuỗi dài nhất">Best streak</span> <b id="nb">0</b></span></div>
+<div id="msg" role="status"></div>
+</main>
+<aside id="td-teams"></aside>
+</div>
+<div class="ftr" data-vi="Một trò chơi TeachersDeck">A TeachersDeck game</div>
+<div id="toast" role="status"></div>
+<script src="solar_system_order.js"></script>
+</body></html>

@@ -255,7 +255,15 @@ hard:{bins:['Animalia','Plantae','Fungi','Protista','Bacteria (Monera)'],
   ]}};
 const CFG={easy:{pts:1,pen:0},moderate:{pts:1,pen:1},hard:{pts:2,pen:1}};
 let items,placed,sel,mistakes,locked;
-function label(it){return it[1]?it[1]+' '+it[0]:it[0]}
+/* Vietnamese names (the game logic keeps the English keys) */
+const VI={Living:'Vật sống','Non-living':'Vật không sống',Mammal:'Thú',Bird:'Chim',Reptile:'Bò sát',Amphibian:'Lưỡng cư',Fish:'Cá',
+Animalia:'Giới Động vật',Plantae:'Giới Thực vật',Fungi:'Giới Nấm',Protista:'Giới Nguyên sinh','Bacteria (Monera)':'Giới Khởi sinh (vi khuẩn)',
+Dog:'Chó',Tree:'Cây',Flower:'Hoa',Butterfly:'Bướm',Mushroom:'Nấm',Grass:'Cỏ',Rock:'Hòn đá',Car:'Ô tô',Chair:'Ghế',Book:'Sách',Pencil:'Bút chì',Bicycle:'Xe đạp',
+Whale:'Cá voi',Bat:'Dơi',Eagle:'Đại bàng',Penguin:'Chim cánh cụt',Owl:'Cú',Snake:'Rắn',Turtle:'Rùa',Lizard:'Thằn lằn',Frog:'Ếch',Toad:'Cóc',Salamander:'Kỳ giông',Salmon:'Cá hồi',Shark:'Cá mập',Eel:'Cá chình',
+Lion:'Sư tử',Jellyfish:'Sứa',Human:'Con người','Oak tree':'Cây sồi',Fern:'Dương xỉ',Sunflower:'Hoa hướng dương',Yeast:'Nấm men',Mold:'Nấm mốc',Amoeba:'Trùng biến hình',Paramecium:'Trùng giày',Algae:'Tảo',
+'E. coli':'Vi khuẩn E. coli',Streptococcus:'Liên cầu khuẩn',Cyanobacteria:'Vi khuẩn lam'};
+const tr=s=>TD.L(s,VI[s]);
+function label(it){return it[1]?it[1]+' '+tr(it[0]):tr(it[0])}
 /* Cards stop propagation so a click on a card never also bubbles up and fires the
    bin's own onclick (which would immediately try to place whatever's selected into
    that same bin right after the card's own tap/untap ran). */
@@ -266,27 +274,27 @@ tray.innerHTML='';items.filter(it=>!(it in placed)).forEach(it=>tray.append(card
 bins.innerHTML='';SETS[TD.level].bins.forEach(bin=>{
   const col=document.createElement('div');col.className='bin';
   const need=items.filter(it=>it[2]===bin).length,got=items.filter(it=>placed[it]===bin).length;
-  col.innerHTML='<div class="fill" style="height:'+(need?got/need*100:0)+'%"></div><h3>'+bin+'</h3>';col.classList.toggle('full',need>0&&got===need);col.dataset.bin=bin;
+  col.innerHTML='<div class="fill" style="height:'+(need?got/need*100:0)+'%"></div><h3>'+tr(bin)+'</h3>';col.classList.toggle('full',need>0&&got===need);col.dataset.bin=bin;
   const list=document.createElement('div');list.className='bin-list';
   items.filter(it=>placed[it]===bin).forEach(it=>list.append(card(it,()=>{if(locked)return;const m=TD.fx.moves($('.stage'));delete placed[it];sel=null;draw();m()},true)));
   col.append(list);
   col.onclick=()=>place(bin);
   bins.append(col)});
-$('#tally').textContent='Sorted '+Object.keys(placed).length+' of '+items.length}
+$('#tally').textContent=TD.L('Sorted '+Object.keys(placed).length+' of '+items.length,'Đã xếp '+Object.keys(placed).length+'/'+items.length)}
 function place(bin){if(locked||!sel)return;const it=sel,correct=it[2]===bin;
-if(correct){const m=TD.fx.moves($('.stage')),was=done(bin);placed[it]=bin;sel=null;TD.sfx('ok');TD.award(CFG[TD.level].pts);TD.toast('Correct!');draw();m();
+if(correct){const m=TD.fx.moves($('.stage')),was=done(bin);placed[it]=bin;sel=null;TD.sfx('ok');TD.award(CFG[TD.level].pts);TD.toast(TD.L('Correct!','Đúng rồi!'));draw();m();
 if(!was&&done(bin))TD.fx.glow(document.querySelector('.bin[data-bin="'+bin+'"]'));checkDone()}
 else{TD.sfx('bad');const c=CFG[TD.level];if(c.pen)TD.award(-c.pen);
-$('#msg').textContent=it[0]+' does not belong in '+bin+'.'+(c.pen?' \u2212'+c.pen:'');mistakes++;
+$('#msg').textContent=TD.L(it[0]+' does not belong in '+bin+'.',tr(it[0])+' không thuộc nhóm '+tr(bin)+'.')+(c.pen?' \u2212'+c.pen:'');mistakes++;
 document.getElementById('bins').classList.remove('shake');void document.getElementById('bins').offsetWidth;document.getElementById('bins').classList.add('shake')}}
 function done(bin){const need=items.filter(it=>it[2]===bin);return need.length>0&&need.every(it=>placed[it]===bin)}
 function checkDone(){if(Object.keys(placed).length>=items.length)finish()}
-function finish(){locked=true;TD.sfx('win');$('#msg').textContent='Round complete! Sorted with '+mistakes+' mistake'+(mistakes===1?'':'s')+'.';
-TD.nextTeam();$('#ctl').innerHTML='<button class="btn" id="go">Next team: '+TD.team.name+'</button>';$('#go').onclick=start}
+function finish(){locked=true;TD.sfx('win');$('#msg').textContent=TD.L('Round complete! Sorted with '+mistakes+' mistake'+(mistakes===1?'':'s')+'.','Hoàn thành! Có '+mistakes+' lần xếp sai.');
+TD.nextTeam();$('#ctl').innerHTML='<button class="btn" id="go">'+TD.L('Next team: ','Đội tiếp theo: ')+TD.team.name+'</button>';$('#go').onclick=start}
 function start(){items=TD.shuffle(SETS[TD.level].items);placed={};sel=null;mistakes=0;locked=false;
-$('#turn').textContent=TD.team.name+"'s turn";$('#msg').textContent='';
-$('#ctl').innerHTML='';$('#instr').textContent=TD.level==='easy'?'Tap a card, then tap Living or Non-living.':'Tap a card, then tap the correct group.';
-draw();if(TD.level==='easy')TD.speak('Sort each item into Living or Non-living.')}
+$('#turn').textContent=TD.L(TD.team.name+"'s turn",'Lượt của '+TD.team.name);$('#msg').textContent='';
+$('#ctl').innerHTML='';$('#instr').textContent=TD.level==='easy'?TD.L('Tap a card, then tap Living or Non-living.','Chạm vào một thẻ, rồi chạm Vật sống hoặc Vật không sống.'):TD.L('Tap a card, then tap the correct group.','Chạm vào một thẻ, rồi chạm vào nhóm đúng.');
+draw();if(TD.level==='easy')TD.speak(TD.L('Sort each item into Living or Non-living.','Hãy xếp mỗi thứ vào nhóm Vật sống hoặc Vật không sống.'))}
 /* the science lab: shelves of glowing flasks, bubbles rising */
 const flask=(x,y,c,s=1)=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M-12 -70h24v34l30 50q6 14-10 14h-64q-16 0-10-14l30-50z" fill="#0f2a3a" stroke="#5fb8c9" stroke-width="3" opacity=".9"/><path d="M-26 -10h52l12 20q4 8-6 8h-64q-10 0-6-8z" fill="${c}" opacity=".75"/><circle data-fx="float:-60:3" cx="-6" cy="-6" r="4" fill="#fff" opacity=".6"/><circle data-fx="float:-70:4" cx="8" cy="0" r="3" fill="#fff" opacity=".5"/></g>`;
 const beaker=(x,y,c)=>`<g transform="translate(${x} ${y})"><path d="M-30 -80v76q0 8 8 8h44q8 0 8-8v-76" fill="#0f2a3a" stroke="#5fb8c9" stroke-width="3"/><rect x="-27" y="-40" width="54" height="40" rx="5" fill="${c}" opacity=".7"/><path d="M-30 -60h12M-30 -44h8M-30 -28h12" stroke="#5fb8c9" stroke-width="2"/></g>`;
@@ -299,4 +307,4 @@ ${flask(160,770,'#3ddbb0')}${beaker(300,770,'#ff6fae')}${flask(420,770,'#4da3ff'
 <g transform="translate(560 770)" fill="#123845" stroke="#5fb8c9" stroke-width="3"><rect x="-40" y="-14" width="80" height="14" rx="4"/><path d="M-6 -14v-60l30-40" fill="none"/><rect x="10" y="-140" width="26" height="40" rx="6" transform="rotate(35 23 -120)"/></g>
 ${bub(120,14)}${bub(380,18)}${bub(700,22)}${bub(980,16)}${bub(1240,20)}${bub(1520,17)}</svg>`;
 TD.fx.scene(LAB);
-TD.init({id:'sort-it-out',title:'Sort It Out',onLevel:()=>start()});
+TD.init({id:'sort-it-out',title:'Sort It Out',langs:['en','vi'],onLevel:()=>start()});

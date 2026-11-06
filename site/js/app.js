@@ -687,6 +687,9 @@ const STRINGS = {
   doc_name_ph:     { en:'Name (optional)', vi:'Tên (không bắt buộc)' },
   doc_link_invalid:{ en:'That doesn’t look like a Google Docs, Slides, Sheets, Forms or Drive link. (A Google Forms editor link can’t be shown; use the form’s send/preview link.)', vi:'Liên kết này có vẻ không phải từ Google Docs, Slides, Sheets, Forms hoặc Drive. (Liên kết chỉnh sửa Google Forms không hiển thị được; hãy dùng liên kết gửi/xem trước của biểu mẫu.)' },
   doc_link_added:  { en:'Google link added', vi:'Đã thêm liên kết Google' },
+  drive_btn:       { en:'Google Drive', vi:'Google Drive' },
+  drive_added:     { en:'Added {n} from Google Drive', vi:'Đã thêm {n} tệp từ Google Drive' },
+  drive_blocked:   { en:'The Google Drive window was blocked. Allow pop-ups for this page and try again.', vi:'Cửa sổ Google Drive đã bị chặn. Hãy cho phép cửa sổ bật lên trên trang này rồi thử lại.' },
   doc_office_tab:  { en:'Office files can’t be shown full screen yet — opening it in a new tab.', vi:'Chưa thể hiển thị tệp Office toàn màn hình — đang mở trong tab mới.' },
   doc_pdf_error:   { en:'Couldn’t open that PDF here.', vi:'Không thể mở tệp PDF này tại đây.' },
   dock_autohide_label:{ en:'Hide the bottom dock until I hover its tab', vi:'Ẩn thanh dock phía dưới cho đến khi tôi rê chuột vào thẻ của nó' },
@@ -4045,7 +4048,7 @@ function docOpenInTab(){
 
 function renderFiles(body){
   body.innerHTML = `
-    <div class="file-drop"><button type="button" class="file-drop-browse" id="file-browse">${iconSvg('plus','wsvg')}<span data-i18n="browse_btn">${t('browse_btn')}</span></button></div>
+    <div class="file-drop"><button type="button" class="file-drop-browse" id="file-browse">${iconSvg('plus','wsvg')}<span data-i18n="browse_btn">${t('browse_btn')}</span></button>${typeof DrivePick !== 'undefined' && DrivePick.available() ? `<button type="button" class="file-drop-browse" id="file-drive">${iconSvg('cloud','wsvg')}<span data-i18n="drive_btn">${t('drive_btn')}</span></button>` : ''}</div>
     <input type="file" id="file-input" hidden multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx">
     <form class="file-glink" id="file-glink" autocomplete="off">
       <input type="text" id="glink-url" placeholder="${t('doc_link_ph')}" data-i18n-placeholder="doc_link_ph" aria-label="${t('doc_add_link')}" data-i18n-aria="doc_add_link">
@@ -4069,6 +4072,16 @@ function renderFiles(body){
   const list = body.querySelector('.file-list');
   const input = body.querySelector('#file-input');
   body.querySelector('#file-browse').addEventListener('click', ()=> input.click());
+  // Google Drive (js/drivepick.js): picked files are saved as Google links, so they show like a pasted link
+  const driveBtn = body.querySelector('#file-drive');
+  if(driveBtn) driveBtn.addEventListener('click', async ()=>{
+    let picked;
+    try{ picked = await DrivePick.pick(state.lang); }catch(e){ toast(t('drive_blocked'), 5000); return; }
+    if(!picked.length) return;
+    for(const p of picked) await idb.put('files', { id:cid(), kind:'glink', name:p.name, url:p.url, gtype:p.gtype, added:Date.now() });
+    draw();
+    toast(t('drive_added', { n:picked.length }));
+  });
 
   function showFile(f){
     if(f.kind === 'glink'){

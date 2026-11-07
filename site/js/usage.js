@@ -1,17 +1,19 @@
 'use strict';
-/* Anonymous usage statistics → Google Analytics 4 (property 555390375, linked to the Firebase project), shown in
-   TeachersDeckHQ → Analytics → App usage. The same file in TeachersDeck and AdminDeck (tools/check_shared.py), and
+/* Anonymous usage statistics → Google Analytics 4 (property 561096420, the one myteachersdeck.com also uses), shown in
+   TeachersDeckHQ → Analytics → App usage and More → Product usage. The same file in TeachersDeck and AdminDeck (tools/check_shared.py), and
    in UniDeck's LectureDeck. StudentDeck and ParentDeck never load it: they are used by children and families.
 
    What is sent: the app's name and version, extension or web, a random install id (not linked to any account) and a
    few event names — "app_open" once per session and "widget_open" with the widget's id. Never names, emails, class
-   or student data, text the teacher typed, or keys. Not sent from the demo site or localhost.
+   or student data, text the teacher typed, or keys. Not sent from localhost or the platform sites on github.io.
+   On the public demo (teachersdeck.github.io/demo/…) the same events go out as "demo_open" and "demo_widget_open"
+   with platform "demo", so HQ can count demo use without mixing it into real use.
    Settings → "Share anonymous usage statistics" turns it off (and forgets the install id).
 
    Chrome extensions can't use the Firebase Analytics script (no remote code), so events go to GA's Measurement
    Protocol with a plain request. To stop sending everywhere at once, empty MEASUREMENT_ID below. */
 (function(){
-  const MEASUREMENT_ID = 'G-M8LJNJ2D3P';   // GA property 555390375 → Admin → Data streams → "TeachersDeck apps"
+  const MEASUREMENT_ID = 'G-M8LJNJ2D3P';   // GA property 561096420 → Admin → Data streams → "TeachersDeck apps"
   const API_SECRET = '9nhlt-gERJecOlFmkKnsxQ';   // that stream → Measurement Protocol API secrets ("apps"); public by nature: it ships in the app
   const OFF = 'td_usage_off', CID = 'td_usage_cid', SES = 'td_usage_session';
   const ed = window.DECK_EDITION || {};
@@ -21,8 +23,10 @@
     del(k){ try { localStorage.removeItem(k); } catch(_){} },
   };
   const host = location.hostname;
-  const platform = location.protocol === 'chrome-extension:' ? 'extension' : 'web';
-  const skip = /(^|\.)github\.io$/.test(host) || host === 'localhost' || host === '127.0.0.1' || location.protocol === 'file:';
+  const pages = /(^|\.)github\.io$/.test(host);
+  const demo = pages && /^\/demo\//.test(location.pathname);   // the public demo; other github.io sites stay silent
+  const platform = demo ? 'demo' : location.protocol === 'chrome-extension:' ? 'extension' : 'web';
+  const skip = (pages && !demo) || host === 'localhost' || host === '127.0.0.1' || location.protocol === 'file:';
 
   function enabled(){ return store.get(OFF) !== '1'; }
   function setEnabled(on){
@@ -58,6 +62,7 @@
   function track(name, params){
     if(!MEASUREMENT_ID || !API_SECRET || skip || !enabled()) return;
     if(!/^[a-z][a-z0-9_]{0,39}$/.test(name)) return;
+    if(demo) name = name === 'app_open' ? 'demo_open' : `demo_${name}`;   // kept apart from real use in HQ
     const s = session();
     const body = {
       client_id: clientId(),

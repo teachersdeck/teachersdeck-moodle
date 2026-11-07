@@ -426,10 +426,10 @@ function exportWatermarkToken(){
 if(window.Watermark) Watermark.configure({ identity: ()=> `${(state.license && state.license.key) || 'UNLICENSED'}::${deviceId()}` });
 /* ---- Official-build check (anti-theft, v0.21.4) ----
    The extension ID comes from the manifest's "key" (dliphbbeinjlpcnpenllgaddihpkamcl), so a copy republished under another ID shows a notice and
-   cannot activate Pro. Update OFFICIAL_IDS if the Chrome Web Store assigns a different ID when you publish. Pages served
+   cannot activate Pro. The Chrome Web Store build runs as gemkljlgmnajlmdlcgdegpegaoiahaea (the store's own ID; its manifest has no "key"). Pages served
    outside an extension (demo/testing over http) are not checked. */
 // UniDeck: LectureDeck runs this same file under its own extension ID, listed in its own js/edition.js (officialIds).
-const OFFICIAL_IDS = ['dliphbbeinjlpcnpenllgaddihpkamcl', ...((ED && ED.officialIds) || [])];
+const OFFICIAL_IDS = ['dliphbbeinjlpcnpenllgaddihpkamcl', 'gemkljlgmnajlmdlcgdegpegaoiahaea', ...((ED && ED.officialIds) || [])];
 function isOfficialBuild(){ try{ return !(window.chrome && chrome.runtime && chrome.runtime.id) || OFFICIAL_IDS.includes(chrome.runtime.id); }catch(e){ return true; } }
 if(!isOfficialBuild()) document.addEventListener('DOMContentLoaded', ()=>{
   const n = document.createElement('div'); n.className = 'unofficial-build'; n.setAttribute('role', 'alert');

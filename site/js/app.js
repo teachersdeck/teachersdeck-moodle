@@ -6611,7 +6611,8 @@ function renderSoundboard(body){
 /* ---------------- Wave 1 widgets ---------------- */
 
 function renderAttendance(body){
-  function todayKey(d){ d = d||new Date(); return d.toISOString().slice(0,10); }
+  // v0.40.2: the LOCAL date (toISOString is UTC, so in Vietnam it opened on yesterday's date before 7 am).
+  function todayKey(d){ d = d||new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   let curDate = todayKey();
   /* v0.21.2: "Share with families" — when this class is linked to a cloud class and the teacher turns it on, each day's
      present / late / absent is copied to students/{id}/attendance/{date} for ParentDeck's Attendance widget (status only,
@@ -9184,9 +9185,10 @@ function renderCloudClass(body){
         <div class="cc-code-row"><span>${t('cc_student_code')}: <b>${escHtml(cls.studentJoinCode)}</b></span>
           <span class="cc-code-btns"><button class="wbtn" data-copy="${escHtml(cls.studentJoinCode)}">${t('cc_copy')}</button>
           <button class="wbtn" data-which="student">${t('cc_regenerate')}</button></span></div>
-        <div class="cc-code-row"><span>${t('cc_parent_code')}: <b>${escHtml(cls.parentJoinCode)}</b></span>
+        ${cls.parentLinking === 'class-code' ? `<div class="cc-code-row"><span>${t('cc_parent_code')}: <b>${escHtml(cls.parentJoinCode)}</b></span>
           <span class="cc-code-btns"><button class="wbtn" data-copy="${escHtml(cls.parentJoinCode)}">${t('cc_copy')}</button>
-          <button class="wbtn" data-which="parent">${t('cc_regenerate')}</button></span></div>`;
+          <button class="wbtn" data-which="parent">${t('cc_regenerate')}</button></span></div>`
+        : `<p class="small-hint">👪 ${t('cc_parents_family')}</p>`}`;   // v0.40.2: the class's parent code only works where the class chose class-code linking
       codesEl.querySelectorAll('[data-copy]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const code = btn.dataset.copy;
@@ -9665,7 +9667,8 @@ Object.assign(STRINGS, {
   cb_student_note:     { en:'Matched by name (accents and capitals ignored).', vi:'Khớp theo tên (bỏ qua dấu và chữ hoa).' },
   cb_unmatched_title:  { en:'Joined, but not on your list', vi:'Đã tham gia nhưng chưa có trong danh sách' },
   cb_add_to_list:      { en:'Add to class list', vi:'Thêm vào danh sách lớp' },
-  cb_parent_note:      { en:'Parents join with the parent code {code}. Which parents have linked isn’t visible here — this shows the notes you sent them.', vi:'Phụ huynh tham gia bằng mã phụ huynh {code}. Ở đây không thấy phụ huynh nào đã liên kết — chỉ thấy các ghi chú bạn đã gửi.' },
+  cb_parent_note_cc:   { en:'Parents join with the parent code {code}. Which parents have linked isn’t visible here — this shows the notes you sent them.', vi:'Phụ huynh tham gia bằng mã phụ huynh {code}. Ở đây không thấy phụ huynh nào đã liên kết — chỉ thấy các ghi chú bạn đã gửi.' },
+  cb_parent_note:      { en:'Parents link with their child’s own family code: Cloud Class → Class settings → Family codes, or StudentDeck → Class. Which parents have linked isn’t visible here — this shows the notes you sent them.', vi:'Phụ huynh liên kết bằng mã gia đình riêng của con: Cloud Class → Cài đặt lớp → Mã gia đình, hoặc StudentDeck → Lớp. Ở đây không thấy phụ huynh nào đã liên kết — chỉ thấy các ghi chú bạn đã gửi.' },
   cb_admin_note:       { en:'The class record, as far as TeachersDeck can see it. Your school’s AdminDeck holds its own view.', vi:'Hồ sơ lớp theo những gì TeachersDeck thấy được. AdminDeck của trường có góc nhìn riêng.' },
   cb_a_class:          { en:'Class', vi:'Lớp' },
   cb_a_teacher:        { en:'Teacher', vi:'Giáo viên' },
@@ -9684,6 +9687,8 @@ Object.assign(STRINGS, {
   cb_popup_blocked:    { en:'Your browser blocked the print window — allow pop-ups for this page.', vi:'Trình duyệt đã chặn cửa sổ in — hãy cho phép cửa sổ bật lên.' },
   cb_slip_student:     { en:'StudentDeck → Join with class code {code}. Type your name as: {name}', vi:'StudentDeck → Tham gia bằng mã lớp {code}. Nhập tên của em: {name}' },
   cb_slip_parent:      { en:'Parents: ParentDeck → parent code {code}', vi:'Phụ huynh: ParentDeck → mã phụ huynh {code}' },
+  cb_slip_family:      { en:'Parents: ParentDeck → Link a child → family code {code}', vi:'Phụ huynh: ParentDeck → Liên kết một học sinh → mã gia đình {code}' },
+  cb_slip_family_later:{ en:'Parents: once your child has joined, their family code for ParentDeck is in StudentDeck → Class.', vi:'Phụ huynh: khi con đã tham gia lớp, mã gia đình cho ParentDeck nằm trong StudentDeck → Lớp.' },
   cb_unlink:           { en:'Unlink from cloud class', vi:'Hủy liên kết lớp cloud' },
   cb_unlink_confirm:   { en:'Unlink this class from its cloud class? The cloud class and its students are not deleted.', vi:'Hủy liên kết lớp này với lớp cloud? Lớp cloud và học sinh không bị xóa.' },
   cb_settings_sum:     { en:'{name} · {n} students', vi:'{name} · {n} học sinh' },
@@ -9958,7 +9963,7 @@ function cbPaneCloud(pane){
           const c = map.get(s.id), mine = c ? notes.filter(n => n.studentId === c.id) : [], last = mine.slice().sort((a, b) => cbTsMs(b.createdAt) - cbTsMs(a.createdAt))[0];
           return [studentDisplay(s), c ? String(mine.length) : '—', c ? String(mine.filter(n => !n.read).length) : '—', last ? `${cbDate(cbTsMs(last.createdAt))} ${CB_MOOD[last.mood] || ''}`.trim() : '—'];
         });
-        $('#cb-note').textContent = t('cb_parent_note', { code:cls ? (cls.parentJoinCode || '') : '' });
+        $('#cb-note').textContent = cls && cls.parentLinking === 'class-code' ? t('cb_parent_note_cc', { code:cls.parentJoinCode || '' }) : t('cb_parent_note');   // v0.40.2: parents link with family codes unless the class chose the class code
       }else{
         const n = state.students.filter(s => studentDisplay(s)).length;
         head = [t('cb_h_item'), t('cb_h_value')];
@@ -9996,10 +10001,24 @@ function cbPaneCloud(pane){
   paint();
   return () => { stop(); unAuth(); };
 }
-function cbPrintSlips(cls){
+// v0.40.2: each slip tells the child's family how to link. Parents link with the child's OWN family code (backend v2.0.0),
+// so a student who has joined gets theirs printed on their slip; one who hasn't is told where it will appear. Only a class
+// that chose class-code linking (AdminDeck → ClassDeck) still prints the class's parent code.
+async function cbPrintSlips(cls){
   if(!cls){ toast(t('cb_cloud_missing')); return; }
-  const w = window.open('', '_blank'); if(!w){ toast(t('cb_popup_blocked')); return; }
-  const slips = state.students.filter(s => studentDisplay(s)).map(s => `<div class="slip"><h3>${escHtml(studentDisplay(s))}</h3><p>${escHtml(t('cb_slip_student', { code:cls.studentJoinCode || '', name:studentDisplay(s) }))}</p><p><small>${escHtml(t('cb_slip_parent', { code:cls.parentJoinCode || '' }))}</small></p></div>`).join('');
+  const w = window.open('', '_blank'); if(!w){ toast(t('cb_popup_blocked')); return; }   // opened before any await, or the pop-up blocker steps in
+  const classCode = cls.parentLinking === 'class-code';
+  let famByLocal = new Map();
+  if(!classCode && state.cloudClassId && typeof TDCloud !== 'undefined' && TDCloud.getFamilyCodes){
+    try{
+      const codes = await TDCloud.getFamilyCodes(state.cloudClassId);
+      const { map } = cbMatch(state.students, codes.map(c => ({ id:c.studentId, displayName:c.displayName, familyCode:c.familyCode })));
+      map.forEach((hit, localId) => famByLocal.set(localId, hit.familyCode));
+    }catch(e){ /* offline or an older backend: the slips say where the code will be */ }
+  }
+  const parentLine = s => classCode ? t('cb_slip_parent', { code:cls.parentJoinCode || '' })
+    : famByLocal.get(s.id) ? t('cb_slip_family', { code:famByLocal.get(s.id) }) : t('cb_slip_family_later');
+  const slips = state.students.filter(s => studentDisplay(s)).map(s => `<div class="slip"><h3>${escHtml(studentDisplay(s))}</h3><p>${escHtml(t('cb_slip_student', { code:cls.studentJoinCode || '', name:studentDisplay(s) }))}</p><p><small>${escHtml(parentLine(s))}</small></p></div>`).join('');
   w.document.write(`<!doctype html><meta charset="utf-8"><title>${escHtml(cls.className || '')}</title><style>body{font:14px system-ui,sans-serif;margin:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.slip{border:1.5px dashed #888;border-radius:10px;padding:10px 12px;break-inside:avoid}h3{margin:0 0 6px;font-size:15px}p{margin:4px 0}small{color:#555}button{margin-bottom:12px;padding:6px 12px}@media print{button{display:none}}</style><button onclick="print()">🖨️ ${escHtml(t('cb_slips'))}</button><h2>${escHtml(cls.className || '')}</h2><div class="grid">${slips}</div>`);
   w.document.close();
 }
@@ -10029,6 +10048,7 @@ Object.assign(STRINGS, {
   an_gotit:            { en:'✓ Got it', vi:'✓ Đã xem' },
   an_toast:            { en:'📬 New note from your school (Cloud Class)', vi:'📬 Có ghi chú mới từ nhà trường (Cloud Class)' },
   cc_family_codes:     { en:'Family codes', vi:'Mã gia đình' },
+  cc_parents_family:   { en:'Parents link with their child’s own family code: Class settings → Family codes.', vi:'Phụ huynh liên kết bằng mã gia đình riêng của con: Cài đặt lớp → Mã gia đình.' },
   cc_family_hint:      { en:'Each student has their own code; their parents type it into ParentDeck to link. Students see theirs in StudentDeck \u2192 Class. Give each code only to that child\u2019s family.', vi:'Mỗi học sinh có mã riêng; phụ huynh nhập mã vào ParentDeck để liên kết. Học sinh xem mã trong StudentDeck \u2192 Lớp. Chỉ đưa mỗi mã cho đúng gia đình của em đó.' },
   cc_family_show:      { en:'Show family codes', vi:'Hiện mã gia đình' },
   cc_family_loading:   { en:'Loading\u2026', vi:'Đang tải\u2026' },

@@ -436,6 +436,9 @@ input[type=text], textarea{
   width:100%;
 }
 input[type=text]:focus, textarea:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+/* Number boxes look like the text boxes (they were left with the browser's white default in dark mode); width stays each widget's own */
+input[type=number]{ background:var(--ink-1); border:1px solid var(--line); border-radius:8px; color:var(--text-hi); padding:8px 10px; font-family:'Inter'; font-size:13px; }
+input[type=number]:focus{ outline:2px solid var(--amber); outline-offset:1px; }
 select{
   background:var(--ink-2); border:1px solid var(--line); border-radius:8px;
   color:var(--text-hi); padding:6px 8px; font-family:'Inter'; font-size:12.5px;

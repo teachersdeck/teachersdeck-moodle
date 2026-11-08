@@ -968,6 +968,7 @@ const STRINGS = {
   pay_start_over_confirm: { en:'Start over? If you have already paid for this order, don\'t: it would be matched by hand later and is harder to trace.', vi:'Chọn lại? Nếu bạn đã thanh toán đơn này thì đừng: đơn sẽ khó đối chiếu hơn.' },
   pay_done: { en:'Payment received: Pro is on. Your key is in your email.', vi:'Đã nhận thanh toán: Pro đã bật. Mã đã được gửi qua email.' },
   pay_renewed: { en:'Payment received: your Pro is renewed.', vi:'Đã nhận thanh toán: Pro đã được gia hạn.' },
+  pro_uni_campus: { en:'Pro comes with your campus plan. Ask your campus admin, or enter a licence key in Settings.', vi:'Pro đi kèm gói của trường. Hãy hỏi quản trị viên của trường, hoặc nhập mã bản quyền trong Cài đặt.' },
   pro_unofficial: { en:'This copy is not an official build, so it can\'t buy or activate Pro.', vi:'Bản này không phải bản chính thức nên không thể mua hoặc kích hoạt Pro.' },
   pro_locked_hint: { en:'This is a Pro feature.', vi:'Đây là tính năng của Pro.' },
 
@@ -8393,7 +8394,7 @@ function buildProStatus(){
     badge.textContent = 'FREE'; badge.classList.remove('is-pro');
     text.textContent = t('pro_status_free'); text.setAttribute('data-i18n','pro_status_free');
     licenseRow.hidden = false;
-    upgradeBtn.hidden = false;
+    upgradeBtn.hidden = UNI;   // UniDeck (LectureDeck): a campus plan makes the school Pro, so no purchase here; a key can still be entered
   }
 }
 
@@ -8481,6 +8482,7 @@ function pollProOrder(){
 
 const proModalBackdrop = document.getElementById('pro-modal-backdrop');
 function openProModal(){
+  if(UNI){ toast(t('pro_uni_campus')); return; }   // UniDeck: Pro comes with the campus plan, never bought by a lecturer here
   const saved = readProOrder();
   if(saved){ showProOrder(saved); } else { buildPayStep1(); showPayStep(1); }
   proModalBackdrop.hidden = false;

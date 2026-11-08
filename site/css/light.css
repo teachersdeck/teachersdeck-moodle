@@ -243,6 +243,12 @@
 :where(html[data-mode="light"]) .pro-modal-backdrop{
   background:rgba(6,9,14,0.36);
 }
+:where(html[data-mode="light"]) .pay-plan{
+  border:1px solid var(--line, rgba(15,23,42,0.165));
+}
+:where(html[data-mode="light"]) input[type=email]{
+  border:1px solid var(--line, rgba(15,23,42,0.165));
+}
 :where(html[data-mode="light"]) .dock-vis-row{
   background:rgba(15,23,42,0.022);
 }

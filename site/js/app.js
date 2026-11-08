@@ -341,31 +341,11 @@ if(!state.nhLayoutV21){ state.nhLayoutV21 = true; const nl = state.layout && sta
    LICENSE_OFFLINE_GRACE_MS before failing closed — see
    recheckLicenseIfNeeded().
    ========================================================= */
-// Customers fill this out first.
-const ORDER_FORM_URL = 'https://forms.gle/SGUgGpgLyEjNu5iS8';
-// v2.3.0: real subscription pricing (official pricing sheet). VND-only — the old one-time
-// PRO_PRICE_USD/PRO_PRICE_VND pair is gone; see backend/functions/src/license.js for the
-// matching billingCycle/expiresAt fields this prices against.
+// v2.3.0: real subscription pricing (official pricing sheet). VND only; must equal the quote engine and the backend's
+// payments.js PRICES (the server prices every order; these are only shown).
 const PRO_PRICING_VND = { monthly: 240000, annual: 2100000, founding: 1300000 };
-
-// --- Payment method 1: HSBC VietQR (bank transfer, shown first) ---
-// BETA BUILD: the account details below are intentionally blank, so the VietQR panel
-// just says payments are switched off.
-const HSBC_VIETQR_BIN = '458761';      // HSBC Vietnam's NAPAS bank BIN (public info; verify at vietqr.io)
-const HSBC_ACCOUNT_NUMBER = '';
-const HSBC_ACCOUNT_NAME = '';
-const HSBC_BANK_NAME = 'HSBC Vietnam';
-const HSBC_ACCOUNT_NUMBER_DISPLAY = '';
-const HSBC_SWIFT_CODE = '';
-const HSBC_BRANCH_ADDRESS = '';
-
-// --- Payment method 2: Stripe (card), or swap for another Asian processor ---
-// Easiest no-backend option: create a Stripe "Payment Link" (dashboard.stripe.com/payment-links)
-// for the Pro price and paste its URL here. Alternatives that also work without a
-// backend: PayPal.me link, a Wise payment request link, or a 2Checkout/Xendit/
-// PayerMax checkout link — anything that's just a URL can go in STRIPE_PAYMENT_LINK.
-const STRIPE_PAYMENT_LINK = '';        // TODO: e.g. 'https://buy.stripe.com/xxxxxxxx'
-const CARD_PROCESSOR_LABEL = 'Card (Stripe)'; // change if using a different processor
+// v0.41.0: paid by VietQR only, with a note token per order (createOrder). The bank account comes from the backend,
+// so the order form, the HSBC constants and the Stripe/card link are gone.
 
 // ---- Pro gate (v0.21.3) — the decided split; reasons in PRO-TIERS.md at the repository root ----
 // PRO_GATE_ENABLED is THE switch. While it is false (testing / beta distribution) nothing is locked: every widget and
@@ -952,31 +932,43 @@ const STRINGS = {
   pro_license_expired: { en:'Your subscription has expired — renew to keep Pro features', vi:'Gói đăng ký của bạn đã hết hạn — gia hạn để tiếp tục dùng tính năng Pro' },
   pro_license_network_error: { en:'Couldn\'t reach the license server — check your connection and try again', vi:'Không thể kết nối máy chủ cấp phép — kiểm tra kết nối mạng và thử lại' },
   pro_modal_title: { en:'Upgrade to TeachersDeck Pro', vi:'Nâng cấp lên TeachersDeck Pro' },
-  pro_modal_subtitle: { en:'Monthly or annual subscription. Unlocks on this browser.', vi:'Đăng ký theo tháng hoặc theo năm. Mở khóa trên trình duyệt này.' },
+  pro_modal_subtitle: { en:'Monthly or yearly, paid by bank transfer (VietQR). Unlocks on this device.', vi:'Theo tháng hoặc theo năm, thanh toán bằng chuyển khoản (VietQR). Mở khóa trên thiết bị này.' },
   pro_close: { en:'Close', vi:'Đóng' },
   plan_free_title: { en:'Free', vi:'Miễn phí' },
   plan_pro_title: { en:'Pro', vi:'Pro' },
-  plan_free_f1: { en:'Clock, timer & stopwatch', vi:'Đồng hồ, hẹn giờ & bấm giờ' },
-  plan_free_f2: { en:'Built-in calendar', vi:'Lịch tích hợp' },
-  plan_free_f3: { en:'Lesson files on this device', vi:'Tệp bài học trên thiết bị này' },
+  plan_free_f1: { en:'Classes, points, Notes Home, reports, homework, calendar, attendance', vi:'Lớp học, điểm thưởng, Notes Home, báo cáo, bài tập, lịch, điểm danh' },
+  plan_free_f2: { en:'Classroom tools: clock, timers, name picker, dice, traffic light, checklist', vi:'Công cụ lớp học: đồng hồ, hẹn giờ, chọn tên, xúc xắc, đèn giao thông, danh sách việc' },
+  plan_free_f3: { en:'Files, with Google Drive', vi:'Tệp, kèm Google Drive' },
   plan_pro_f1: { en:'Everything in Free', vi:'Tất cả tính năng của gói Miễn phí' },
-  plan_pro_f2: { en:'Traffic light, dice, checklist, scoreboard, poll, noise meter', vi:'Đèn giao thông, xúc xắc, danh sách việc, bảng điểm, khảo sát, đo tiếng ồn' },
-  plan_pro_f3: { en:'Games, music & video player, soundboard', vi:'Trò chơi, nhạc & video, bảng âm thanh' },
-  plan_pro_f4: { en:'Custom background & side drawer customization', vi:'Ảnh nền tùy chỉnh & tùy chỉnh ngăn kéo bên' },
-  pay_tab_vietqr: { en:'VietQR (Bank transfer)', vi:'VietQR (Chuyển khoản)' },
-  pay_tab_card: { en:'{label}', vi:'{label}' },
-  pay_bank_transfer_heading: { en:'Pay by Bank Transfer', vi:'Thanh toán qua chuyển khoản' },
-  pay_step1_heading: { en:'Step 1 — Fill out the order form', vi:'Bước 1 — Điền phiếu đặt mua' },
-  pay_step1_copy: { en:'Tell us who the license is for. It opens in a new tab.', vi:'Cho chúng tôi biết mã bản quyền dành cho ai. Biểu mẫu mở trong tab mới.' },
-  pay_step1_btn: { en:'Open the order form', vi:'Mở phiếu đặt mua' },
-  pay_step1_done: { en:'Already submitted the form? Continue to payment', vi:'Đã gửi biểu mẫu? Tiếp tục thanh toán' },
-  pay_step2_heading: { en:'Step 2 — Pay by Bank Transfer', vi:'Bước 2 — Thanh toán qua chuyển khoản' },
-  vietqr_instructions: { en:'Scan with any Vietnamese banking app to pay {price}. Use the same email you entered on the order form so we can match your payment and send your license key.', vi:'Quét bằng ứng dụng ngân hàng bất kỳ để thanh toán {price}. Dùng cùng email bạn đã điền trong phiếu đặt mua để chúng tôi đối chiếu thanh toán và gửi mã bản quyền.' },
-  vietqr_not_configured: { en:'Payments are switched off in this beta build.', vi:'Bản thử nghiệm này đã tắt tính năng thanh toán.' },
-  vietqr_swift_label: { en:'SWIFT', vi:'SWIFT' },
-  card_instructions: { en:'Pay {price} securely by card.', vi:'Thanh toán {price} an toàn bằng thẻ.' },
-  pay_card_btn: { en:'Pay with {label}', vi:'Thanh toán bằng {label}' },
-  card_not_configured: { en:'Card payment isn\'t set up yet — add a payment link in js/app.js (search STRIPE_PAYMENT_LINK).', vi:'Thanh toán bằng thẻ chưa được thiết lập — thêm liên kết thanh toán trong js/app.js (tìm STRIPE_PAYMENT_LINK).' },
+  plan_pro_f2: { en:'Lesson Planner, Games, Poll, Exit Ticket, Group Maker, Scoreboard', vi:'Soạn giáo án, Trò chơi, Khảo sát, Phiếu cuối giờ, Chia nhóm, Bảng điểm' },
+  plan_pro_f3: { en:'Music, video, soundboard, Meet, TTS reader, DrawDeck', vi:'Nhạc, video, bảng âm thanh, Meet, đọc văn bản, DrawDeck' },
+  plan_pro_f4: { en:'Language tools, custom background, school logo, drawer', vi:'Công cụ ngôn ngữ, ảnh nền, logo trường, tùy chỉnh ngăn kéo' },
+  pay_choose_heading: { en:'Choose your plan', vi:'Chọn gói của bạn' },
+  pay_plan_monthly: { en:'Monthly', vi:'Theo tháng' },
+  pay_plan_annual: { en:'Yearly', vi:'Theo năm' },
+  pay_plan_founding: { en:'Founding Teacher (yearly)', vi:'Giáo viên sáng lập (theo năm)' },
+  pay_plan_founding_note: { en:'For the first 100 teachers', vi:'Dành cho 100 giáo viên đầu tiên' },
+  pay_per_month: { en:'{price}/month', vi:'{price}/tháng' },
+  pay_per_year: { en:'{price}/year', vi:'{price}/năm' },
+  pay_renew_note: { en:'This payment renews your key {key}.', vi:'Khoản thanh toán này gia hạn mã {key} của bạn.' },
+  pay_email_label: { en:'Email for your key', vi:'Email nhận mã' },
+  pay_name_label: { en:'Your name (optional)', vi:'Tên của bạn (không bắt buộc)' },
+  pay_start_btn: { en:'Show the payment QR', vi:'Hiện mã QR thanh toán' },
+  pay_email_needed: { en:'Enter the email your key should go to.', vi:'Nhập email để nhận mã bản quyền.' },
+  pay_off: { en:'Payments aren\'t open yet. Please check back soon.', vi:'Chưa mở thanh toán. Vui lòng quay lại sau.' },
+  pay_founding_full: { en:'The founding places are all taken. Choose Monthly or Yearly.', vi:'Đã hết suất giá sáng lập. Hãy chọn gói theo tháng hoặc theo năm.' },
+  pay_too_many: { en:'There are already unpaid orders from this computer. Pay one of them, or wait a week for it to expire.', vi:'Máy tính này đã có đơn chưa thanh toán. Hãy thanh toán một đơn, hoặc chờ một tuần để đơn hết hạn.' },
+  pay_failed: { en:'Couldn\'t create the order. Please try again.', vi:'Không tạo được đơn hàng. Vui lòng thử lại.' },
+  pay_scan_heading: { en:'Scan with your banking app', vi:'Quét bằng ứng dụng ngân hàng' },
+  pay_note_label: { en:'Transfer note: keep it exactly as it is', vi:'Nội dung chuyển khoản: giữ nguyên như sau' },
+  pay_copy: { en:'Copy', vi:'Sao chép' },
+  pay_copied: { en:'Copied', vi:'Đã sao chép' },
+  pay_waiting: { en:'Waiting for your payment. We match transfers by hand, usually within one working day. You can close this window: Pro switches on here by itself and your key is emailed to you.', vi:'Đang chờ thanh toán. Chúng tôi đối chiếu chuyển khoản thủ công, thường trong một ngày làm việc. Bạn có thể đóng cửa sổ này: Pro sẽ tự bật trên máy này và mã được gửi qua email.' },
+  pay_start_over: { en:'Start over with a different plan', vi:'Chọn lại gói khác' },
+  pay_start_over_confirm: { en:'Start over? If you have already paid for this order, don\'t: it would be matched by hand later and is harder to trace.', vi:'Chọn lại? Nếu bạn đã thanh toán đơn này thì đừng: đơn sẽ khó đối chiếu hơn.' },
+  pay_done: { en:'Payment received: Pro is on. Your key is in your email.', vi:'Đã nhận thanh toán: Pro đã bật. Mã đã được gửi qua email.' },
+  pay_renewed: { en:'Payment received: your Pro is renewed.', vi:'Đã nhận thanh toán: Pro đã được gia hạn.' },
+  pro_unofficial: { en:'This copy is not an official build, so it can\'t buy or activate Pro.', vi:'Bản này không phải bản chính thức nên không thể mua hoặc kích hoạt Pro.' },
   pro_locked_hint: { en:'This is a Pro feature.', vi:'Đây là tính năng của Pro.' },
 
   /* ---- Wave 1 widgets ---- */
@@ -8387,10 +8379,6 @@ wireDrawer('btn-theme','theme-drawer','theme-close');
 wireDrawer('btn-settings','settings-drawer','settings-close');
 
 /* ---------------- TeachersDeck Pro ---------------- */
-function fmtPrice(){
-  const m = PRO_PRICING_VND.monthly.toLocaleString('vi-VN'), y = PRO_PRICING_VND.annual.toLocaleString('vi-VN');
-  return state.lang === 'vi' ? `${m}₫/tháng hoặc ${y}₫/năm` : `${m}₫/month or ${y}₫/year`;
-}
 function buildProStatus(){
   const badge = document.getElementById('pro-badge');
   const text = document.getElementById('pro-status-text');
@@ -8409,77 +8397,111 @@ function buildProStatus(){
   }
 }
 
-function buildVietQRPanel(){
-  const box = document.getElementById('vietqr-qr-box');
-  const details = document.getElementById('vietqr-account-details');
-  document.getElementById('vietqr-copy').textContent = t('vietqr_instructions', { price: fmtPrice() });
-  if(!HSBC_ACCOUNT_NUMBER){
-    box.innerHTML = `<div class="qr-missing">${t('vietqr_not_configured')}</div>`;
-    if(details) details.innerHTML = '';
-    return;
-  }
-  const addInfo = encodeURIComponent('TeachersDeck Pro');
-  const acctName = encodeURIComponent(HSBC_ACCOUNT_NAME || '');
-  const url = `https://img.vietqr.io/image/${HSBC_VIETQR_BIN}-${HSBC_ACCOUNT_NUMBER}-compact2.png?amount=${PRO_PRICING_VND.annual}&addInfo=${addInfo}&accountName=${acctName}`;
-  box.innerHTML = `<img src="${url}" alt="VietQR payment code">`;
-  if(details){
-    details.innerHTML = `
-      <div class="vietqr-acct-line vietqr-acct-name">${escHtml(HSBC_ACCOUNT_NAME)}</div>
-      <div class="vietqr-acct-line vietqr-acct-number">${escHtml(HSBC_ACCOUNT_NUMBER_DISPLAY)}</div>
-      <div class="vietqr-acct-line">${escHtml(HSBC_BANK_NAME)}</div>
-      <div class="vietqr-acct-line">${t('vietqr_swift_label')}: ${escHtml(HSBC_SWIFT_CODE)}</div>
-      <div class="vietqr-acct-line vietqr-acct-address">${escHtml(HSBC_BRANCH_ADDRESS)}</div>
-    `;
-  }
+/* ---- Pro by VietQR (v0.41.0, backend v2.30.0) ----
+   createOrder prices the plan on the server and returns a note token (TD K7Q4M9), the QR and the bank account.
+   The order is kept on this device (PRO_ORDER_KEY) and polled with getOrder until the owner marks it paid; then the
+   key, already bound to this device, is activated here. Cards, Stripe and the order form are gone (owner, 7 Nov 2026). */
+const PRO_ORDER_KEY = 'td_pro_order';
+const PRO_ORDER_POLL_MS = 20000;
+let proOrderTimer = null;
+const vndFmt = n => Number(n).toLocaleString(state.lang === 'vi' ? 'vi-VN' : 'en-US') + '₫';
+function readProOrder(){ try{ return JSON.parse(localStorage.getItem(PRO_ORDER_KEY)); }catch(e){ return null; } }
+function saveProOrder(o){ try{ o ? localStorage.setItem(PRO_ORDER_KEY, JSON.stringify(o)) : localStorage.removeItem(PRO_ORDER_KEY); }catch(e){} }
+function selectedPlan(){ const r = document.querySelector('input[name="pay-plan"]:checked'); return r ? r.value : 'annual'; }
+
+function buildPayStep1(){
+  document.getElementById('pay-price-monthly').textContent = t('pay_per_month', { price: vndFmt(PRO_PRICING_VND.monthly) });
+  document.getElementById('pay-price-annual').textContent = t('pay_per_year', { price: vndFmt(PRO_PRICING_VND.annual) });
+  document.getElementById('pay-price-founding').textContent = t('pay_per_year', { price: vndFmt(PRO_PRICING_VND.founding) });
+  const renew = state.license && state.license.key;
+  const note = document.getElementById('pay-renew-note');
+  note.hidden = !renew;
+  if(renew) note.textContent = t('pay_renew_note', { key: state.license.key });
+  const em = document.getElementById('pay-email');
+  if(!em.value){ try{ em.value = localStorage.getItem('td_pay_email') || ''; }catch(e){} }
+  document.getElementById('pay-start-msg').hidden = true;
 }
-function buildCardPanel(){
-  document.getElementById('card-copy').textContent = t('card_instructions', { price: fmtPrice() });
-  const link = document.getElementById('pay-card-link');
-  if(!STRIPE_PAYMENT_LINK){
-    link.removeAttribute('href');
-    link.textContent = t('card_not_configured');
-    link.style.opacity = .6; link.style.pointerEvents = 'none';
-  } else {
-    link.href = STRIPE_PAYMENT_LINK;
-    link.textContent = t('pay_card_btn', { label: CARD_PROCESSOR_LABEL });
-    link.style.opacity = 1; link.style.pointerEvents = 'auto';
-  }
+function showPayStep(n){
+  document.getElementById('pay-step-1').hidden = n !== 1;
+  document.getElementById('pay-step-2').hidden = n !== 2;
 }
-function buildPayTabs(){
-  document.getElementById('pay-tab-card').dataset.key = 'pay_tab_card';
-  document.getElementById('pay-tab-card').textContent = t('pay_tab_card', { label: CARD_PROCESSOR_LABEL });
+function showProOrder(o){
+  document.getElementById('vietqr-qr-box').innerHTML = o.qrUrl ? `<img src="${escHtml(o.qrUrl)}" alt="VietQR">` : '';
+  document.getElementById('pay-amount').textContent = vndFmt(o.amount);
+  document.getElementById('pay-token').textContent = o.token;
+  const b = o.bank || {};
+  document.getElementById('vietqr-account-details').innerHTML = b.account ? `
+    <div class="vietqr-acct-line vietqr-acct-name">${escHtml(b.accountName || '')}</div>
+    <div class="vietqr-acct-line vietqr-acct-number">${escHtml(b.account)}</div>
+    <div class="vietqr-acct-line">${escHtml(b.bankName || '')}</div>` : '';
+  showPayStep(2);
+}
+async function startProOrder(){
+  const msg = document.getElementById('pay-start-msg'), btn = document.getElementById('pay-start');
+  msg.hidden = true;
+  if(!isOfficialBuild()){ msg.textContent = t('pro_unofficial'); msg.hidden = false; return; }
+  const email = document.getElementById('pay-email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent = t('pay_email_needed'); msg.hidden = false; document.getElementById('pay-email').focus(); return; }
+  const plan = selectedPlan();
+  const body = { product:'teachersdeck', cycle: plan === 'monthly' ? 'monthly' : 'annual', founding: plan === 'founding',
+    email, name: document.getElementById('pay-name').value.trim(), deviceId: deviceId() };
+  if(state.license && state.license.key) body.renewKey = state.license.key;
+  btn.disabled = true;
+  try{
+    const o = await callLicenseFn('createOrder', body);
+    try{ localStorage.setItem('td_pay_email', email); }catch(e){}
+    saveProOrder({ id:o.id, secret:o.secret, token:o.token, amount:o.amount, qrUrl:o.qrUrl, bank:o.bank, at:Date.now() });
+    showProOrder(o);
+    pollProOrder();
+  } catch(e){
+    msg.textContent = t({ 'payments-off':'pay_off', 'founding-full':'pay_founding_full', 'too-many-open':'pay_too_many' }[e.code] || (e.message === 'network' || e.message === 'not-configured' ? 'pro_license_network_error' : 'pay_failed'));
+    msg.hidden = false;
+  } finally { btn.disabled = false; }
+}
+// Checks the saved order once; activates Pro when it's paid. Safe to call on every launch.
+async function checkProOrder(){
+  const saved = readProOrder(); if(!saved) return null;
+  let o;
+  try{ o = await callLicenseFn('getOrder', { id: saved.id, secret: saved.secret }); }
+  catch(e){ if(e.status === 404) saveProOrder(null); return null; }
+  if(o.status === 'paid' && o.key){
+    saveProOrder(null);
+    const r = await activateLicenseOnline(o.key);
+    if(r.ok){ setLicense(Object.assign({}, state.license, { key:o.key, pro:true, lastCheck:Date.now() })); buildProStatus(); toast(t(o.renewed ? 'pay_renewed' : 'pay_done')); closeProModal(); }
+    return o;
+  }
+  if(o.status === 'cancelled'){ saveProOrder(null); if(!proModalBackdrop.hidden){ buildPayStep1(); showPayStep(1); } return o; }
+  return o;
+}
+function pollProOrder(){
+  clearTimeout(proOrderTimer);
+  if(!readProOrder() || proModalBackdrop.hidden) return;
+  proOrderTimer = setTimeout(async ()=>{ await checkProOrder(); pollProOrder(); }, PRO_ORDER_POLL_MS);
 }
 
 const proModalBackdrop = document.getElementById('pro-modal-backdrop');
-function showPayStep2(){ document.getElementById('pay-step-2').hidden = false; }
 function openProModal(){
-  document.getElementById('pay-order-form-link').href = ORDER_FORM_URL;
-  document.getElementById('pay-step-2').hidden = true; // re-lock payment until the form is opened
-  buildVietQRPanel();
-  buildCardPanel();
-  buildPayTabs();
+  const saved = readProOrder();
+  if(saved){ showProOrder(saved); } else { buildPayStep1(); showPayStep(1); }
   proModalBackdrop.hidden = false;
+  if(saved) checkProOrder().then(()=> pollProOrder());
 }
-function closeProModal(){ proModalBackdrop.hidden = true; }
+function closeProModal(){ proModalBackdrop.hidden = true; clearTimeout(proOrderTimer); }
 document.getElementById('pro-upgrade-open').addEventListener('click', ()=> openProModal());
 document.getElementById('pro-modal-close').addEventListener('click', closeProModal);
 proModalBackdrop.addEventListener('click', e=>{ if(e.target === proModalBackdrop) closeProModal(); });
-
-document.getElementById('pay-order-form-link').addEventListener('click', ()=>{ showPayStep2(); });
-document.getElementById('pay-form-done-link').addEventListener('click', e=>{ e.preventDefault(); showPayStep2(); });
-
-document.getElementById('pay-tab-vietqr').addEventListener('click', ()=>{
-  document.getElementById('pay-tab-vietqr').classList.add('active');
-  document.getElementById('pay-tab-card').classList.remove('active');
-  document.getElementById('pay-panel-vietqr').hidden = false;
-  document.getElementById('pay-panel-card').hidden = true;
+document.getElementById('pay-start').addEventListener('click', startProOrder);
+document.getElementById('pay-token-copy').addEventListener('click', ()=>{
+  const tok = document.getElementById('pay-token').textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(tok) : Promise.reject()).then(()=> toast(t('pay_copied')), ()=> toast(tok));
 });
-document.getElementById('pay-tab-card').addEventListener('click', ()=>{
-  document.getElementById('pay-tab-card').classList.add('active');
-  document.getElementById('pay-tab-vietqr').classList.remove('active');
-  document.getElementById('pay-panel-card').hidden = false;
-  document.getElementById('pay-panel-vietqr').hidden = true;
+document.getElementById('pay-cancel-local').addEventListener('click', e=>{
+  e.preventDefault();
+  if(!confirm(t('pay_start_over_confirm'))) return;
+  saveProOrder(null); clearTimeout(proOrderTimer); buildPayStep1(); showPayStep(1);
 });
+// A saved order is checked once at launch, so Pro switches on even if the teacher closed the window while waiting.
+setTimeout(()=>{ if(readProOrder()) checkProOrder(); }, 4000);
 
 document.getElementById('pro-license-activate').addEventListener('click', async ()=>{
   const input = document.getElementById('pro-license-input');

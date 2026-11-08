@@ -18,7 +18,7 @@
    computer. IndexedDB (uploaded files, DrawDeck boards) still lives in this browser until step 4 moves it.
    ========================================================= */
 window.TD_PLATFORM = (() => {
-  const BUILD = 'moodle.2';   // the platform build for local builds
+  const BUILD = 'moodle.3';   // the platform build for local builds
   const params = new URLSearchParams(location.search);
   const appVersion = (window.DECK_EDITION && window.DECK_EDITION.version) || '0.0.0';
 

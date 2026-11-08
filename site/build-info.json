@@ -1,10 +1,10 @@
 {
  "platform": "moodle",
  "name": "TeachersDeck for Moodle",
- "version": "0.41.0-moodle.2",
+ "version": "0.41.0-moodle.3",
  "app_version": "0.41.0",
- "build": "moodle.2",
- "commit": "7ee3b8e",
- "built": "2026-11-08T12:42:27Z",
+ "build": "moodle.3",
+ "commit": "ca5285d",
+ "built": "2026-11-08T13:16:14Z",
  "widgets": 45
 }

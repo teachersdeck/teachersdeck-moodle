@@ -421,6 +421,7 @@ if(!isOfficialBuild()) document.addEventListener('DOMContentLoaded', ()=>{
 // ---- Online activation against the license Cloud Functions ---------------
 const LICENSE_FN_REGION = 'us-central1';
 function licenseFnBase(){
+  if(window.TDBackend) return TDBackend.base();   // lights-on: backend.json says where the functions run
   const projectId = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || '';
   if(!projectId) return null;
   return `https://${LICENSE_FN_REGION}-${projectId}.cloudfunctions.net`;

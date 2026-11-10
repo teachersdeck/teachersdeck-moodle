@@ -32,7 +32,7 @@ const UniCourses = (() => {
     if (fb) return true;
     if (!configured()) return false;
     fb = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(window.FIREBASE_CONFIG);
-    auth = firebase.auth(); db = firebase.firestore(); fns = firebase.functions();
+    auth = firebase.auth(); db = firebase.firestore(); fns = window.TDBackend ? TDBackend.functions() : firebase.functions();
     try { storage = firebase.storage ? firebase.storage() : null; } catch (e) { storage = null; }
     auth.onAuthStateChanged(async (u) => {
       if (!u || u.isAnonymous) { state = { ...state, user: null, role: null }; fire(); return; }

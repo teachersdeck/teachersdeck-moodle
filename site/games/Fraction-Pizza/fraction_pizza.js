@@ -15,46 +15,89 @@ const U=s=>(UI[lang]&&UI[lang][s])||s,L=(en,vi)=>lang==='vi'&&vi!=null?vi:en;
 const num=x=>{let s=String(+(+x).toFixed(4));if(lang==='vi')s=s.replace('.',',');return s.replace(/^-/,'−')};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)}
 function tone(f,d,t='sine',at=0,v=.15,f2){if(muted)return;ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),s=ac.currentTime+at;o.type=t;o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(ac.destination);o.start(s);o.stop(s+d)}
-function sfx(k){if(k==='ok'){tone(660,.12);tone(880,.18,'sine',.1);fx.sparkle();fx.mascot('cheer');fx.streakHit()}
-else if(k==='bad'){tone(220,.25,'sawtooth',0,.1);fx.flash();fx.mascot('sad');fx.streakReset()}
-else if(k==='win'){[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',i*.12));fx.confetti();fx.mascot('cheer')}
+function sfx(k){if(SOLO&&round&&round.done&&k!=='pop')return;if(k==='ok'){tone(660,.12);tone(880,.18,'sine',.1);fx.sparkle();fx.mascot('cheer');fx.streakHit();soloCount(true)}
+else if(k==='bad'){tone(220,.25,'sawtooth',0,.1);fx.flash();fx.mascot('sad');fx.streakReset();soloCount(false)}
+else if(k==='win'){[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',i*.12));fx.confetti();fx.mascot('cheer');if(SOLO&&round&&!round.done)setTimeout(()=>soloEnd(),700)}
 else if(k==='tick'){tone(900,.05,'square',0,.05)}
 else if(k==='pop'){tone(520,.08,'sine',0,.12,900)}
 else if(k==='whoosh'){tone(300,.3,'triangle',0,.06,1400)}
 else if(k==='fanfare'){[[523,0],[523,.14],[659,.28],[784,.42],[1047,.62]].forEach(([f,t])=>tone(f,t>.6?.5:.16,'triangle',t,.13))}
 else if(k==='drum'){for(let i=0;i<12;i++)tone(140+i*4,.06,'triangle',i*.07,.05+i*.006)}}
 function speak(text){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang==='vi'?'vi-VN':'en-US';u.rate=.85;speechSynthesis.speak(u)}
-function saveTeams(){store.set('td_teams_'+cfg.id,{teams,act})}
+function saveTeams(){if(SOLO)return;store.set('td_teams_'+cfg.id,{teams,act})}
 function renderTeams(){const box=$('#td-teams .list');box.innerHTML='';teams.forEach((t,i)=>{const d=document.createElement('div');d.className='team'+(i===act?' act':'');
 d.innerHTML=`<span class="nm" contenteditable="true" spellcheck="false"></span><span class="sc">${t.score}</span><span class="pm"><button aria-label="minus one">−1</button><button aria-label="plus one">+1</button></span>`;
 const nm=$('.nm',d);nm.textContent=t.name;nm.onclick=e=>e.stopPropagation();nm.oninput=()=>{t.name=nm.textContent;saveTeams()};
 d.onclick=()=>{act=i;saveTeams();renderTeams()};
 const b=d.querySelectorAll('.pm button');b[0].onclick=e=>{e.stopPropagation();award(-1,i)};b[1].onclick=e=>{e.stopPropagation();award(1,i)};box.appendChild(d)});}
-function award(n,i=act){const was=teams[i].score;teams[i].score=Math.max(0,was+n);saveTeams();renderTeams();fx.scored(i,was,teams[i].score)}
-function nextTeam(){act=(act+1)%teams.length;fx.streakReset();saveTeams();renderTeams()}
+function award(n,i=act){if(SOLO){if(i!==0||!round||round.done)return;const was=teams[0].score;teams[0].score=Math.max(0,was+n);round.score=teams[0].score;soloPanel();fx.scored(0,was,teams[0].score);return}const was=teams[i].score;teams[i].score=Math.max(0,was+n);saveTeams();renderTeams();fx.scored(i,was,teams[i].score)}
+function nextTeam(){if(SOLO)return;act=(act+1)%teams.length;fx.streakReset();saveTeams();renderTeams()}
 function sendScores(){store.set('td_scoreboard_transfer',{teams:teams.map(t=>({name:t.name,score:t.score})),from:cfg.title,ts:Date.now()});toast(U('Scores sent to the Scoreboard widget'))}
 function init(c){cfg=c;lang=(c.langs||['en']).includes(want)?want:'en';document.documentElement.lang=lang;
 const q=new URLSearchParams(location.search).get('level');
 level=LV.includes(q)?q:store.get('td_level_'+c.id,'easy');
 const s=store.get('td_teams_'+c.id,null);teams=s?s.teams:[{name:U('Team')+' 1',score:0},{name:U('Team')+' 2',score:0}];act=s?s.act:0;
+if(SOLO){soloLoad();teams=[{name:US('You'),score:0}];act=0;if(!open(level))level=LV.filter(open).pop()||'easy';document.documentElement.classList.add('td-solo');soloStyle()}
 $('#td-header').className='hdr';
 const multi=(c.langs||[]).length>1;
 $('#td-header').innerHTML=`<h1>${c.title}</h1><div class="lv" role="group" aria-label="${U('Difficulty')}">${LV.map(l=>`<button data-l="${l}">${U(LN[l])}</button>`).join('')}</div><a class="hbtn" href="${lang==='vi'&&multi?'instructions.vi.html':'instructions.html'}" target="_blank" rel="noopener">${U('How to play')}</a><button class="hbtn" id="mute">${U('Sound on')}</button><button class="hbtn" id="motion" title="${U('Animations: full, reduced or off')}"></button>${multi?`<button class="hbtn" id="langB" lang="${lang==='vi'?'en':'vi'}">${lang==='vi'?'English':'Tiếng Việt'}</button>`:''}`;
 if(multi)$('#langB').onclick=()=>{const u=new URL(location.href);u.searchParams.set('lang',lang==='vi'?'en':'vi');u.searchParams.set('level',level);location.replace(u.href)};
 if(lang==='vi')document.querySelectorAll('[data-vi]').forEach(e=>e.textContent=e.dataset.vi);
 $('#td-teams').className='side';
-$('#td-teams').innerHTML=`<h2>${U('Teams')}</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">${U('+ Team')}</button><button class="btn ghost" id="rstT">${U('Reset scores')}</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} ${U('Podium')}</button><button class="btn" id="sendT">${U('Send to Scoreboard')}</button></div>`;
 $('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=U(muted?'Sound off':'Sound on');if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
 $('#motion').onclick=()=>fx.cycleMotion();
+if(!SOLO){
+$('#td-teams').innerHTML=`<h2>${U('Teams')}</h2><div class="list"></div><div class="row"><button class="btn ghost" id="addT">${U('+ Team')}</button><button class="btn ghost" id="rstT">${U('Reset scores')}</button></div><div class="row"><button class="btn ghost" id="podT">\u{1F3C6} ${U('Podium')}</button><button class="btn" id="sendT">${U('Send to Scoreboard')}</button></div>`;
 $('#addT').onclick=()=>{if(teams.length<6){teams.push({name:U('Team')+' '+(teams.length+1),score:0});saveTeams();renderTeams()}else toast(U('Six teams is the maximum'))};
 $('#rstT').onclick=()=>{teams.forEach(t=>t.score=0);saveTeams();renderTeams();toast(U('Scores reset'))};
 $('#sendT').onclick=sendScores;
 $('#podT').onclick=()=>fx.podium();
+}
 document.querySelectorAll('.lv button').forEach(b=>b.onclick=()=>setLevel(b.dataset.l));
-fx.start();setLevel(level,true);renderTeams()}
-function setLevel(l,first){level=l;store.set('td_level_'+cfg.id,l);fx.streakReset();document.querySelectorAll('.lv button').forEach(b=>b.classList.toggle('on',b.dataset.l===l));cfg.onLevel(l,first)}
+fx.start();setLevel(level,true);if(SOLO)soloHeader();else renderTeams()}
+function setLevel(l,first){if(SOLO&&!open(l))return;$('.td-res')&&$('.td-res').remove();level=l;if(SOLO){teams[0].score=0;soloStart();soloHeader()}store.set('td_level_'+cfg.id,l);fx.streakReset();document.querySelectorAll('.lv button').forEach(b=>b.classList.toggle('on',b.dataset.l===l));cfg.onLevel(l,first)}
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+/* ---- Solo mode (StudentDeck): ?mode=solo. One player instead of teams: a My progress panel, rounds of up to
+   cfg.soloCap answers (10 unless the game says otherwise; 0 = the game's own round, ended by sfx('win') or TD.soloEnd),
+   0 to 3 stars a round (cfg.soloStars: the share of right answers for 3, 2 and 1 stars), and a level unlocks at 2 stars on
+   the one below. Progress comes in ?p= from StudentDeck's Games Hub (games run sandboxed there, without storage) or from
+   localStorage, and goes back to the hub: postMessage {type:'sd-xp', game, result, score, level, stars, progress}. ---- */
+const SOLO=new URLSearchParams(location.search).get('mode')==='solo';
+let prog={},round=null,quiet=false;
+const UIS={vi:{'My progress':'Tiến bộ của em',You:'Em','This round':'Lượt này','right of':'đúng trên','Round complete!':'Hoàn thành lượt chơi!','Play again':'Chơi lại','Next level':'Mức tiếp theo',
+'unlocked!':'đã mở khóa!','Get 2 stars on':'Đạt 2 sao ở mức','to unlock':'để mở khóa',Best:'Cao nhất',points:'điểm'}};
+const US=s=>(UIS[lang]&&UIS[lang][s])||s,capOf=()=>cfg.soloCap===undefined?10:cfg.soloCap;
+function soloLoad(){try{const q=new URLSearchParams(location.search).get('p');if(q){prog=JSON.parse(q)||{};return}}catch(e){}prog=store.get('td_solo_'+cfg.id,{})||{}}
+const stars=l=>(prog[l]&&prog[l].stars)||0,starTxt=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+function open(l){return l==='easy'||(l==='moderate'&&stars('easy')>=2)||(l==='hard'&&stars('moderate')>=2)}
+function soloStyle(){const s=document.createElement('style');s.textContent=`.td-solo #turn{visibility:hidden}.lv button small{margin-left:4px;color:var(--gold,#f5c542);font-size:.8em}.lv button:disabled{opacity:.55;cursor:not-allowed}
+.td-this{grid-column:1/-1;color:var(--muted,#9fb0d8);font-size:.9rem}.td-lvl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 10px;border-radius:10px;margin-bottom:6px;background:var(--stage,#0b1430)}
+.td-lvl.on{outline:2px solid var(--gold,#f5c542)}.td-lvl span{color:var(--gold,#f5c542);letter-spacing:2px}.td-lvl i{grid-column:1/-1;font-style:normal;color:var(--muted,#9fb0d8);font-size:.85rem}
+.td-res .box{max-width:480px}.td-stars{font-size:clamp(2.6rem,9vw,3.8rem);letter-spacing:8px;color:#3a4a7a;margin:10px 0}.td-stars span.on{color:var(--gold,#f5c542);text-shadow:0 0 18px rgba(245,197,66,.6)}
+.td-res p{margin:6px 0;font-weight:600}.td-res .unl{color:var(--mint,#3ddbb0)}`;document.head.appendChild(s)}
+function soloHeader(){document.querySelectorAll('.lv button').forEach(b=>{const l=b.dataset.l,ok=open(l),i=LV.indexOf(l);b.disabled=!ok;b.textContent=U(LN[l]);const s=document.createElement('small');s.textContent=ok?starTxt(stars(l)):'\u{1F512}';b.append(s);
+b.title=ok?'':US('Get 2 stars on')+' '+U(LN[LV[i-1]])+' '+US('to unlock')})}
+function soloPanel(){if(!SOLO)return;const r=round||{right:0,wrong:0,score:0},tp=$('#td-teams');tp.className='side';
+tp.innerHTML=`<h2>${US('My progress')}</h2><div class="list"><div class="team act"><span class="nm"></span><span class="sc">${r.score}</span><span class="td-this"></span></div></div><div class="td-lvls"></div>`;
+$('.nm',tp).textContent=US('You');$('.td-this',tp).textContent=US('This round')+': '+r.right+' '+US('right of')+' '+(r.right+r.wrong);
+$('.td-lvls',tp).innerHTML=LV.map(l=>`<div class="td-lvl${l===level?' on':''}"><b>${U(LN[l])}</b><span>${open(l)?starTxt(stars(l)):'\u{1F512}'}</span><i>${open(l)&&prog[l]?US('Best')+': '+prog[l].best:''}</i></div>`).join('')}
+function soloStart(){round={right:0,wrong:0,score:0,ended:false,done:false};quiet=false;soloPanel()}
+function soloCount(ok){if(!SOLO||!round||round.ended||quiet)return;ok?round.right++:round.wrong++;soloPanel();const cap=capOf();if(cap&&round.right+round.wrong>=cap){round.ended=true;setTimeout(()=>soloEnd(),1000)}}
+function soloEnd(given){if(!SOLO||!round||round.done)return;round.done=round.ended=true;
+const n=round.right+round.wrong,cap=capOf(),th=cfg.soloStars||[.9,.7,.4],f=cap?round.right/cap:(n?round.right/n:0);
+const st=given!=null?given:(n?(f>=th[0]?3:f>=th[1]?2:f>=th[2]?1:0):0),before=LV.map(open);
+const p=prog[level]||{stars:0,best:0};prog[level]={stars:Math.max(p.stars,st),best:Math.max(p.best,round.score)};store.set('td_solo_'+cfg.id,prog);
+try{if(parent!==window)parent.postMessage({type:'sd-xp',game:cfg.id,result:st+' stars',score:round.score,level,stars:st,progress:prog},'*')}catch(e){}
+soloHeader();soloPanel();results(st,n,LV.filter((l,i)=>!before[i]&&open(l)))}
+function results(st,n,newly){const o=document.createElement('div');o.className='td-pod td-res';o.setAttribute('role','dialog');o.setAttribute('aria-label',US('Round complete!'));
+const nx=LV[LV.indexOf(level)+1];o.innerHTML=`<div class="box"><h2>${US('Round complete!')}</h2><div class="td-stars">${[0,1,2].map(()=>'<span>★</span>').join('')}</div>
+<p>${round.right} ${US('right of')} ${n} · ${round.score} ${US('points')}</p>${newly.map(l=>`<p class="unl">\u{1F513} ${U(LN[l])} ${US('unlocked!')}</p>`).join('')}
+<div class="acts"><button class="btn" data-a="again">${US('Play again')}</button>${nx&&open(nx)?`<button class="btn ghost" data-a="next">${US('Next level')}: ${U(LN[nx])}</button>`:''}</div></div>`;
+o.onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(a==='again'){o.remove();setLevel(level)}if(a==='next'){o.remove();setLevel(nx)}};document.body.appendChild(o);$('[data-a=again]',o).focus();
+const ss=o.querySelectorAll('.td-stars span');ss.forEach((s,i)=>{if(i>=st)return;setTimeout(()=>{s.classList.add('on');tone(660+i*220,.18,'triangle',0,.14);if(fx.motion==='full'&&s.animate)s.animate([{transform:'scale(.2)'},{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:420,easing:'ease-out'})},fx.motion==='off'?0:350+i*380)});
+if(st===3)setTimeout(()=>{fx.confetti(120)},350+3*380)}
 
 /* ---- TD.fx: the effects layer. Every game gets these through the calls it already makes: sfx('ok') sparkles, cheers
    and counts the streak, sfx('bad') flashes red, sfx('win') throws confetti, award() flies the points to the team card.
@@ -221,7 +264,7 @@ done(anim(d,k,{duration:ms,easing:'ease-in-out'}),()=>d.remove(),ms)}
 /* a line or arrow draws itself from the left */
 function drawIn(el,delay=0){if(still()||!el)return;anim(el,full()?[{transform:'scaleX(0)',transformOrigin:'left center'},{transform:'scaleX(1)',transformOrigin:'left center'}]:[{opacity:0},{opacity:1}],{duration:300,delay,easing:'ease-out',fill:'backwards'})}
 return{start,cycleMotion,sparkle,confetti,flash,shake,scored,streakHit,streakReset,banner,ring,podium,mascot,scene,moves,pop,deal,slash,glow,wave,puff,critter,drawIn,get motion(){return motion}}})();
-return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,L,num,get lang(){return lang},get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
+return{init,toast,sfx,speak,award,nextTeam,shuffle,rnd,fx,L,num,soloEnd,soloQuiet:v=>{quiet=!!v},get solo(){return SOLO},get lang(){return lang},get level(){return level},get team(){return teams[act]},get teamIndex(){return act},get teamCount(){return teams.length}}})();
 
 const $=s=>document.querySelector(s);
 /* Fraction Pizza: pizzas cut into equal slices; the slices with pepperoni are the fraction. Easy: name the fraction

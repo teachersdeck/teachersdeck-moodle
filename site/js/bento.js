@@ -11,6 +11,8 @@
    - Phones (portrait): two columns, one under the other, scrolling.
    - Sizes: Small (1×1), Wide (2×1), Large (2×2) and Full width. ⋯ on a tile (or press and hold its title, or right-click)
      resizes it, moves it earlier or later, opens it full screen or closes it. ⤢ opens it full screen; ⤡ or Esc puts it back.
+   - Moving and resizing by hand (v0.42.0): press and hold a tile's title, then drag it to a new place; the corner grip
+     resizes it, snapping to the four sizes. See "moving and resizing tiles" below.
    - The first time, a few useful widgets open by themselves (DEFAULTS below).
    - The bottom dock becomes a floating glass dock of icons; each icon's name shows above it on hover or press-and-hold.
    Tile sizes and order are this device's own (localStorage). With a mouse on a wide window nothing changes unless
@@ -87,6 +89,8 @@
   const body = (el) => el.querySelector(':scope > .body, :scope > .widget-body');
   const px = (v) => parseFloat(v) || 0;
   let on = false;
+  let paused = false;   // a tile is being moved or resized: the grid only re-packs when that code asks it to
+  let geo = { cols: 2, colW: 160, rowH: 160, phone: true };   // the grid's last measurements, for resizing by hand
 
   function usual(el) {   // the widget's own size when it opened, before the grid takes over
     if (!el.dataset.bw) {
@@ -135,7 +139,7 @@
 
   /* ---- the grid ---- */
   function layout() {
-    if (!on) return;
+    if (!on || paused) return;
     edges();
     const phone = narrow.matches, short = innerHeight <= 500;   // short: a phone held sideways
     root.classList.toggle('bento-phone', phone);
@@ -149,6 +153,7 @@
     wall.style.setProperty('--bento-cols', cols);
     wall.style.setProperty('--bento-row', rowH + 'px');
     wall.style.setProperty('--bento-pad', pad + 'px');
+    geo = { cols, colW, rowH, phone };
     const items = tiles().sort((a, b) => orderOf(a) - orderOf(b)).map((el) => {
       usual(el); dress(el);
       const size = sizeOf(el);
@@ -224,6 +229,9 @@
     box.querySelector('.bento-more').addEventListener('click', (e) => { e.stopPropagation(); menu(el, e.currentTarget); });
     box.querySelector('.bento-x').addEventListener('click', (e) => { e.stopPropagation(); setOpen(el, !el.classList.contains('bento-open')); });
     h.appendChild(box);
+    const grip = document.createElement('span');   // the corner grip that resizes the tile by hand
+    grip.className = 'bento-rsz'; grip.title = T('Drag to resize', 'Kéo để đổi cỡ'); grip.setAttribute('aria-hidden', 'true');
+    el.appendChild(grip);
     el.classList.add('bento-new'); setTimeout(() => el.classList.remove('bento-new'), 700);
     [300, 1200, 2500].forEach((t) => setTimeout(() => fit(el), t));   // content that arrives later (cloud data, fonts)
   }
@@ -271,28 +279,162 @@
   }
   document.addEventListener('pointerdown', (e) => { if (pop && !pop.contains(e.target) && !e.target.closest('.bento-more')) closeMenu(); }, true);
 
-  /* A finger on a title bar scrolls the grid instead of dragging the widget (the apps' drag handlers never see it);
-     pressing and holding it (or right-clicking) opens the tile menu. */
-  let hold = null;
+  /* ---- moving and resizing tiles ----
+     A finger on a title bar scrolls the grid instead of dragging the widget (the apps' drag handlers never see it).
+     Pressing and holding it 350 ms lifts the tile: let go without moving for the tile menu, or drag it to a new place.
+     The other tiles move aside as it passes, packed the same way as always (tiles keep an order; they don't stay
+     where they're dropped), and the order is saved on drop. With a mouse (Settings → Tiles → Always) the drag starts
+     once the pointer has moved 6 px, and holding still opens the menu, as before; right-click opens it too.
+     The corner grip resizes a tile: it snaps to Small, Wide, Large or Full width as it's dragged.
+     Esc (or a cancelled touch) puts a moved or resized tile back. The tile being moved is the real widget, so its live
+     content keeps running; the grid doesn't re-pack by itself until the drop. */
+  const LIFT = 350, MENU = 550, SLOP = 8, MOUSE_GO = 6;
+  let press = null, act = null, swallow = 0;
+  const calm = () => !window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches;
   wall.addEventListener('pointerdown', (e) => {
-    if (!on || e.target.closest('button, a, input, select, textarea, [contenteditable]')) return;
+    if (!on || act || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const grip = e.target.closest('.bento-rsz');
+    if (grip) {
+      const el = grip.closest('.widget');
+      if (el && el.parentNode === wall && !el.classList.contains('bento-open')) { e.stopPropagation(); e.preventDefault(); startResize(el, e); }
+      return;
+    }
+    if (e.target.closest('button, a, input, select, textarea, [contenteditable]')) return;
     const h = e.target.closest('.head, .widget-head, .grip, .widget-resize');
     const el = h && h.closest('.widget');
     if (!el || el.parentNode !== wall || el.classList.contains('bento-open')) return;
     e.stopPropagation();
-    const x = e.clientX, y = e.clientY;
-    clearTimeout(hold && hold.t);
-    hold = { t: setTimeout(() => { hold = null; if (navigator.vibrate) navigator.vibrate(12); menu(el, h); }, 550), x, y };
+    clearPress();
+    const p = press = { el, h, x: e.clientX, y: e.clientY, mouse: e.pointerType === 'mouse', lifted: false };
+    p.t = setTimeout(() => {
+      if (press !== p) return;
+      if (p.mouse) { clearPress(); menu(el, h); return; }   // a mouse held still: the menu
+      p.lifted = true; el.classList.add('bento-lift');
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, p.mouse ? MENU : LIFT);
   }, true);
-  const cancelHold = (e) => { if (hold && (!e || e.type !== 'pointermove' || Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8)) { clearTimeout(hold.t); hold = null; } };
-  ['pointerup', 'pointercancel', 'pointermove'].forEach((t) => wall.addEventListener(t, cancelHold, true));
+  document.addEventListener('pointermove', (e) => {
+    if (act) { act.x = e.clientX; act.y = e.clientY; act.step(); return; }
+    if (!press) return;
+    const d = Math.hypot(e.clientX - press.x, e.clientY - press.y);
+    if (press.mouse ? d > MOUSE_GO : (press.lifted && d > SLOP)) { const p = press; clearPress(); startDrag(p.el, p.x, p.y, e); }
+    else if (!press.mouse && !press.lifted && d > SLOP) clearPress();   // a swipe: the grid scrolls
+  }, true);
+  document.addEventListener('pointerup', (e) => {
+    if (act) { act.x = e.clientX; act.y = e.clientY; act.end(true); return; }
+    if (press && press.lifted) { const p = press; clearPress(); menu(p.el, p.h); return; }   // held, then let go: the menu
+    clearPress();
+  }, true);
+  document.addEventListener('pointercancel', () => { if (act) act.end(false); clearPress(); }, true);
+  addEventListener('blur', () => { if (act) act.end(false); clearPress(); });
+  // once a tile is lifted, the finger moves it, not the grid
+  document.addEventListener('touchmove', (e) => { if (act || (press && press.lifted)) e.preventDefault(); }, { passive: false });
+  wall.addEventListener('click', (e) => { if (Date.now() < swallow) { e.stopPropagation(); e.preventDefault(); swallow = 0; } }, true);
+  function clearPress() { if (press) { clearTimeout(press.t); press.el.classList.remove('bento-lift'); press = null; } }
+
+  /* Re-pack the grid now and slide every tile that moved from where it was (skip: the tile under the finger). */
+  function relayout(skip) {
+    const before = new Map(tiles().filter((t) => t !== skip).map((t) => [t, t.getBoundingClientRect()]));
+    const was = paused; paused = false; layout(); paused = was;
+    if (calm()) return;
+    before.forEach((r0, t) => {
+      const r1 = t.getBoundingClientRect(), dx = r0.left - r1.left, dy = r0.top - r1.top;
+      if (Math.abs(dx) + Math.abs(dy) > 1 && t.animate) t.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    });
+  }
+  function scrollNear(y) {   // the grid scrolls when a tile is held near its top or bottom (above the dock)
+    const r = wall.getBoundingClientRect(), bottom = Math.min(r.bottom, innerHeight - px(root.style.getPropertyValue('--bento-bottom')));
+    const by = y < r.top + 56 ? -12 : y > bottom - 56 ? 12 : 0;
+    if (by) wall.scrollTop += by;
+    return by && wall.scrollTop > 0 && wall.scrollTop < wall.scrollHeight - wall.clientHeight;
+  }
+
+  function startDrag(el, x0, y0, e) {
+    const id = wid(el);
+    if (!id) return;
+    closeMenu();
+    const before = saved.order.slice();
+    const r = el.getBoundingClientRect();
+    paused = true;
+    const ph = document.createElement('div'); ph.className = 'bento-ph'; ph.setAttribute('aria-hidden', 'true');
+    ph.style.gridColumn = el.style.gridColumn; ph.style.gridRow = el.style.gridRow;
+    wall.appendChild(ph);
+    el.classList.remove('bento-lift'); el.classList.add('bento-dragging'); root.classList.add('bento-moving');
+    const ids = tiles().sort((a, b) => orderOf(a) - orderOf(b)).map(wid).filter(Boolean);
+    const A = act = { x: e.clientX, y: e.clientY, dx: x0 - r.left, dy: y0 - r.top, ids, idx: ids.indexOf(id), last: 0 };
+    const follow = () => {   // the tile under the finger: its grid slot (the placeholder), moved by a transform
+      el.style.transform = 'none';
+      const b = el.getBoundingClientRect();
+      ph.style.gridColumn = el.style.gridColumn; ph.style.gridRow = el.style.gridRow;
+      el.style.transform = `translate(${Math.round(A.x - A.dx - b.left)}px, ${Math.round(A.y - A.dy - b.top)}px) scale(1.02)`;
+    };
+    A.step = () => {
+      const others = tiles().filter((t) => t !== el);
+      const hit = others.find((t) => { const q = t.getBoundingClientRect(); return A.x >= q.left && A.x <= q.right && A.y >= q.top && A.y <= q.bottom; });
+      const rest = A.ids.filter((x) => x !== id);
+      let i = -1;
+      if (hit) { const q = hit.getBoundingClientRect(); i = rest.indexOf(wid(hit)) + (A.x > q.left + q.width / 2 ? 1 : 0); }
+      else if (others.length && A.y > Math.max(...others.map((t) => t.getBoundingClientRect().bottom))) i = rest.length;
+      const now = performance.now();
+      if (i >= 0 && i !== A.idx && now - A.last > 140) {
+        rest.splice(i, 0, id); A.ids = rest; A.idx = i; A.last = now;
+        saved.order = rest; relayout(el);
+      }
+      follow();
+    };
+    A.end = (ok) => {
+      act = null; paused = false;
+      const from = el.getBoundingClientRect();
+      el.style.transform = ''; el.classList.remove('bento-dragging'); root.classList.remove('bento-moving');
+      ph.remove();
+      if (ok) save(); else saved.order = before;
+      if (ok) relayout(el); else relayout();
+      const to = el.getBoundingClientRect();
+      if (!calm() && el.animate) el.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+      swallow = Date.now() + 400;
+    };
+    const loop = () => { if (act !== A) return; if (scrollNear(A.y)) A.step(); requestAnimationFrame(loop); };
+    A.step(); requestAnimationFrame(loop);
+  }
+
+  function sizeAt(c, r) {   // the tile size a resize grip at c columns × r rows asks for
+    if (geo.phone) return r >= 3 ? 'full' : c >= 2 ? (r >= 2 ? 'large' : 'wide') : 'small';
+    return c >= geo.cols ? 'full' : c >= 2 ? (r >= 2 ? 'large' : 'wide') : 'small';
+  }
+  function startResize(el, e) {
+    const id = wid(el);
+    if (!id || el.classList.contains('min') || el.classList.contains('minimized')) return;
+    closeMenu(); clearPress();
+    const had = Object.prototype.hasOwnProperty.call(saved.sizes, id), old = saved.sizes[id];
+    const r = el.getBoundingClientRect();   // sizes are measured from where the tile started, so a tile that moves to the next row doesn't flicker
+    paused = true;
+    el.classList.add('bento-resizing'); root.classList.add('bento-moving');
+    const badge = document.createElement('span'); badge.className = 'bento-size-badge'; badge.setAttribute('aria-hidden', 'true');
+    badge.textContent = SIZE_NAMES[el.dataset.bentoSize] || '';
+    el.appendChild(badge);
+    const A = act = { x: e.clientX, y: e.clientY, size: el.dataset.bentoSize };
+    A.step = () => {
+      const c = Math.max(1, Math.round((A.x - r.left + GAP) / (geo.colW + GAP))), rows = Math.max(1, Math.round((A.y - r.top + GAP) / (geo.rowH + GAP)));
+      const s = sizeAt(c, rows);
+      if (s !== A.size) { A.size = s; saved.sizes[id] = s; relayout(); badge.textContent = SIZE_NAMES[s]; }
+    };
+    A.end = (ok) => {
+      act = null; paused = false;
+      el.classList.remove('bento-resizing'); root.classList.remove('bento-moving'); badge.remove();
+      if (ok) save(); else if (had) saved.sizes[id] = old; else delete saved.sizes[id];
+      relayout();
+      swallow = Date.now() + 400;
+    };
+  }
+
   wall.addEventListener('contextmenu', (e) => {
     if (!on) return;
     const h = e.target.closest('.head, .widget-head'); const el = h && h.closest('.widget');
-    if (el && el.parentNode === wall) { e.preventDefault(); cancelHold(); menu(el, h); }
+    if (el && el.parentNode === wall) { e.preventDefault(); clearPress(); menu(el, h); }
   });
   document.addEventListener('keydown', (e) => {
     if (!on || e.key !== 'Escape') return;
+    if (act) { act.end(false); e.stopPropagation(); return; }
     if (pop) { closeMenu(); e.stopPropagation(); return; }
     const open = wall.querySelector(':scope > .widget.bento-open');
     if (open) { setOpen(open, false); e.stopPropagation(); }
@@ -385,7 +527,7 @@
       on = want;
       root.classList.toggle('bento', on);
       if (on) { tiles().forEach((el) => { usual(el); dress(el); }); restoreFull(); seed(); }
-      else { root.classList.remove('bento-phone', 'bento-tablet', 'bento-row2'); tiles().forEach((el) => { setOpen(el, false); el.style.order = ''; }); closeMenu(); hideTip(); }
+      else { if (act) act.end(false); clearPress(); root.classList.remove('bento-phone', 'bento-tablet', 'bento-row2', 'bento-short'); tiles().forEach((el) => { setOpen(el, false); el.style.order = ''; }); closeMenu(); hideTip(); }
     }
     layout();
   }

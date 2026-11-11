@@ -264,3 +264,29 @@ html.bento-short #dock-wrap .dock{ padding:4px 6px !important; }
 html.bento-short #dock-wrap .dock-item{ width:42px !important; height:42px; }
 html.bento-short #dock-wrap .app-tray-tab{ display:none; }
 html.bento-short #wall{ padding-top:10px; }
+
+/* ---------- Moving and resizing tiles by hand (js/bento.js, v0.42.0) ---------- */
+/* Held: the tile lifts. Dragged: it follows the finger above the others, and a dashed slot shows where it will land. */
+html.bento #wall > .widget.bento-lift{ transform:scale(1.02); box-shadow:0 10px 30px rgba(0,0,0,.32) !important; transition:transform .15s ease, box-shadow .15s ease; }
+html.bento #wall > .widget.bento-dragging{ z-index:40 !important; box-shadow:0 18px 44px rgba(0,0,0,.45) !important; transition:none !important; opacity:.97; }
+html.bento #wall > .bento-ph{ box-sizing:border-box; border:2px dashed var(--bento-accent); border-radius:18px; background:rgba(232,163,61,.08); pointer-events:none; }
+html.bento.bento-moving, html.bento.bento-moving *{ -webkit-user-select:none !important; user-select:none !important; }
+html.bento.bento-moving #wall > .widget.bento-dragging,
+html.bento.bento-moving #wall > .widget.bento-dragging *{ cursor:grabbing !important; }
+/* The corner grip: drag it to resize the tile; it snaps to Small, Wide, Large or Full width */
+.bento-rsz{ display:none; }
+html.bento #wall > .widget > .bento-rsz{
+  display:block; position:absolute; right:0; bottom:0; width:30px; height:30px; z-index:3;
+  cursor:nwse-resize; touch-action:none; opacity:.5; transition:opacity .15s ease;
+}
+html.bento #wall > .widget > .bento-rsz::before{
+  content:''; position:absolute; right:8px; bottom:8px; width:9px; height:9px;
+  border-right:2.5px solid var(--bento-label); border-bottom:2.5px solid var(--bento-label); border-radius:0 0 4px 0;
+}
+html.bento #wall > .widget:hover > .bento-rsz, html.bento #wall > .widget.bento-resizing > .bento-rsz{ opacity:1; }
+html.bento #wall > .widget:is(.min,.minimized,.bento-open) > .bento-rsz{ display:none; }
+html.bento #wall > .widget.bento-resizing{ outline:2px solid var(--bento-accent); outline-offset:-2px; z-index:30 !important; }
+.bento-size-badge{
+  position:absolute; right:34px; bottom:8px; z-index:4; padding:3px 9px; border-radius:7px; pointer-events:none;
+  background:var(--bento-accent); color:#1b1408; font-size:12px; font-weight:700; white-space:nowrap;
+}

@@ -189,6 +189,7 @@ if(state.hoverOpen === undefined) state.hoverOpen = false;
 if(state.dockAutoHide === undefined) state.dockAutoHide = false;
 if(!state.docViewer) state.docViewer = { removeCopyOnClose:false };   // Office-to-Google: delete the Google copy when the document is closed   // bottom dock slides away, leaving only its tab; hover the tab to bring it back
 if(!state.dockPlacement) state.dockPlacement = {}; // widgetId -> 'bottom' | 'left' | 'right' | 'hidden'
+if(!state.dockOrder) state.dockOrder = {};         // dock -> [widgetId, …] in the order the teacher dragged them (js/dockdrag.js); widgets not listed follow in the usual order
 if(!state.attendance) state.attendance = {};
 if(!state.groupMaker) state.groupMaker = { mode:'groups', count:4, size:4, lastKey:'' };
 if(!state.exitTicket) state.exitTicket = { question:'', tallies:{ got_it:0, almost:0, need_help:0 } };
@@ -630,7 +631,7 @@ const STRINGS = {
   settings_title:  { en:'Settings', vi:'Cài đặt', es:'Configuración', fr:'Paramètres', zh:'设置', ja:'設定', ko:'설정', tl:'Mga Setting' },
   language_section:{ en:'Language', vi:'Ngôn ngữ', es:'Idioma', fr:'Langue', zh:'语言', ja:'言語', ko:'언어', tl:'Wika' },
   dock_buttons: { en:'Dock buttons', vi:'Nút trên thanh dock', es:'Botones del dock', fr:'Boutons du dock', zh:'底部工具栏按钮', ja:'ドックのボタン', ko:'독 버튼', tl:'Mga Button sa Dock' },
-  dock_buttons_hint: { en:'Choose where each widget\u2019s launcher lives — bottom dock, a side drawer, or hidden', vi:'Chọn nơi hiển thị nút mở từng widget — thanh dock dưới, ngăn hai bên, hoặc ẩn' },
+  dock_buttons_hint: { en:'Choose where each widget\u2019s launcher lives — bottom dock, a side drawer, or hidden. You can also drag the buttons themselves.', vi:'Chọn nơi hiển thị nút mở từng widget — thanh dock dưới, ngăn hai bên, hoặc ẩn. Bạn cũng có thể kéo thả trực tiếp các nút.' },
   placement_bottom: { en:'Bottom dock', vi:'Thanh dock dưới' },
   placement_left:   { en:'Left drawer', vi:'Ngăn bên trái' },
   placement_right:  { en:'Right drawer', vi:'Ngăn bên phải' },
@@ -1697,6 +1698,10 @@ const DOCK_CAPS = { bottom:KINDER ? 5 : 10, left:5, right:5, top:5 };   // Kinde
 
 function widgetsFor(loc){
   const list = WIDGETS.filter(w => state.dockPlacement[w.id] === loc && !isOff(w.id));
+  // The order the teacher dragged the icons into comes first (before the cap below, so a dragged icon is never the one
+  // capped out); widgets never dragged keep the registry order after them.
+  const order = state.dockOrder[loc] || [], at = id => { const i = order.indexOf(id); return i < 0 ? order.length : i; };
+  list.sort((a, b) => at(a.id) - at(b.id));
   // Defensive cap at render time too, not just when a widget is newly
   // assigned — a widget added to the registry before caps existed, or a
   // state migrated before this fix, could otherwise carry more than
@@ -2030,15 +2035,14 @@ const PLACEMENT_OPTIONS = ['bottom','left','right','top','hidden'];
 function buildDockPlacementList(){
   const box = document.getElementById('dock-vis-list');
   box.innerHTML = '';
-  const locked = state.layoutMode !== 'custom';
+  // Placing icons works in every layout mode (v0.42.0), as dragging them does: the mode only decides which docks are shown
   const lockHint = document.getElementById('dock-buttons-lock-hint');
-  if(lockHint) lockHint.hidden = !locked;
+  if(lockHint) lockHint.hidden = true;
   WIDGETS.filter(w=> !isOff(w.id)).forEach(w=>{
     const row = document.createElement('div');
-    row.className = 'dock-vis-row placement-row' + (locked ? ' locked' : '');
+    row.className = 'dock-vis-row placement-row';
     row.innerHTML = `<span data-i18n="${w.labelKey}">${t(w.labelKey)}</span>`;
     const sel = document.createElement('select');
-    sel.disabled = locked;
     PLACEMENT_OPTIONS.forEach(opt=>{
       const o = document.createElement('option');
       o.value = opt;
@@ -2060,6 +2064,30 @@ function buildDockPlacementList(){
     });
     row.appendChild(sel);
     box.appendChild(row);
+  });
+}
+
+/* Dragging launchers (js/dockdrag.js): a dock icon to another place or dock, a tray icon onto a dock, a dock icon onto
+   the tray tab (off the docks). The drag file checks the caps; this saves the move once, on drop, and rebuilds. */
+function wireDockDrag(){
+  if(!window.DockDrag) return;
+  DockDrag.init({
+    zones: { bottom:'#dock', left:'#dock-left-items', right:'#dock-right-items', top:'#dock-top-widgets' },
+    item: '.dock-item[data-id], .dock-top-item[data-id]',
+    caps: DOCK_CAPS,
+    tray: { grid:'#app-tray-grid', item:'.app-tray-item[data-id]', tab:'#app-tray-tab' },
+    move(id, loc, ids){
+      const from = state.dockPlacement[id];
+      state.dockPlacement[id] = loc;
+      if(from && from !== loc && state.dockOrder[from]) state.dockOrder[from] = state.dockOrder[from].filter(x => x !== id);
+      if(ids) state.dockOrder[loc] = ids;
+      saveState();
+      rebuildAllDocks();
+      buildDockPlacementList();
+    },
+    full(loc){ toast(t('drawer_full_toast', { side: t('placement_'+loc), max: DOCK_CAPS[loc] })); },
+    closeTray: closeAppTray,
+    openTray: openAppTray
   });
 }
 
@@ -10362,6 +10390,7 @@ function init(){
   rebuildAllDocks();
   wireClasses();
   wireAppTray();
+  wireDockDrag();
   buildLangSelects();
   buildLayoutModeSelector();
   buildDockPlacementList();

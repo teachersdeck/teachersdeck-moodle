@@ -132,6 +132,7 @@
     dd_img_files:    { en: 'From my Files', vi: 'Từ Tệp của tôi' },
     dd_img_none:     { en: 'No pictures in your Files yet.', vi: 'Chưa có hình ảnh nào trong Tệp của bạn.' },
     dd_img_fail:     { en: 'That could not be opened or saved.', vi: 'Không thể mở hoặc lưu mục này.' },
+    dd_stickers:     { en: 'Stickers', vi: 'Nhãn dán' },
     dd_er_part:      { en: 'Erase parts', vi: 'Xóa từng phần' },
     dd_er_whole:     { en: 'Erase whole strokes', vi: 'Xóa cả nét' }
   };
@@ -2278,6 +2279,7 @@
       var rail = btn('tool', 'select', 'select', t('dd_t_select'), tool === 'select') + btn('tool', 'hand', 'hand', t('dd_t_hand'), tool === 'hand') +
         btn('tool', 'pen', 'pen', t('dd_t_pen'), tool === 'pen') + btn('tool', 'hl', 'hl', t('dd_t_hl'), tool === 'hl') + btn('tool', 'eraser', 'eraser', t('dd_t_eraser'), tool === 'eraser');
       if (!kidMode) rail += btn('tool', 'text', 'text', t('dd_t_text'), tool === 'text') + btn('image', null, 'image', t('dd_t_image')) + btn('math', null, 'math', t('dd_t_math'));
+      else if (stickerPacks().length) rail += btn('stickers', null, 'image', t('dd_stickers'));   // Item Store: bought stickers, also in kid mode (KeepDeck's Home board)
       if (mode !== 'mind') rail += '<span class="dd-sep"></span>' + btn('tool', 'shape', 'shape', t('dd_t_shape'), tool === 'shape');
       if (!kidMode && mode === 'flow') rail += btn('tool', 'conn', 'conn', t('dd_t_conn'), tool === 'conn');
       if (!kidMode && mode === 'mind') rail += '<span class="dd-sep"></span>' + btn('topic', null, 'topic', t('dd_add_topic')) + btn('child', null, 'child', t('dd_add_child')) + btn('sibling', null, 'sib', t('dd_add_sib')) + btn('collapse', null, 'collapse', t('dd_collapse')) + btn('tidy', null, 'layout', t('dd_layout'));
@@ -2450,13 +2452,29 @@
         getImg(src); change(page.objs.concat([o])); sel = new Set([o.id]); tool = 'select'; renderChrome(); need();
       }).catch(function () { toast(t('dd_img_fail')); });
     }
-    var imgFiles = [];
+    var imgFiles = [], stkPacks = [];
+    function stickerPacks() { try { return typeof host.stickers === 'function' ? (host.stickers() || []) : []; } catch (e) { return []; } }
+    function stickerMenuHtml() {
+      stkPacks = stickerPacks();
+      return stkPacks.map(function (p, pi) {
+        return '<div class="dd-mh">' + esc(p.name) + '</div><div class="dd-stk">' + p.items.map(function (it, ii) {
+          return '<button type="button" class="dd-stk-b" data-act="stkpick" data-v="' + pi + ':' + ii + '" title="' + esc(it.name) + '" aria-label="' + esc(it.name) + '">' + it.svg + '</button>'; }).join('') + '</div>';
+      }).join('');
+    }
+    function openStickerMenu(anchor) { openPop(anchor, '<div class="dd-menu">' + stickerMenuHtml() + '</div>'); }
+    /* A bought sticker (validated store SVG) goes on the board as a picture: drawn once to a PNG, like any image. */
+    function insertSticker(svg) {
+      var sized = String(svg).replace(/^<svg\b/, '<svg width="320" height="320"');
+      return insertImage(new Blob([sized], { type: 'image/svg+xml' }));
+    }
     function openImageMenu(anchor) {
       var render = function (list) {
         imgFiles = list;
         var items = menuItem('imgcomputer', null, t('dd_img_computer')) + '<hr>';
         items += list.length ? list.slice(0, 30).map(function (f, i) { return menuItem('imgfile', String(i), f.name || ('#' + (i + 1))); }).join('') : '<div class="dd-mi dd-none">' + esc(t('dd_img_none')) + '</div>';
-        openPop(anchor, '<div class="dd-menu"><div class="dd-mh">' + esc(t('dd_img_files')) + '</div>' + items + '</div>');
+        // Item Store: sticker packs the family bought (host.stickers) — the same stickers as Scrapdeck, one purchase for both
+        var stk = stickerMenuHtml();
+        openPop(anchor, '<div class="dd-menu">' + (stk ? '<div class="dd-mh">' + esc(t('dd_stickers')) + '</div>' + stk + '<hr>' : '') + '<div class="dd-mh">' + esc(t('dd_img_files')) + '</div>' + items + '</div>');
       };
       try { host.idb.getAll('files').then(function (all) { render((all || []).filter(function (f) { return f && f.blob && /^image\//.test(f.blob.type || ''); })); }, function () { render([]); }); } catch (e) { render([]); }
     }
@@ -2594,7 +2612,7 @@
       var act = el.dataset.act, v = el.dataset.v;
       if (el.tagName === 'INPUT') return;
       if (el.classList.contains('dis') && (act === 'undo' || act === 'redo')) return;
-      if (act !== 'boards' && act !== 'more' && act !== 'bgmenu' && act !== 'image' && act !== 'math' && act !== 'tpl') closePop();
+      if (act !== 'boards' && act !== 'more' && act !== 'bgmenu' && act !== 'image' && act !== 'stickers' && act !== 'math' && act !== 'tpl') closePop();
       switch (act) {
         case 'tool': setTool(v); break;
         case 'mode': setMode(v); break;
@@ -2629,6 +2647,7 @@
         case 'share': shareBoard(); break; case 'stopshare': stopShareBoard(); break;
         case 'assign': assignToStudents(); break;
         case 'image': openImageMenu(el); break;
+        case 'stickers': openStickerMenu(el); break;
         case 'math': if (pop === el) { closePop(); break; } openMathMenu(el); break;
         case 'mathadd': addMath(v); break;
         case 'tpl': if (pop === el) { closePop(); break; } openTplMenu(el); break;
@@ -2639,6 +2658,7 @@
         case 'props-apply': applyProps(v); break;
         case 'imgcomputer': imgFileEl.value = ''; imgFileEl.click(); break;
         case 'imgfile': { var rec = imgFiles[+v]; if (rec) insertImage(rec.blob); break; }
+        case 'stkpick': { var pp = String(v).split(':'), pk = stkPacks[+pp[0]], st = pk && pk.items[+pp[1]]; if (st) { closePop(); insertSticker(st.svg); } break; }
         case 'erasemode': prefs.eraseParts = v === 'part'; savePrefs(); renderChrome(); break; case 'exportboard': exportBoard(); break; case 'importboard': fileEl.value = ''; fileEl.click(); break;
         case 'outline': openOutline(); break;
         case 'outline-copy': { var ta = modalEl.querySelector('textarea'), txt = host.watermark ? host.watermark.stamp(ta.value) : ta.value; (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast(t('dd_outline_copied')); }, function () { ta.select(); try { document.execCommand('copy'); toast(t('dd_outline_copied')); } catch (er) { } }); break; }

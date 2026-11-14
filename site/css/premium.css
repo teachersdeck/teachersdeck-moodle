@@ -1,0 +1,373 @@
+/* TEST (branch glass-blue-test): premium themes in TeachersDeck. Every theme from the store and every free background
+   colour repaints the widgets, docks and drawers: app.js (applySkin) sets html[data-td-skin] and the --sk-* tokens from
+   the chosen theme pack's tokens (card, line, ink, muted, acc, bb, bt, dock, hov) or the background's own set.
+   (Originally written for Glass Blue alone; its colours are the defaults the tokens replaced.)
+   Light mode: only the background changes; the app keeps its light look. */
+
+html[data-td-skin]:not([data-mode="light"]){
+  --ink-0:var(--sk-ink0);
+  --ink-1:var(--sk-ink1);
+  --ink-2:var(--sk-ink2);
+  --ink-3:var(--sk-ink3);
+  --line:var(--sk-line);
+  --text-hi:var(--sk-ink);
+  --text-lo:var(--sk-muted);
+  --amber:var(--sk-acc);
+  --amber-hi:var(--sk-acc-hi);
+  --amber-rgb:var(--sk-acc-rgb);        /* polish phase 3: every accent in style.css reads these */
+  --amber-hi-rgb:var(--sk-acc-hi-rgb);
+  --text-on-accent:var(--sk-on);
+  --text-on-accent-rgb:var(--sk-on-rgb);
+  --bento-accent:var(--sk-acc);
+  --teal:var(--sk-acc);
+  --radius-panel:var(--sk-radius);
+  --radius-chip:12px;
+  --shadow-panel:0 14px 34px rgba(var(--sk-shadow-rgb),.45), 0 2px 6px rgba(var(--sk-shadow-rgb),.3);
+  /* phones and tablets (css/bento.css) */
+  --bento-tile:var(--sk-card);
+  --bento-tile-hi:var(--sk-hov);
+  --bento-line:var(--sk-line);
+  --bento-label:var(--sk-muted);
+  --bento-glass:var(--sk-dock);
+  --bento-glass-line:var(--sk-line);
+  --bento-pop:var(--sk-ink1);
+}
+html[data-td-skin]:not([data-mode="light"]) body{ background:var(--sk-ink0); }
+
+/* Widgets: frosted glass over the blue */
+html[data-td-skin]:not([data-mode="light"]) .widget{
+  background:var(--sk-card);
+  -webkit-backdrop-filter:blur(18px) saturate(140%); backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,.18);
+}
+html[data-td-skin]:not([data-mode="light"]) .widget-head{ background:var(--sk-head); }
+html[data-td-skin]:not([data-mode="light"]) .widget-min:hover,
+html[data-td-skin]:not([data-mode="light"]) .widget-pin:hover,
+html[data-td-skin]:not([data-mode="light"]) .widget-drag:hover{ background:var(--sk-hov); }
+
+/* Dock and top bar */
+html[data-td-skin]:not([data-mode="light"]) .dock{
+  background:var(--sk-dock);
+  -webkit-backdrop-filter:blur(16px) saturate(140%); backdrop-filter:blur(16px) saturate(140%);
+}
+html[data-td-skin]:not([data-mode="light"]) .dock-item{ background:var(--sk-head); }
+html[data-td-skin]:not([data-mode="light"]) .dock-item:hover{ background:var(--sk-hov); }
+html[data-td-skin]:not([data-mode="light"]) .dock-item.active,
+html[data-td-skin]:not([data-mode="light"]) .dock-item.active .dock-ic{ background:rgba(var(--sk-acc-rgb),.18); color:var(--sk-acc-hi); }
+html[data-td-skin]:not([data-mode="light"]) .dock-top-item{ background:var(--sk-dock-soft); }
+/* The side docks (9 and 3 o'clock) and the top dock (12 o'clock: class, language, Light / Dark, Settings) */
+html[data-td-skin]:not([data-mode="light"]) .edge-dock{
+  background:var(--sk-dock);
+  -webkit-backdrop-filter:blur(16px) saturate(140%); backdrop-filter:blur(16px) saturate(140%);
+}
+/* The buttons in the top dock: class, language, theme, Light / Dark, Settings */
+html[data-td-skin]:not([data-mode="light"]) :is(.class-pill,.lang-toggle,.icon-btn,.deck-mode-toggle,.deck-mode-switch){
+  background:var(--sk-pill); border-color:var(--sk-line);
+}
+html[data-td-skin]:not([data-mode="light"]) :is(.class-pill,.icon-btn):hover{ background:var(--sk-hov); }
+html[data-td-skin]:not([data-mode="light"]) .lang-toggle button.active{ color:var(--sk-on); }
+html[data-td-skin]:not([data-mode="light"]) :is(.deck-mode-opt.on, .deck-mode-opt.on:hover){ background:var(--sk-acc); color:var(--sk-on); }
+
+/* Drawers (Theme, Settings) */
+html[data-td-skin]:not([data-mode="light"]) .drawer{
+  background:var(--sk-drawer);
+  -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+}
+
+/* Buttons that use the accent: dark text on light blue (pack token bt) */
+html[data-td-skin]:not([data-mode="light"]) .btn-primary,
+html[data-td-skin]:not([data-mode="light"]) .primary{ background:var(--sk-acc); color:var(--sk-on); border-color:var(--sk-acc); }
+
+/* The pack's drawings (js/store-core.js puts an SVG in each box) */
+.skin-face{ width:100%; height:112px; margin:0 auto 4px; }
+.widget-full .skin-face{ height:min(60vh,420px); }
+.widget-full .skin-light{ height:min(60vh,420px); }
+.widget-full .noise-skin{ max-width:520px; height:min(40vh,340px); }
+.skin-face svg, .skin-light svg, .noise-skin svg{ display:block; filter:drop-shadow(0 6px 12px rgba(0,0,0,.35)); }
+.skin-switch{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
+.skin-light{ width:100%; height:138px; margin:0 auto; }
+.skin-light + .traffic-hint{ margin-top:6px; }
+.noise-stage.skin{ flex-direction:column; margin:0 0 8px; }
+.noise-skin{ width:100%; max-width:260px; height:180px; margin:0 auto 4px; }
+.noise-stage.skin .noise-readout{ display:flex; align-items:baseline; justify-content:center; gap:4px; }
+.noise-stage.skin .noise-db{ font-size:24px; }
+.noise-stage.skin .noise-unit{ margin-top:0; }
+
+/* Dock styles (css/dockstyle.css) take TeachersDeck's colours; Glass Blue gives them its own */
+body{ --hi:var(--text-hi); --lo:var(--text-lo); --gold:var(--amber); }
+html[data-td-skin]:not([data-mode="light"]) body{ --dk-bg:var(--sk-dock); --dk-line:rgba(var(--sk-line-rgb),.35); --dk-ink:var(--sk-ink); --dk-acc:var(--sk-acc); --dk-hov:var(--sk-hov); }
+.dock-style-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.dock-style-opt{ display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; }
+.dock-style-sw{ height:34px; border-radius:9px; border:2px solid transparent; }
+.dock-style-opt.active .dock-style-sw{ border-color:var(--amber); }
+.dock-style-opt.active{ color:var(--text-hi); }
+
+/* Top bar with the new docks (menus scope step 1; js/app.js applyTopBarMode). css/dockstyle.css hides every
+   .edge-dock for Floating, Magnifying, Circle; the top bar comes back, tucked (tb-drop) or always shown (tb-keep). */
+html:not(.bento-phone) body:is(.tb-drop,.tb-keep) #dock-top.edge-dock:not([hidden]){ display:block !important; }
+html:not(.bento-phone) body.tb-drop #dock-top.edge-dock{
+  transform:translateY(calc(-100% - 14px)); transition:transform .22s ease, box-shadow .22s ease; box-shadow:none;
+}
+html:not(.bento-phone) body.tb-drop.tb-open #dock-top.edge-dock{ transform:none; box-shadow:var(--shadow-panel); }
+#tb-edge{ display:none; position:fixed; left:0; right:0; top:0; height:6px; z-index:7; }
+#tb-handle{
+  display:none; position:fixed; top:4px; left:50%; transform:translateX(-50%); z-index:7;
+  width:56px; height:20px; padding:0; border:0; background:transparent; cursor:pointer;
+}
+#tb-handle::before{
+  content:""; position:absolute; left:8px; right:8px; top:4px; height:5px; border-radius:3px;
+  background:var(--text-lo); opacity:.7;
+}
+html:not(.bento-phone) body.tb-drop #tb-edge{ display:block; }
+html:not(.bento-phone) body.tb-drop.tb-open #tb-edge{ display:none; }
+@media (pointer:coarse){ html:not(.bento-phone) body.tb-drop:not(.tb-open) #tb-handle{ display:block; } }
+@media (prefers-reduced-motion:reduce){ html:not(.bento-phone) body.tb-drop #dock-top.edge-dock{ transition:none; } }
+.topbar-mode{ display:flex; gap:6px; margin:-8px 0 20px; }
+.topbar-mode[hidden]{ display:none; }
+.topbar-mode-opt{ flex:1; padding:7px 8px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--text-lo); cursor:pointer; font:600 11.5px 'Quicksand',sans-serif; }
+.topbar-mode-opt.active{ border-color:var(--amber); color:var(--text-hi); background:rgba(255,255,255,.06); }
+
+/* Polish phase 2: a premium theme over your own photo. The glass gets a little thicker so text stays readable on a
+   busy picture; "Tint my image" washes the photo with the theme's colour (off by default). */
+html[data-td-skin][data-td-bg="image"]:not([data-mode="light"]) .widget{ background:var(--sk-card-photo); }
+html[data-td-skin][data-td-bg="image"]:not([data-mode="light"]) .widget-head{ background:var(--sk-head); }
+html[data-td-skin][data-td-bg="image"]:not([data-mode="light"]){ --bento-tile:var(--sk-card-photo); --bento-tile-hi:var(--sk-card-photo); }
+html[data-td-tint="1"] .bg-layer::after{ content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode:multiply; }
+html[data-td-skin][data-td-tint="1"] .bg-layer::after{ background:var(--sk-tint); }
+/* Theme row in the drawer */
+.ui-theme-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.ui-theme-opt{ position:relative; display:flex; flex-direction:column; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; }
+.ui-theme-sw{ height:44px; border-radius:10px; border:2px solid transparent; }
+.ui-theme-opt.active .ui-theme-sw{ border-color:var(--amber); }
+.ui-theme-opt.active{ color:var(--text-hi); }
+.ui-theme-opt.premium::after{ content:"★"; position:absolute; top:4px; right:7px; font-size:11px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+.swatch.theme-bg{ outline:1px dashed rgba(255,255,255,.35); outline-offset:-5px; }
+.bg-photo-state{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-8px 0 14px; font-size:12px; color:var(--text-lo); }
+.bg-photo-state[hidden]{ display:none; }
+.bg-photo-reset{ border:1px solid var(--line); background:transparent; color:var(--text-hi); border-radius:8px; padding:5px 9px; font:600 11px 'Quicksand',sans-serif; cursor:pointer; }
+#photo-tint-row[hidden], #wallpaper-row[hidden]{ display:none; }
+
+/* Polish phase 3: accents written as literals in the shared files (bento.css, mode.css, drawdeck.css stay identical
+   across the four apps, so Glass Blue overrides them here) */
+html[data-td-skin]:not([data-mode="light"]) .bento-seg button[aria-checked="true"]{ background:var(--sk-acc); color:var(--sk-on); }
+html[data-td-skin]:not([data-mode="light"]) .bento-seg button:focus-visible{ outline-color:var(--sk-acc); }
+html[data-td-skin]:not([data-mode="light"]) .bento-menu-sizes button[aria-checked="true"]{ background:rgba(var(--sk-acc-rgb),.16); color:var(--sk-acc); }
+html[data-td-skin]:not([data-mode="light"]) .deck-mode-opt:focus-visible{ outline-color:var(--sk-acc); }
+html[data-td-skin]:not([data-mode="light"]) .dd-sw.on{ box-shadow:0 0 0 2px var(--amber-hi), 0 0 0 4px rgba(var(--sk-acc-rgb),.28); }
+html[data-td-skin]:not([data-mode="light"]) .dd-size.on{ background:rgba(var(--sk-acc-rgb),.22); }
+
+/* ---------- Polish phase 5: premium extras (Glass Blue) ---------- */
+/* Real glass: a soft highlight along the top edge, a faint inner glow, edges that catch the light */
+html[data-td-skin]:not([data-mode="light"]) .widget{
+  background-image:linear-gradient(180deg, rgba(255,255,255,.13) 0%, rgba(255,255,255,.03) 28%, rgba(255,255,255,0) 55%);
+  box-shadow:var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 1px rgba(var(--sk-line-rgb),.10), inset 0 -18px 30px -24px rgba(var(--sk-acc-rgb),.25);
+}
+html[data-td-skin]:not([data-mode="light"]) .widget.is-front:not(.dragging){
+  box-shadow:var(--shadow-panel), 0 18px 46px rgba(var(--sk-shadow-rgb),.4), inset 0 1px 0 rgba(255,255,255,.34), inset 0 0 0 1px rgba(var(--sk-line-rgb),.16), inset 0 -18px 30px -24px rgba(var(--sk-acc-rgb),.32);
+}
+html[data-td-skin]:not([data-mode="light"]) :is(.dock, .edge-dock){
+  background-image:linear-gradient(180deg, var(--sk-card), rgba(255,255,255,0) 60%);
+  box-shadow:var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,.22);
+}
+/* Icon tint: dock icons in the theme's accent */
+html[data-td-skin]:not([data-mode="light"]) :is(.dock-item, .edge-dock .dock-item) .dock-ic{ color:var(--sk-acc-hi); }
+html[data-td-skin]:not([data-mode="light"]) .dock-item:hover .dock-ic{ color:var(--sk-ink); }
+/* Theme font (the pack's font field; Glass Blue: system) for titles and big readouts */
+html[data-td-theme] :is(.widget-head, .big-readout, .clock-digital, .cd-days, .brand-name, .noise-db){ font-family:var(--theme-font, inherit); }
+/* Living background: the theme's own gradient drifts very slowly (60 s); still while a Timer or Noise Meter runs */
+@keyframes td-drift{ 0%{ background-position:0% 30%; } 100%{ background-position:100% 70%; } }
+html[data-td-skin][data-td-bg="theme"] .bg-layer{ background-size:240% 240% !important; animation:td-drift 60s ease-in-out infinite alternate; }
+body.td-busy .bg-layer{ animation-play-state:paused !important; }
+/* Arrival: picking a premium theme fades its background in and settles the widgets (1 s) */
+@keyframes td-arrive-bg{ from{ opacity:.25; filter:saturate(.6) blur(6px); } to{ opacity:1; filter:none; } }
+@keyframes td-settle{ 0%{ transform:translateY(10px) scale(.985); opacity:.6; } 100%{ transform:none; opacity:1; } }
+html.td-arrive .bg-layer{ animation:td-arrive-bg .9s cubic-bezier(.2,.8,.2,1); }
+html.td-arrive .widget{ animation:td-settle .7s cubic-bezier(.2,.8,.2,1) both; }
+html.td-arrive .widget:nth-child(2n){ animation-delay:60ms; }
+html.td-arrive .widget:nth-child(3n){ animation-delay:120ms; }
+html.td-arrive :is(.dock, .edge-dock){ animation:td-settle .7s cubic-bezier(.2,.8,.2,1) 80ms both; }
+/* Idle clock: the theme's watch face fills the screen */
+.td-idle{ position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  background:radial-gradient(120% 90% at 50% 40%, var(--sk-idle-a, rgba(12,42,90,.72)), var(--sk-idle-b, rgba(4,14,32,.94))); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+  opacity:0; transition:opacity .3s ease; cursor:none; }
+.td-idle.on{ opacity:1; }
+.td-idle-face{ width:min(64vh, 70vw); height:min(64vh, 70vw); }
+.td-idle-face svg{ filter:drop-shadow(0 20px 50px rgba(0,0,0,.5)); }
+.td-idle-time{ font:700 clamp(28px, 6vh, 72px)/1 var(--theme-font, 'Quicksand', sans-serif); color:var(--sk-ink, #eaf4ff); letter-spacing:.5px; }
+.td-idle-date{ font-size:clamp(14px, 2.4vh, 26px); color:var(--sk-muted, #a9c4e8); }
+#idle-clock-row[hidden]{ display:none; }
+@media (prefers-reduced-motion:reduce){
+  html[data-td-skin][data-td-bg="theme"] .bg-layer{ animation:none; }
+  html.td-arrive .bg-layer, html.td-arrive .widget, html.td-arrive :is(.dock, .edge-dock){ animation:none; }
+  .td-idle{ transition:none; }
+}
+
+/* Radial menu layouts (owner 11 Nov 2026): Docks off clears the wall (the rings and the top-edge bar hold everything);
+   Compact keeps a small icon-only bottom dock; Keep docks leaves the standard docks as they are. */
+body.rad-off #dock-wrap, body.rad-off .edge-dock-left, body.rad-off .edge-dock-right, body.rad-off .app-tray-tab{ display:none !important; }
+body.rad-compact .edge-dock-left, body.rad-compact .edge-dock-right{ display:none !important; }
+body.rad-compact #dock{ gap:4px; padding:6px; }
+body.rad-compact #dock .dock-item{ width:46px; padding:6px 0; }
+body.rad-compact #dock .dock-item > span:not(.dock-ic){ display:none; }
+#radial-mode{ margin:-8px 0 12px; }
+
+/* Circle launcher: the same size as the AgentDeck button opposite it (44 px, 18 px from the corner, 22 px icon) */
+.dk-launcher{ width:44px !important; height:44px !important; left:max(18px, env(safe-area-inset-left)) !important; bottom:max(18px, env(safe-area-inset-bottom)) !important; box-shadow:0 8px 18px -6px rgba(0,0,0,.4) !important; }
+.dk-launcher svg{ width:22px !important; height:22px !important; }
+
+/* Floating icons (Pro): no panel behind the chosen docks; each icon keeps a faint backing and a soft shadow */
+html body.df-bottom #dock-wrap #dock,
+html body.df-sides #dock-left, html body.df-sides #dock-right,
+html body.df-top #dock-top{
+  background:transparent !important; background-image:none !important; border-color:transparent !important;
+  box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+html body.df-bottom #dock-wrap #dock .dock-item,
+html body:is(.df-sides) :is(#dock-left, #dock-right) .dock-item{ background:transparent !important; }
+html body.df-bottom #dock-wrap #dock .dock-ic,
+html body.df-sides :is(#dock-left, #dock-right) .dock-ic{
+  background:rgba(14,19,28,.46) !important; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.30);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+}
+html[data-td-skin]:not([data-mode="light"]) body.df-bottom #dock-wrap #dock .dock-ic,
+html[data-td-skin]:not([data-mode="light"]) body.df-sides :is(#dock-left, #dock-right) .dock-ic{
+  background:var(--sk-hov) !important; box-shadow:0 6px 16px rgba(var(--sk-shadow-rgb),.4), inset 0 1px 0 rgba(255,255,255,.25);
+}
+html[data-mode="light"] body.df-bottom #dock-wrap #dock .dock-ic,
+html[data-mode="light"] body.df-sides :is(#dock-left, #dock-right) .dock-ic{ background:rgba(255,255,255,.78) !important; box-shadow:0 6px 16px rgba(20,30,50,.18); }
+html body.df-bottom #dock-wrap #dock .dock-item > span:not(.dock-ic),
+html body.df-sides :is(#dock-left, #dock-right) .dock-item > span:not(.dock-ic){ text-shadow:0 1px 3px rgba(0,0,0,.65); color:#f2f5f9; }
+html[data-mode="light"] body.df-bottom #dock-wrap #dock .dock-item > span:not(.dock-ic),
+html[data-mode="light"] body.df-sides :is(#dock-left, #dock-right) .dock-item > span:not(.dock-ic){ text-shadow:0 1px 2px rgba(255,255,255,.9); color:#1f2a3c; }
+html body:is(.df-bottom, .df-sides) .dock-item.active .dock-ic{ outline:2px solid rgba(var(--amber-rgb), .8); outline-offset:1px; }
+html body.df-top #dock-top :is(.class-pill, .lang-toggle, .icon-btn, .deck-mode-toggle, .deck-mode-switch){ box-shadow:0 6px 16px rgba(0,0,0,.28); }
+/* Rings: no discs or dashed circle behind the icons */
+body.df-rings .dk-rings::before, body.df-rings .dk-rings::after{ display:none; }
+body.df-rings .dk-veil{ background:rgba(6,9,14,.18); backdrop-filter:none; }
+body.df-rings :is(.dk-cat, .dk-wid){ box-shadow:0 8px 20px rgba(0,0,0,.4); }
+/* The switches */
+.floating-head{ display:flex; align-items:center; gap:8px; }
+.pro-badge{ font:800 9.5px 'Quicksand',sans-serif; letter-spacing:.06em; padding:2px 6px; border-radius:6px; background:var(--amber); color:var(--text-on-accent, #231604); }
+.floating-opts{ flex-wrap:wrap; margin-top:0; }
+.floating-opts .topbar-mode-opt{ flex:1 1 40%; }
+.topbar-mode-opt.locked{ opacity:.6; }
+
+/* The swatch grid marks premium themes with a star */
+.swatch.premium{ position:relative; }
+.swatch.premium::after{
+  content:"★"; position:absolute; top:4px; right:6px; font-size:11px; line-height:1;
+  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5);
+}
+
+
+/* ---------- Fonts the premium themes ask for (fonts/, SIL Open Font License; StoreCore.THEME_FONTS names them) ---------- */
+@font-face{ font-family:'Mystery Quest'; font-style:normal; font-weight:400; font-display:swap; src:url(../fonts/mystery-quest-latin.woff2) format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face{ font-family:'Mystery Quest'; font-style:normal; font-weight:400; font-display:swap; src:url(../fonts/mystery-quest-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face{ font-family:'Playfair Display'; font-style:normal; font-weight:400 900; font-display:swap; src:url(../fonts/playfair-latin.woff2) format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face{ font-family:'Playfair Display'; font-style:normal; font-weight:400 900; font-display:swap; src:url(../fonts/playfair-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face{ font-family:'Playfair Display'; font-style:normal; font-weight:400 900; font-display:swap; src:url(../fonts/playfair-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB; }
+/* 13 Nov: every premium theme has its own face (variable fonts; Cormorant Garamond is the 700 cut, used for 500-700) */
+@font-face{ font-family:'Comfortaa'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/comfortaa-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face{ font-family:'Comfortaa'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/comfortaa-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'Comfortaa'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/comfortaa-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'Cormorant Garamond'; font-style:normal; font-weight:500 700; font-display:swap; src:url(../fonts/cormorant-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face{ font-family:'Cormorant Garamond'; font-style:normal; font-weight:500 700; font-display:swap; src:url(../fonts/cormorant-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'Cormorant Garamond'; font-style:normal; font-weight:500 700; font-display:swap; src:url(../fonts/cormorant-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'Dancing Script'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/dancing-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face{ font-family:'Dancing Script'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/dancing-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'Dancing Script'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/dancing-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'Josefin Sans'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/josefin-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face{ font-family:'Josefin Sans'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/josefin-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'Josefin Sans'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/josefin-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:'Lexend'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/lexend-vietnamese.woff2) format('woff2'); unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face{ font-family:'Lexend'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/lexend-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:'Lexend'; font-style:normal; font-weight:400 700; font-display:swap; src:url(../fonts/lexend-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+html[data-td-skin] :is(.brand, .brand-name, .widget-title, .traffic-label, .tm-time, .timer-display){ font-family:var(--theme-font, inherit); }
+
+/* ---------- Decorations: a theme's `deco` (snow = Noel Christmas, lanterns = Tết) ----------
+   The app draws them (#td-deco, built once by app.js); a pack only names the set. Nothing here catches clicks. */
+#td-deco{ position:fixed; inset:0; z-index:1; pointer-events:none; display:none; overflow:hidden; }
+html[data-td-deco]:not([data-td-deco="none"]):not([data-mode="light"]) #td-deco{ display:block; }
+#td-deco > *{ display:none; }
+/* Noel: festive bunting along the top, soft snow dots, a thin gold edge; the hand-lettered font comes from the theme */
+html[data-td-deco="snow"] #td-deco .dc-bunting{ display:block; position:absolute; left:0; right:0; top:0; height:14px;
+  background:repeating-linear-gradient(90deg,#E84B4B 0 46px,#F0C96A 46px 92px,#2F9E66 92px 138px); box-shadow:0 2px 8px rgba(0,0,0,.25); }
+html[data-td-deco="snow"] #td-deco .dc-snow{ display:block; position:absolute; inset:0;
+  background:radial-gradient(circle,rgba(255,255,255,.55) 2px,transparent 2.6px) 0 0/96px 96px, radial-gradient(circle,rgba(255,255,255,.3) 1.5px,transparent 2px) 48px 48px/96px 96px; opacity:.55; }
+html[data-td-deco="snow"]:not([data-mode="light"]) .widget{ box-shadow:var(--shadow-panel), inset 0 0 0 1px rgba(240,201,106,.28); }
+/* Tết: red lanterns hanging from the top, apricot blossoms (hoa mai) on each window, flames and falling petals */
+html[data-td-deco="lanterns"] #td-deco .dc-lantern{ display:block; position:absolute; top:-6px; width:84px; height:150px; filter:drop-shadow(0 8px 14px rgba(0,0,0,.35)); transform-origin:50% 0; }
+html[data-td-deco="lanterns"] #td-deco .dc-lantern.l1{ left:27%; animation:dc-sway 6s ease-in-out infinite; }
+html[data-td-deco="lanterns"] #td-deco .dc-lantern.l2{ left:68%; animation:dc-sway 7s ease-in-out -2s infinite; }
+html[data-td-deco="lanterns"] #td-deco .dc-flames{ display:block; position:absolute; left:0; right:0; bottom:0; width:100%; height:150px; }
+html[data-td-deco="lanterns"] #td-deco .dc-petals{ display:block; position:absolute; inset:0; }
+@keyframes dc-sway{ 0%,100%{ transform:rotate(-3deg); } 50%{ transform:rotate(3deg); } }
+@keyframes dc-fall{ 0%{ transform:translateY(-10vh) rotate(0); opacity:0; } 10%{ opacity:.9; } 100%{ transform:translateY(105vh) rotate(260deg); opacity:.2; } }
+#td-deco .dc-petals i{ position:absolute; top:0; width:10px; height:8px; border-radius:60% 40% 60% 40%; background:#f0c34e; animation:dc-fall 14s linear infinite; }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget{ box-shadow:var(--shadow-panel), inset 0 0 0 3px var(--sk-card), inset 0 0 0 4px rgba(229,185,78,.55); }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget::before{ content:""; position:absolute; left:-14px; top:-22px; width:118px; height:58px; z-index:3; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 118 58'%3E%3Cpath d='M4 50 C30 40 60 30 112 6' stroke='%235b2a12' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M40 37 C46 30 50 26 58 24' stroke='%235b2a12' stroke-width='2' fill='none'/%3E%3Cg fill='%23ffd34d' stroke='%23e0a21a' stroke-width='1'%3E%3Ccircle cx='20' cy='42' r='5'/%3E%3Ccircle cx='27' cy='38' r='5'/%3E%3Ccircle cx='23' cy='33' r='5'/%3E%3Ccircle cx='15' cy='35' r='5'/%3E%3Ccircle cx='14' cy='43' r='5'/%3E%3Ccircle cx='62' cy='22' r='5'/%3E%3Ccircle cx='69' cy='18' r='5'/%3E%3Ccircle cx='65' cy='12' r='5'/%3E%3Ccircle cx='57' cy='14' r='5'/%3E%3Ccircle cx='56' cy='22' r='5'/%3E%3Ccircle cx='96' cy='14' r='4'/%3E%3Ccircle cx='101' cy='10' r='4'/%3E%3Ccircle cx='97' cy='6' r='4'/%3E%3Ccircle cx='91' cy='8' r='4'/%3E%3Ccircle cx='91' cy='14' r='4'/%3E%3C/g%3E%3Cg fill='%23d6402f'%3E%3Ccircle cx='20' cy='38' r='2.2'/%3E%3Ccircle cx='62' cy='18' r='2.2'/%3E%3Ccircle cx='96' cy='10' r='1.8'/%3E%3C/g%3E%3C/svg%3E") no-repeat; }
+html[data-td-deco] .widget-full::before{ display:none; }
+/* ---------- 13 Nov (owner's mockups): Noel and Tết get their own words and finishing touches ----------
+   #td-greet (app.js) shows the theme's greeting from its pack and a "Premium · name" badge in the top bar. */
+#td-greet{ position:absolute; left:50%; top:calc(50% + 9px); transform:translate(-50%,-50%); display:none; align-items:center; gap:10px; pointer-events:none; z-index:1; }
+html[data-td-greet]:not([data-mode="light"]) #td-greet{ display:flex; }
+#td-greet .tg-text{ padding:6px 16px; border:1.5px solid rgba(var(--sk-acc-rgb),.55); border-radius:999px; color:var(--sk-ink); font-size:13px; font-weight:600; white-space:nowrap; background:rgba(0,0,0,.12); }
+#td-greet .tg-badge{ padding:6px 14px; border-radius:999px; background:var(--sk-acc); color:var(--sk-on); font-size:12px; font-weight:800; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+@media (max-width:1180px){ #td-greet .tg-badge{ display:none; } }
+@media (max-width:900px){ html[data-td-greet] #td-greet{ display:none; } }
+html[data-td-greet] .dock-top-widgets:not(:empty) ~ #td-greet{ display:none; }
+/* Gold headline type, as in the mockups: the brand, big numbers and readouts in the theme's accent */
+html:is([data-td-deco="snow"], [data-td-deco="lanterns"]):not([data-mode="light"]) :is(.brand-name, .big-readout, .clock-digital, .cd-days, .noise-db, .tm-time, .timer-display, .traffic-label, .td-idle-time){ color:var(--sk-acc); }
+html[data-td-deco="snow"]:not([data-mode="light"]) .brand-name{ font-size:1.3em; letter-spacing:.01em; }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .brand-name{ font-weight:800; }
+/* Tết: a double gold frame on every window, and the Fire Goat medallion (Đinh Mùi) on the Clock's corner */
+/* the window lets its blossoms and the medallion hang over its edge; the title bar and body keep the rounded corners */
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget:not(.widget-full){ overflow:visible; }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget:not(.widget-full) > .widget-head{ border-radius:inherit; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget:not(.widget-full) > .widget-body{ border-radius:inherit; border-top-left-radius:0; border-top-right-radius:0; }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget{ box-shadow:0 0 0 2px #E5B94E, var(--shadow-panel), inset 0 0 0 7px var(--sk-card), inset 0 0 0 8px rgba(229,185,78,.6); }
+html[data-td-deco="lanterns"]:not([data-mode="light"]) .widget[data-wid="clock"]:not(.widget-full)::after{ content:""; position:absolute; right:-24px; top:-40px; width:64px; height:74px; z-index:4; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 92'%3E%3Cdefs%3E%3CradialGradient id='g' cx='40%25' cy='35%25' r='70%25'%3E%3Cstop offset='0' stop-color='%23ffe8a3'/%3E%3Cstop offset='1' stop-color='%23d39b2c'/%3E%3C/radialGradient%3E%3CradialGradient id='f' cx='50%25' cy='80%25' r='70%25'%3E%3Cstop offset='0' stop-color='%23fff1b0'/%3E%3Cstop offset='.5' stop-color='%23ffa53a'/%3E%3Cstop offset='1' stop-color='%23e2471f'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M40 2 C46 10 47 16 42 22 C45 18 44 13 40 9 C37 14 34 17 38 22 C33 18 33 11 40 2 Z' fill='url%28%23f%29'/%3E%3Ccircle cx='40' cy='54' r='34' fill='%23ffd76a' opacity='.35'/%3E%3Ccircle cx='40' cy='54' r='31' fill='url%28%23g%29' stroke='%238a5a12' stroke-width='1.5'/%3E%3Ccircle cx='40' cy='54' r='24.5' fill='%238e1324' stroke='%23ffe08a' stroke-width='1.5'/%3E%3Cpath d='M28 40 C22 36 20 44 25 48 C27 45 29 44 32 45 Z M52 40 C58 36 60 44 55 48 C53 45 51 44 48 45 Z' fill='%23ffd76a'/%3E%3Cpath d='M30 47 C33 43 47 43 50 47 C51 54 47 63 43 67 L40 71 L37 67 C33 63 29 54 30 47 Z' fill='%23ffd76a'/%3E%3Cpath d='M26 49 L31 51 L30 54 Z M54 49 L49 51 L50 54 Z' fill='%23ffd76a'/%3E%3Ccircle cx='35.5' cy='53' r='2' fill='%238e1324'/%3E%3Ccircle cx='44.5' cy='53' r='2' fill='%238e1324'/%3E%3Cpath d='M37 63 Q40 65 43 63' stroke='%238e1324' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M38 70 L40 76 L42 70 Z' fill='%23ffd76a'/%3E%3C/svg%3E") center/contain no-repeat; filter:drop-shadow(0 0 10px rgba(255,180,60,.55)); }
+
+@media (prefers-reduced-motion:reduce){ #td-deco *{ animation:none !important; } }
+
+/* ---------- Floating icons fix (11 Nov): without their panel the docks float above the widget windows, so their
+   icons never sit half under a window (layer 950: above windows, below full screen 2000 and pinned widgets) ---------- */
+html body.df-sides :is(#dock-left, #dock-right){ z-index:950; }
+html body.df-bottom #dock-wrap{ z-index:950; }
+html body.df-top #dock-top{ z-index:950; }
+
+/* ---------- Choosing a face, meter or light: a short row in the widget; "More…" opens every one ---------- */
+.skin-more{ border:1px dashed var(--line); background:transparent; color:var(--text-lo); border-radius:999px; padding:0 9px; height:20px; font:700 10.5px 'Quicksand',sans-serif; cursor:pointer; }
+.skin-more:hover{ color:var(--text-hi); border-color:var(--amber); }
+.skin-picker-veil{ position:fixed; inset:0; z-index:2600; background:rgba(4,8,14,.55); display:flex; align-items:center; justify-content:center; padding:24px; }
+.skin-picker{ width:min(880px,100%); max-height:min(86vh,760px); overflow:auto; background:var(--ink-1, #1e2732); border:1px solid var(--line); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.5); padding:16px 18px 20px; color:var(--text-hi); }
+.skin-picker h3{ margin:0 0 4px; font:800 16px 'Quicksand',sans-serif; display:flex; justify-content:space-between; align-items:center; }
+.skin-picker h4{ margin:16px 0 8px; font:700 11px 'Quicksand',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--text-lo); }
+.skin-picker .sp-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; }
+.skin-picker .sp-opt{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:8px 6px; border:2px solid transparent; border-radius:12px; background:rgba(255,255,255,.04); color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; text-align:center; }
+.skin-picker .sp-opt:hover{ background:rgba(255,255,255,.08); color:var(--text-hi); }
+.skin-picker .sp-opt.on{ border-color:var(--amber); color:var(--text-hi); }
+.skin-picker .sp-art{ width:84px; height:84px; display:flex; align-items:center; justify-content:center; }
+.skin-picker .sp-art svg{ width:100%; height:100%; }
+.skin-picker .sp-close{ border:0; background:transparent; color:var(--text-lo); font-size:20px; cursor:pointer; }
+
+/* ---------- Animated wallpaper (js/wallpaper.js): over the theme's gradient (#bg-layer), under the dim (#bg-overlay) ---------- */
+.td-wallpaper{ position:fixed; inset:0; z-index:0; width:100%; height:100%; display:block; pointer-events:none; opacity:0; transition:opacity .8s ease; }
+.td-wallpaper.on{ opacity:1; }
+@media (prefers-reduced-motion:reduce){ .td-wallpaper{ transition:none; } }
+
+/* ---------- The Shop (LMS editions, js/tdstore.js): its button next to Browse themes, and the pay dialog ---------- */
+#ui-theme-browse{ gap:8px; flex-wrap:wrap; }
+.td-shop-sw{ display:flex; align-items:center; justify-content:center; font-size:11px; background:var(--amber, #e0a93b); box-shadow:none; }
+.td-shop-modal{ max-width:420px; }
+.td-shop-modal .tsp-item{ font-size:15px; margin:4px 0 12px; }
+.td-shop-modal .tsp-label{ display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--text-lo); }
+.td-shop-modal input{ font:inherit; color:var(--text-hi); background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+.td-shop-modal .tsp-note{ font-size:12px; margin:8px 0 12px; }
+.td-shop-modal .tsp-amount{ text-align:center; font-size:18px; margin:6px 0; }
+.td-shop-modal .tsp-key{ margin-top:14px; font-size:12.5px; color:var(--text-lo); }
+.td-shop-modal .tsp-key summary{ cursor:pointer; }
+.td-shop-modal .tsp-key-row{ display:flex; gap:8px; margin-top:8px; }
+.td-shop-modal .tsp-key-row input{ flex:1; min-width:0; text-transform:uppercase; letter-spacing:.06em; }

@@ -1,0 +1,128 @@
+/* Dock styles (js/dockstyle.js). Same file in StudentDeck and ParentDeck. Colours come from the app (--panel, --line,
+   --hi, --lo, --gold) unless a dock item brings its own (--dk-bg, --dk-line, --dk-ink, --dk-acc, --dk-hov). */
+body{--dk-bg-d:rgba(20,26,46,.86);--dk-line-d:var(--line,rgba(255,255,255,.14));--dk-ink-d:var(--hi,#e8ecf3);--dk-acc-d:var(--gold,#e0a93b);--dk-hov-d:rgba(255,255,255,.1)}
+.dk-ic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;flex-shrink:0}
+.dk-ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- float and magnify: the bottom dock, icons only, 9 widgets + the tray ---- */
+body.dk-float .edge-dock,body.dk-magnify .edge-dock{display:none!important}
+body.dk-float .app-tray-tab,body.dk-magnify .app-tray-tab{display:none}
+body.dk-float #dock,body.dk-magnify #dock{gap:6px;padding:8px;border-radius:22px;background:var(--dk-bg,var(--dk-bg-d));border-color:var(--dk-line,var(--dk-line-d));overflow:visible}
+body.dk-float #dock .dock-item,body.dk-magnify #dock .dock-item{width:48px;padding:7px 0;background:transparent}
+body.dk-float #dock .dock-item>span:last-child,body.dk-magnify #dock .dock-item>span:last-child{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--dk-ink,var(--dk-ink-d));color:#10131a;padding:2px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;display:block;-webkit-line-clamp:unset}
+body.dk-float #dock .dock-item:hover>span:last-child,body.dk-float #dock .dock-item:focus-visible>span:last-child,
+body.dk-magnify #dock .dock-item:hover>span:last-child,body.dk-magnify #dock .dock-item:focus-visible>span:last-child{opacity:1}
+body.dk-float #dock .dk-over,body.dk-magnify #dock .dk-over{display:none}
+#dock .dk-tray-btn .dk-ic{background:var(--dk-acc,var(--dk-acc-d));color:#10131a}
+#dock .dk-tray-btn{margin-left:6px;position:relative}
+#dock .dk-tray-btn::before{content:"";position:absolute;left:-7px;top:8px;bottom:8px;width:1px;background:var(--dk-line,var(--dk-line-d))}
+body.dk-float #dock-wrap{animation:dk-bob 4s ease-in-out infinite;bottom:22px}
+@keyframes dk-bob{0%,100%{transform:translateX(-50%) translateY(-2px)}50%{transform:translateX(-50%) translateY(3px)}}
+body.dk-magnify #dock .dock-item .dock-ic{transform:scale(var(--dk-scale,1));transform-origin:50% 100%;transition:transform .08s linear}
+body.dk-magnify #dock{align-items:flex-end}
+
+/* ---- sidebar ---- */
+body.dk-sidebar #dock-wrap,body.dk-sidebar .edge-dock{display:none!important}
+body.dk-sidebar #wall{padding-left:60px}
+body.dk-sidebar.dk-pinned #wall{padding-left:248px}
+nav.dk-sidebar{position:fixed;left:0;top:0;bottom:0;z-index:40;width:52px;background:var(--dk-bg,var(--dk-bg-d));border-right:1px solid var(--dk-line,var(--dk-line-d));backdrop-filter:blur(12px);display:flex;flex-direction:column;overflow:hidden;transition:width .2s ease-out;color:var(--dk-ink,var(--dk-ink-d));padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.dk-sidebar:hover,nav.dk-sidebar:focus-within,nav.dk-sidebar.pinned{width:240px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.dk-sb-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 8px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.dk-sb-foot{border-top:1px solid var(--dk-line,var(--dk-line-d));padding:6px 8px;display:flex;flex-direction:column;gap:2px}
+.dk-sb-head{margin:10px 0 2px;padding:0 8px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--lo,#9aa3b5);white-space:nowrap;opacity:0;transition:opacity .2s;height:14px}
+nav.dk-sidebar:hover .dk-sb-head,nav.dk-sidebar:focus-within .dk-sb-head,nav.dk-sidebar.pinned .dk-sb-head{opacity:1}
+.dk-sb-item{display:flex;align-items:center;gap:10px;width:100%;height:38px;padding:0 1px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer;text-align:left;white-space:nowrap}
+.dk-sb-item .dk-ic{width:34px;height:34px}
+.dk-sb-item:hover,.dk-sb-item:focus-visible{background:var(--dk-hov,var(--dk-hov-d))}
+.dk-sb-item.on{color:var(--dk-acc,var(--dk-acc-d))}
+.dk-sb-item.on .dk-ic{background:var(--dk-hov,var(--dk-hov-d))}
+.dk-sb-item .dk-lb{opacity:0;transform:translateX(-8px);transition:opacity .2s,transform .2s}
+nav.dk-sidebar:hover .dk-lb,nav.dk-sidebar:focus-within .dk-lb,nav.dk-sidebar.pinned .dk-lb{opacity:1;transform:none}
+.dk-pin.on{color:var(--dk-acc,var(--dk-acc-d))}
+
+/* ---- circle launcher ---- */
+body.dk-circle #dock-wrap,body.dk-circle .edge-dock{display:none!important}
+.dk-launcher{position:fixed;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:45;width:58px;height:58px;border-radius:50%;border:1px solid var(--dk-line,var(--dk-line-d));background:var(--dk-acc,var(--dk-acc-d));color:#10131a;display:grid;place-items:center;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.dk-launcher svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dk-launcher:hover{transform:scale(1.06)}
+
+/* ---- the two rings (circle and radial) ---- */
+.dk-veil{position:fixed;inset:0;z-index:60;background:rgba(6,9,14,.35);backdrop-filter:blur(2px)}
+.dk-rings{position:fixed;width:0;height:0}
+.dk-rings::before{content:"";position:absolute;left:-110px;top:-110px;width:220px;height:220px;border-radius:50%;background:var(--dk-bg,var(--dk-bg-d));border:1px solid var(--dk-line,var(--dk-line-d));box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.dk-rings::after{content:"";position:absolute;left:-186px;top:-186px;width:372px;height:372px;border-radius:50%;border:1px dashed var(--dk-line,var(--dk-line-d));pointer-events:none}
+.dk-hub,.dk-cat,.dk-wid{position:absolute;transform:translate(-50%,-50%);border:1px solid var(--dk-line,var(--dk-line-d));cursor:pointer;font:inherit;color:var(--dk-ink,var(--dk-ink-d))}
+.dk-hub{left:0;top:0;width:66px;height:66px;border-radius:50%;background:var(--dk-acc,var(--dk-acc-d));color:#10131a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0}
+.dk-hub .dk-ic{width:24px;height:24px}.dk-hub .dk-lb{font-size:9px;font-weight:700;max-width:58px;line-height:1.1;text-align:center}
+.dk-cat{width:62px;height:62px;border-radius:50%;background:var(--dk-hov,var(--dk-hov-d));font-size:10.5px;font-weight:700;line-height:1.15;padding:4px;display:grid;place-items:center;text-align:center}
+.dk-cat.on,.dk-cat:focus-visible{background:var(--dk-acc,var(--dk-acc-d));color:#10131a}
+.dk-outer{position:absolute;left:0;top:0;width:0;height:0}
+.dk-wid{width:58px;height:58px;border-radius:16px;background:var(--dk-bg,var(--dk-bg-d));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;box-shadow:0 8px 20px rgba(0,0,0,.35);animation:dk-pop .16s ease-out}
+.dk-wid .dk-ic{width:26px;height:26px}.dk-wid .dk-lb{font-size:9.5px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-wid:hover,.dk-wid:focus-visible{border-color:var(--dk-acc,var(--dk-acc-d))}
+.dk-wid.on{color:var(--dk-acc,var(--dk-acc-d))}
+@keyframes dk-pop{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){body.dk-float #dock-wrap{animation:none}.dk-wid{animation:none}nav.dk-sidebar,.dk-sb-item .dk-lb{transition:none}}
+/* Light mode (js/mode.js sets html[data-mode="light"]): pale glass instead of dark */
+html[data-mode="light"] body{--dk-bg-d:rgba(255,255,255,.88);--dk-line-d:rgba(20,30,50,.14);--dk-ink-d:#1f2a3c;--dk-hov-d:rgba(20,30,50,.07)}
+html[data-mode="light"] body.dk-float #dock .dock-item>span:last-child,html[data-mode="light"] body.dk-magnify #dock .dock-item>span:last-child{color:#fff}
+
+/* ---- sidebar, two levels (menus scope, owner 11 Nov 2026): js decides when it is open (.expanded), not :hover ---- */
+body.dk-sidebar #wall{padding-left:64px}
+body.dk-sidebar.dk-pinned #wall{padding-left:228px}
+nav.dk-sidebar{top:calc(56px + env(safe-area-inset-top,0px));padding-top:6px;width:56px;border-top:1px solid var(--dk-line,var(--dk-line-d));border-top-right-radius:14px}
+nav.dk-sidebar:hover,nav.dk-sidebar:focus-within{width:56px;box-shadow:none}
+nav.dk-sidebar.expanded,nav.dk-sidebar.pinned{width:220px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+nav.dk-sidebar:not(.expanded):not(.pinned) .dk-lb,nav.dk-sidebar:not(.expanded):not(.pinned) .dk-chev{opacity:0;transform:translateX(-8px)}
+nav.dk-sidebar .dk-lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+nav.dk-sidebar.expanded .dk-lb,nav.dk-sidebar.pinned .dk-lb{opacity:1;transform:none}
+.dk-sb-scroll,.dk-sb-foot{padding:4px 8px}
+.dk-sb-sep{height:1px;background:var(--dk-line,var(--dk-line-d));margin:6px 6px;flex:none}
+.dk-chev{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.55;transition:opacity .2s,transform .2s;margin-right:4px}
+.dk-sb-item svg:not(.dk-chev){fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;width:17px;height:17px}
+.dk-sb-item.open{background:var(--dk-hov,var(--dk-hov-d));color:var(--dk-acc,var(--dk-acc-d))}
+.dk-sb-item.open .dk-chev{opacity:1}
+.dk-sb-class .dk-lb{font-weight:700}
+.dk-sb-panel{position:fixed;left:220px;top:calc(56px + env(safe-area-inset-top,0px));bottom:0;width:220px;z-index:39;display:flex;flex-direction:column;background:var(--dk-bg,var(--dk-bg-d));border:1px solid var(--dk-line,var(--dk-line-d));border-left:0;border-bottom:0;border-top-right-radius:14px;backdrop-filter:blur(14px);color:var(--dk-ink,var(--dk-ink-d));box-shadow:14px 10px 40px rgba(0,0,0,.3);animation:dk-slide .14s ease-out}
+@keyframes dk-slide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.dk-sb-ph{margin:0;padding:14px 16px 6px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px}
+.dk-sb-count{font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;background:var(--dk-hov,var(--dk-hov-d));color:var(--lo,#9aa3b5)}
+.dk-sb-search{margin:4px 10px 6px;padding:7px 10px;border-radius:9px;border:1px solid var(--dk-line,var(--dk-line-d));background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:12.5px;outline:none}
+.dk-sb-search:focus{border-color:var(--dk-acc,var(--dk-acc-d))}
+.dk-sb-list{flex:1;overflow-y:auto;padding:2px 8px 12px;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.dk-sb-panel .dk-sb-item .dk-lb{opacity:1;transform:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dk-pw.on::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--dk-acc,var(--dk-acc-d));flex:none;margin-right:6px}
+.dk-pw.fav .dk-lb::after{content:" \2605";color:var(--dk-acc,var(--dk-acc-d));font-size:10px}
+.dk-code{font-size:10.5px;font-weight:700;letter-spacing:.04em}
+.dk-sb-empty{padding:10px 8px;font-size:12px;color:var(--lo,#9aa3b5)}
+@media (prefers-reduced-motion:reduce){.dk-sb-panel{animation:none}.dk-chev{transition:none}}
+html[data-mode="light"] .dk-sb-search{background:rgba(20,30,50,.04)}
+
+/* ---- rings, rethought (menus scope, owner 11 Nov 2026): icons only, names in the hub, 8 + More, a gear ---- */
+.dk-launcher{left:calc(22px + env(safe-area-inset-left,0px));right:auto}
+.dk-hub{width:78px;height:78px;gap:2px}
+.dk-hub .dk-ic{width:20px;height:20px}
+.dk-hub-name{font-size:10.5px;font-weight:700;line-height:1.15;max-width:66px;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dk-cat{width:44px;height:44px;padding:0}
+.dk-cat .dk-ic{width:44px;height:44px}
+.dk-cat .dk-ic svg,.dk-wid .dk-ic svg,.dk-rp-item .dk-ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dk-wid{width:44px;height:44px;border-radius:13px;padding:0;gap:0;touch-action:none;overflow:visible}
+.dk-wid .dk-ic{width:44px;height:44px}
+.dk-wid .dk-lb{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);max-width:none;overflow:visible;white-space:nowrap;background:var(--dk-ink,var(--dk-ink-d));color:#10131a;padding:2px 8px;border-radius:6px;font-size:11px;opacity:0;pointer-events:none;transition:opacity .12s}
+.dk-wid:hover .dk-lb,.dk-wid:focus-visible .dk-lb{opacity:1}
+.dk-wid.on::after{content:"";position:absolute;bottom:4px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--dk-acc,var(--dk-acc-d))}
+.dk-more{border-style:dashed;background:transparent}
+.dk-more-n{font-size:12.5px;font-weight:800}
+.dk-ghost{position:fixed;transform:translate(-50%,-50%) scale(1.12);pointer-events:none;z-index:80;opacity:.92;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.dk-dragging{opacity:.3}
+.dk-ring-panel{position:fixed;width:256px;max-height:350px;display:flex;flex-direction:column;background:var(--dk-bg,var(--dk-bg-d));border:1px solid var(--dk-line,var(--dk-line-d));border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.45);color:var(--dk-ink,var(--dk-ink-d));backdrop-filter:blur(14px);animation:dk-pop2 .14s ease-out;z-index:62}
+@keyframes dk-pop2{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.dk-rp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px 8px 4px;overflow-y:auto}
+.dk-rp-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:10.5px;line-height:1.15;text-align:center;cursor:pointer;touch-action:none}
+.dk-rp-item .dk-ic{width:34px;height:34px;border-radius:10px;background:var(--dk-hov,var(--dk-hov-d))}
+.dk-rp-item:hover,.dk-rp-item:focus-visible{background:var(--dk-hov,var(--dk-hov-d))}
+.dk-rp-item.on .dk-ic{color:var(--dk-acc,var(--dk-acc-d))}
+.dk-rp-hint{margin:0;padding:4px 12px 10px;font-size:10.5px;color:var(--lo,#9aa3b5)}
+.dk-ring-panel .dk-sb-list{max-height:280px}
+.dk-ring-panel .dk-sb-item .dk-lb{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.dk-ring-panel{animation:none}.dk-wid .dk-lb{transition:none}}

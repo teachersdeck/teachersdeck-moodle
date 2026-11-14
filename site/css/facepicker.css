@@ -1,0 +1,67 @@
+/* FacePicker (js/facepicker.js): the widget's picker button and its card-deck panel. The same file in TeachersDeck
+   and StudentDeck (TeachersDeck's copy is the one to edit). Colours come from each app's tokens, so a premium theme
+   repaints it: --hi / --lo / --gold / --line (StudentDeck's names; TeachersDeck maps its own onto them), with
+   TeachersDeck's --ink-1 or StudentDeck's --panel as the panel. */
+.fp-trigger{ --fp-acc:var(--gold, #e0a93b); display:inline-flex; align-items:center; gap:7px; max-width:100%; margin:8px auto 0; padding:3px 10px 3px 4px;
+  border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:999px; background:rgba(255,255,255,.05); color:var(--lo, #a9b1c9);
+  font-size:11.5px; font-weight:600; line-height:1.2; font-family:inherit; cursor:pointer; }
+.fp-trigger:hover, .fp-trigger[aria-expanded="true"]{ color:var(--hi, #f4f1e8); border-color:var(--fp-acc); }
+.fp-trigger:focus-visible{ outline:2px solid var(--fp-acc); outline-offset:2px; }
+.fp-trigger-sw{ flex:none; width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 2px rgba(255,255,255,.35); }
+.fp-trigger-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fp-trigger-chev{ flex:none; font-size:10px; opacity:.8; }
+.fp-row{ display:flex; justify-content:center; }
+
+.fp-veil{ position:fixed; inset:0; z-index:2600; }
+.fp-veil.fp-centered{ background:rgba(4,8,14,.5); display:flex; align-items:center; justify-content:center; padding:12px; }
+.fp-panel{ --fp-acc:var(--gold, #e0a93b); position:fixed; width:min(600px, calc(100vw - 16px)); box-sizing:border-box; padding:10px 10px 12px;
+  background:var(--ink-1, var(--panel, #1e2732)); color:var(--hi, #f4f1e8); border:1px solid var(--line, rgba(255,255,255,.14));
+  border-radius:18px; box-shadow:0 18px 48px rgba(0,0,0,.5); font-size:12px; user-select:none; }
+.fp-centered .fp-panel{ position:relative; }
+.fp-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 2px 6px 6px; }
+.fp-title{ margin:0; font-size:13.5px; font-weight:800; }
+.fp-close{ width:28px; height:28px; border:0; border-radius:8px; background:transparent; color:var(--lo, #a9b1c9); font-size:20px; line-height:1; cursor:pointer; }
+.fp-close:hover{ background:rgba(255,255,255,.08); color:var(--hi, #f4f1e8); }
+.fp-tabs{ display:flex; gap:6px; overflow-x:auto; padding:2px 4px 4px; scrollbar-width:none; }
+.fp-tabs::-webkit-scrollbar{ display:none; }
+.fp-tab{ flex:none; padding:4px 10px; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:999px; background:transparent; color:var(--lo, #a9b1c9);
+  font-size:11px; font-weight:600; line-height:1.2; font-family:inherit; cursor:pointer; white-space:nowrap; }
+.fp-tab[aria-pressed="true"]{ background:var(--fp-acc); border-color:var(--fp-acc); color:var(--text-on-accent, #231604); }
+
+/* The deck: every card sits in the middle and js/facepicker.js moves it out (translate, turn, shrink) by its distance */
+.fp-stage{ position:relative; height:250px; overflow:hidden; touch-action:pan-y; cursor:grab; margin:2px -10px 0; }
+.fp-stage.dragging{ cursor:grabbing; }
+.fp-deck{ position:absolute; inset:0; }
+.fp-card{ --fp-shade:0; position:absolute; left:50%; top:46%; width:132px; height:184px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:6px; padding:26px 8px 10px; border-radius:16px; overflow:hidden; will-change:transform;
+  background:linear-gradient(160deg, rgba(255,255,255,.12), rgba(255,255,255,.03)), var(--ink-2, var(--panel2, #26335a));
+  border:1px solid var(--line, rgba(255,255,255,.14)); box-shadow:0 12px 28px rgba(0,0,0,.4); color:var(--hi, #f4f1e8); cursor:pointer; text-align:center; }
+.fp-card::after{ content:""; position:absolute; inset:0; background:#000; opacity:var(--fp-shade); pointer-events:none; border-radius:inherit; }
+.fp-card.has-bg::before{ content:""; position:absolute; inset:auto 0 0 0; height:55%; background:linear-gradient(0deg, rgba(0,0,0,.7), transparent); pointer-events:none; }
+.fp-card.mid{ border-color:var(--fp-acc); box-shadow:0 0 0 2px rgba(255,255,255,.08), 0 16px 34px rgba(0,0,0,.5); }
+.fp-card[aria-selected="true"] .fp-badge{ background:var(--fp-acc); color:var(--text-on-accent, #231604); }
+.fp-card:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--fp-acc), 0 16px 34px rgba(0,0,0,.5); }
+.fp-card.locked .fp-art{ filter:grayscale(1) opacity(.5); }
+.fp-art{ position:relative; width:96px; height:96px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+.fp-art svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+.fp-dot{ width:76px; height:76px; border-radius:50%; box-shadow:inset 0 0 0 3px rgba(255,255,255,.3), 0 6px 12px rgba(0,0,0,.3); }
+/* a tiny desk drawn on a theme's card: a top bar, two windows and a dock */
+.fp-mock{ position:relative; width:100px; height:72px; border-radius:8px; }
+.fp-mock::before{ content:""; position:absolute; left:4px; right:4px; top:4px; height:7px; border-radius:4px; background:rgba(255,255,255,.35);
+  box-shadow:0 14px 0 -1px rgba(255,255,255,.22), 0 30px 0 -1px rgba(255,255,255,.18); }
+.fp-mock::after{ content:""; position:absolute; left:26px; right:26px; bottom:4px; height:9px; border-radius:5px; background:rgba(0,0,0,.35); box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+.fp-badge{ position:absolute; top:8px; right:8px; max-width:calc(100% - 16px); padding:2px 7px; border-radius:999px; background:rgba(255,255,255,.92); color:#111;
+  font-size:8.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
+.fp-name{ position:relative; font-size:11.5px; font-weight:700; line-height:1.2; max-width:100%; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  text-shadow:0 1px 3px rgba(0,0,0,.5); pointer-events:none; }
+.fp-arrow{ position:absolute; top:50%; transform:translateY(-50%); z-index:200; width:32px; height:32px; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:50%;
+  background:var(--ink-1, var(--panel, #1e2732)); color:var(--hi, #f4f1e8); font-size:20px; line-height:1; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.35); }
+.fp-prev{ left:14px; } .fp-next{ right:14px; }
+.fp-arrow:hover:not(:disabled){ border-color:var(--fp-acc); }
+.fp-arrow:disabled{ opacity:.25; cursor:default; }
+.fp-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:4px 6px 0; }
+.fp-caption{ min-width:0; color:var(--lo, #a9b1c9); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fp-use{ flex:none; padding:6px 14px; border:0; border-radius:999px; background:var(--fp-acc); color:var(--text-on-accent, #231604); font-size:12px; font-weight:800; font-family:inherit; cursor:pointer; }
+.fp-use:disabled{ opacity:.4; cursor:default; }
+@media (max-width:420px){ .fp-card{ width:112px; height:160px; } .fp-art{ width:78px; height:78px; } .fp-stage{ height:220px; } }
+html[data-mode="light"] .fp-trigger, html[data-mode="light"] .fp-tab{ background:rgba(0,0,0,.04); }

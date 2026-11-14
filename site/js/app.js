@@ -1500,7 +1500,7 @@ function renderDrawDeck(body, ctx){
 }
 
 const WIDGETS = [
-  { id:'clock', cat:'time', labelKey:'clock', icon:'clock', w:200, h:222, render:renderClock },
+  { id:'clock', cat:'time', labelKey:'clock', icon:'clock', w:200, h:246, render:renderClock },
   { id:'timer', cat:'time', labelKey:'timer', icon:'timer', w:220, h:210, render:renderTimer },
   { id:'stopwatch', cat:'time', labelKey:'stopwatch', icon:'stopwatch', w:220, h:280, render:renderStopwatch },
   { id:'tellingtime', cat:'time', labelKey:'tellingtime', icon:'tellingtime', w:340, h:500, render:renderTellingTime },   // Telling Time (Nov 2026): free; its premium faces are Pro
@@ -2078,7 +2078,7 @@ function wireDockDrag(){
     zones: { bottom:'#dock', left:'#dock-left-items', right:'#dock-right-items', top:'#dock-top-widgets' },
     item: '.dock-item[data-id], .dock-top-item[data-id]',
     caps: DOCK_CAPS,
-    tray: { grid:'#app-tray-grid', item:'.app-tray-item[data-id]', tab:'#app-tray-tab' },
+    tray: { grid:'#app-tray-grid', item:'.app-tray-item[data-id]', tab:'#app-tray-tab, #dock .dk-tray-btn' },   // the floating and magnifying docks hide the tab and carry a tray button
     move(id, loc, ids){
       const from = state.dockPlacement[id];
       state.dockPlacement[id] = loc;
@@ -2156,6 +2156,48 @@ function buildDrawerSettings(){
   });
 }
 
+/* Phase 1 (UI polish): text widgets grow with their window, like Instructions does. The widget's content is zoomed to the
+   largest size at which it still fits (never smaller than today's 100%, at most 400%); more content than fits scrolls
+   as before. The content sits in one .fit-wrap inside the body; a widget that redraws its body is re-wrapped. */
+const AUTO_FIT = new Set(['checklist','calendar','announcements','agenda','idiomday','grammarref','convocards',
+  'exitticket','hallpass','poll','readinglog','timer','stopwatch','countdown','dice']);
+function attachAutoFit(id, body){
+  if(!AUTO_FIT.has(id) || body._autoFit) return;
+  let raf = 0, busy = false;
+  function wrap(){
+    const kids = [...body.childNodes];
+    if(kids.length === 1 && kids[0].classList && kids[0].classList.contains('fit-wrap')) return kids[0];
+    const w = document.createElement('div'); w.className = 'fit-wrap';
+    kids.forEach(k=>w.appendChild(k));
+    body.appendChild(w);
+    return w;
+  }
+  function fit(){
+    busy = true;
+    const w = wrap();
+    const cs = getComputedStyle(body);
+    const availH = body.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const availW = body.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if(availH <= 0 || availW <= 0 || body.closest('.minimized')){ busy = false; return; }
+    const fits = z => { w.style.zoom = z; w.style.width = (availW / z) + 'px'; return w.scrollHeight * z <= availH + 1 && w.scrollWidth <= availW / z + 1; };
+    let lo = 1, hi = 4;
+    if(!fits(1)){ fits(1); busy = false; return; }   // too much content: 100% and scroll, as before
+    if(fits(hi)) lo = hi;
+    else for(let i = 0; i < 9; i++){ const mid = (lo + hi) / 2; if(fits(mid)) lo = mid; else hi = mid; }
+    fits(Math.floor(lo * 100) / 100);
+    busy = false;
+  }
+  const schedule = () => { if(busy) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); };
+  const ro = ('ResizeObserver' in window) ? new ResizeObserver(schedule) : null;
+  if(ro) ro.observe(body);
+  const mo = new MutationObserver(schedule);
+  mo.observe(body, { childList:true, subtree:true, characterData:true });
+  body.addEventListener('input', schedule);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  body._autoFit = { schedule };
+  schedule();
+}
+
 function rerenderWidget(id){
   const rec = widgetEls[id];
   if(!rec) return;
@@ -2165,6 +2207,7 @@ function rerenderWidget(id){
   const body = rec.el.querySelector('.widget-body');
   body.innerHTML = '';
   rec.cleanup = def.render(body, { id, toast, preset: pfPreset(id) });
+  attachAutoFit(id, body);
 }
 
 const CAL_SYSTEM_OPTIONS = [
@@ -2227,6 +2270,7 @@ function openWidget(id){
   el.className = 'widget' + (def.full ? ' widget-full' : '') + (layout.minimized && !def.full ? ' minimized' : '') + (pinnedNow ? ' is-pinned' : '');
   el.dataset.onTop = pinnedNow ? '1' : '0';
   el.dataset.wid = id;   // which widget this is (js/bento.js: tile sizes and order on phones and tablets)
+  el.classList.add('td-opening'); el.addEventListener('animationend', ()=> el.classList.remove('td-opening'), { once:true });   // polish phase 4
   if(!def.full){          // a full-screen widget is sized by CSS (.widget-full), not by a saved layout
     el.style.left = layout.x+'px';
     el.style.top = layout.y+'px';
@@ -2268,6 +2312,7 @@ function openWidget(id){
   const body = el.querySelector('.widget-body');
   const cleanup = def.render(body, { id, toast, preset: pfPreset(id) });
   widgetEls[id].cleanup = cleanup;
+  attachAutoFit(id, body);
 }
 
 function toggleMinimize(id){
@@ -2331,6 +2376,8 @@ let topPinZ = DOC_Z;         // last z handed out in the pinned band
 let docStage = null;         // built lazily by buildDocStage()
 let docCur = null;           // the document currently on the stage, or null
 function bringToFront(el){
+  document.querySelectorAll('.widget.is-front').forEach(w=>{ if(w !== el) w.classList.remove('is-front'); });   // polish phase 4: css/polish.css
+  el.classList.add('is-front');
   const pinned = el.dataset.onTop === '1';
   // Already the front-most panel in its band (typing in a widget re-clicks it
   // constantly): leave the counter alone instead of inflating it on every click.
@@ -2453,27 +2500,163 @@ function makeResizable(el, id){
 
 /* ---------------- Widget implementations ---------------- */
 
+/* TEST (branch glass-blue-test): the Glass Blue pack's watch faces, noise meter and traffic light.
+   They show while the Glass Blue theme is picked (Theme → Backgrounds). Packs: js/premium-packs.js, drawn by js/store-core.js. */
+var tdPremiumCache = null;
+function tdPremiumSet(themeId){
+  if(!tdPremiumCache){
+    tdPremiumCache = {};
+    const raw = (window.TD_PREMIUM_PACKS || []);
+    if(window.StoreCore) raw.forEach(r=>{
+      const v = StoreCore.validateStorePack(r); if(!v.ok){ console.warn('TeachersDeck: pack refused', r && r.id, v.error); return; }
+      const pk = v.pack, all = tdPremiumCache.all || (tdPremiumCache.all = { faces:[], meters:[], lights:[] });
+      pk.items.forEach(it=>{
+        const o = Object.assign({ key: pk.id + (pk.items.length > 1 ? ':' + it.id : ''), pack: pk.id }, it);
+        if(pk.kind === 'face') all.faces.push(o);
+        else if(pk.kind === 'meter') all.meters.push(o);
+        else if(pk.kind === 'light') all.lights.push(o);
+      });
+    });
+  }
+  if(themeId === '*') return tdPremiumCache.all || { faces:[], meters:[], lights:[] };
+  // A theme's own set comes from its theme pack: face-<pack>-…, meter-<pack>, light-<pack> (Tết's theme is pack tet-2027)
+  const pid = THEME_PACK_OF[themeId] || themeId, all = tdPremiumCache.all || { faces:[], meters:[], lights:[] };
+  return { faces: all.faces.filter(f=>f.pack.indexOf('face-' + pid + '-') === 0),
+    meter: all.meters.find(m=>m.pack === 'meter-' + pid) || null, light: all.lights.find(l=>l.pack === 'light-' + pid) || null };
+}
+const THEME_PACK_OF = { tet: 'tet-2027' };
+function tdThemeItem(themeId){
+  if(!window.StoreCore) return null;
+  for(const r of (window.TD_PREMIUM_PACKS || [])){
+    if(!r || r.kind !== 'theme') continue;
+    const v = StoreCore.validateStorePack(r); if(!v.ok) continue;
+    const it = v.pack.items.find(i => i.id === themeId); if(it) return it;
+  }
+  return null;
+}
+/* 11 Nov: what the Clock, Noise Meter and Traffic Light show. The theme's own set, then what was picked under "More…".
+   The Clock row stays short: the face in use, the theme's own, the last ones used (at most 5) + Classic + More. */
+function premiumSkins(){
+  const pt = premiumTheme(), own = pt ? tdPremiumSet(pt.id) : { faces:[], meter:null, light:null }, all = tdPremiumSet('*');
+  const find = (list, key) => key ? list.find(x=>x.key===key) || null : null;
+  const faces = own.faces.slice(), cur = find(all.faces, state.premiumFace);
+  if(cur && !faces.some(f=>f.key===cur.key)) faces.unshift(cur);
+  (state.recentFaces || []).forEach(k=>{ const f = find(all.faces, k); if(f && !faces.some(x=>x.key===k) && faces.length < 5) faces.push(f); });
+  return { faces, meter: find(all.meters, state.meterSkin) || own.meter, light: find(all.lights, state.lightSkin) || own.light, all };
+}
+/* "More…": every face, meter or light, grouped (faces by what they are). Picking one keeps it for this widget. */
+function openSkinPicker(kind){
+  const vi = state.lang === 'vi', all = tdPremiumSet('*');
+  const list = kind === 'face' ? all.faces : kind === 'meter' ? all.meters : all.lights;
+  const curKey = kind === 'face' ? state.premiumFace : kind === 'meter' ? state.meterSkin : state.lightSkin;
+  const FORMS = [['watch', vi?'Đồng hồ đeo tay':'Wrist watches'], ['pocket', vi?'Đồng hồ bỏ túi':'Pocket watches'], ['wall', vi?'Đồng hồ treo tường':'Wall clocks'], ['alarm', vi?'Đồng hồ báo thức':'Alarm clocks'], ['desk', vi?'Đồng hồ để bàn':'Desk clocks']];
+  const groups = kind === 'face' ? FORMS.map(([f, label])=>[label, list.filter(x=>(x.form||'watch')===f)]) : [[kind === 'meter' ? (vi?'Đồng hồ tiếng ồn':'Noise meters') : (vi?'Đèn giao thông':'Traffic lights'), list]];
+  const veil = document.createElement('div'); veil.className = 'skin-picker-veil';
+  const title = kind === 'face' ? (vi?'Chọn mặt đồng hồ':'Choose a clock face') : kind === 'meter' ? (vi?'Chọn đồng hồ tiếng ồn':'Choose a noise meter') : (vi?'Chọn đèn giao thông':'Choose a traffic light');
+  veil.innerHTML = `<div class="skin-picker" role="dialog" aria-modal="true" aria-label="${title}"><h3><span>${title}</span><button type="button" class="sp-close" aria-label="${vi?'Đóng':'Close'}">×</button></h3>` +
+    `<div class="sp-grid"><button type="button" class="sp-opt${!curKey ? ' on' : ''}" data-k=""><span class="sp-art" style="font-size:12px">${vi?'Theo giao diện':'The theme’s own'}</span>${vi?'Mặc định':'Default'}</button></div>` +
+    groups.filter(g=>g[1].length).map(([label, items])=>`<h4>${label}</h4><div class="sp-grid">` + items.map((x, i)=>`<button type="button" class="sp-opt${x.key===curKey?' on':''}" data-k="${x.key}"><span class="sp-art">${StoreCore.scopeSvg(x.svg, 'sp' + kind + i + '-')}</span>${x.name[vi?'vi':'en']}</button>`).join('') + '</div>').join('') + '</div>';
+  const close = ()=>{ veil.remove(); document.removeEventListener('keydown', esc, true); };
+  const esc = e=>{ if(e.key === 'Escape'){ e.stopPropagation(); close(); } };
+  veil.addEventListener('click', e=>{
+    if(e.target === veil || e.target.closest('.sp-close')){ close(); return; }
+    const b = e.target.closest('.sp-opt'); if(!b) return;
+    const k = b.dataset.k || null;
+    if(kind === 'face'){ state.premiumFace = k; if(k){ state.recentFaces = [k].concat((state.recentFaces||[]).filter(x=>x!==k)).slice(0, 4); } }
+    else if(kind === 'meter'){ state.meterSkin = k; if(state.noiseMeter && k) state.noiseMeter.style = 'skin'; }
+    else state.lightSkin = k;
+    saveState(); close(); rerenderWidget(kind === 'face' ? 'clock' : kind === 'meter' ? 'noise' : 'traffic');
+  });
+  document.addEventListener('keydown', esc, true);
+  document.body.appendChild(veil);
+  const f = veil.querySelector('.sp-opt.on') || veil.querySelector('.sp-opt'); if(f) f.focus();
+}
+document.addEventListener('click', e=>{ const b = e.target.closest('[data-skin-more]'); if(b){ e.stopPropagation(); openSkinPicker(b.dataset.skinMore); } });   // polish phase 2: the Theme alone decides (a photo behind it keeps it)
+const reduceMotionNow = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function refreshSkinnedWidgets(){ ['clock','traffic','noise'].forEach(id=>{ if(widgetEls[id]) rerenderWidget(id); }); }
+
+/* Polish phase 5: while a Timer, Stopwatch or Noise Meter runs, nothing moves behind it and the idle clock stays away. */
+const tdBusySet = new Set();
+function tdBusy(key, on){ if(on) tdBusySet.add(key); else tdBusySet.delete(key); document.body.classList.toggle('td-busy', tdBusySet.size > 0); if(typeof TDWallpaper !== 'undefined') TDWallpaper.pause(tdBusySet.size > 0); }
+
 function renderClock(body){
+  const skins = premiumSkins();
+  if(skins && skins.faces.length && state.premiumFace !== 'classic') return renderSkinClock(body, skins);
+  const classicCleanup = renderClassicClock(body);
+  body.appendChild(faceSwitcher(skins));
+  return classicCleanup;
+}
+/* 13 Nov: one button under the clock (the face in use) opens js/facepicker.js, a carousel of every face grouped by kind,
+   so the widget stays the same size however many faces there are. Suggested first: Classic, the theme's own, the recent ones. */
+function faceSwitcher(skins){
+  const vi = state.lang === 'vi', L = vi ? 'vi' : 'en';
+  const cur = state.premiumFace === 'classic' || !skins.faces.length ? 'classic' : (skins.faces.some(f=>f.key===state.premiumFace) ? state.premiumFace : skins.faces[0].key);
+  const curFace = cur === 'classic' ? null : skins.all.faces.find(f=>f.key===cur) || null;
+  const row = document.createElement('div'); row.className = 'fp-row';
+  if(typeof FacePicker === 'undefined') return row;
+  const btn = FacePicker.trigger({ lang: L, current: curFace ? { name: curFace.name[L] || curFace.name.en, swatch: curFace.swatch } : null });
+  FacePicker.attach(btn, ()=>{
+    const FORMS = [['watch', vi?'Đồng hồ đeo tay':'Wrist watches'], ['pocket', vi?'Bỏ túi':'Pocket'], ['wall', vi?'Treo tường':'Wall'], ['alarm', vi?'Báo thức':'Alarm'], ['desk', vi?'Để bàn':'Desk']];
+    const SUG = vi ? 'Gợi ý' : 'Suggested', seen = new Set();
+    const opt = (f, group)=>{ seen.add(f.key); return { key:f.key, name:f.name[L] || f.name.en, swatch:f.swatch, svg:f.svg, group }; };
+    const options = [{ key:'classic', name: vi ? 'Cổ điển' : 'Classic', swatch:'#F4F1EA', svg: classicClockSvg().replace(/ class="[^"]*"/g, ''), group:SUG }];
+    skins.faces.forEach(f=>options.push(opt(f, SUG)));
+    FORMS.forEach(([form, label])=>skins.all.faces.forEach(f=>{ if((f.form||'watch') === form && !seen.has(f.key)) options.push(opt(f, label)); }));
+    return { lang: L, options, current: cur, title: vi ? 'Chọn mặt đồng hồ' : 'Choose a clock face', refocus: ()=>widgetEls.clock && widgetEls.clock.el.querySelector('.fp-trigger'),
+      onPick: k=>{ state.premiumFace = k; if(k !== 'classic'){ state.recentFaces = [k].concat((state.recentFaces||[]).filter(x=>x!==k)).slice(0, 4); } saveState(); rerenderWidget('clock'); } };
+  });
+  row.appendChild(btn);
+  return row;
+}
+function renderSkinClock(body, skins){
+  const face = skins.faces.find(f=>f.key===state.premiumFace) || skins.faces[0];
+  body.innerHTML = `<div class="skin-face"></div><div class="clock-date">--</div>`;
+  const ctl = StoreCore.mountFace(body.querySelector('.skin-face'), face, { lang: state.lang==='vi'?'vi':'en', reduceMotion: reduceMotionNow() });
+  body.appendChild(faceSwitcher(skins));
+  const dateEl = body.querySelector('.clock-date');
+  function tickDate(){
+    const d = new Date();
+    dateEl.textContent = state.calendarSystem === 'lunar' ? lunarFullLabel(d)
+      : d.toLocaleDateString(LOCALE_MAP[state.lang] || 'en-US', {weekday:'short', month:'short', day:'numeric'});
+  }
+  tickDate(); const iv = setInterval(tickDate, 30000);
+  return ()=>{ ctl.stop(); clearInterval(iv); };
+}
+// Phase 1 (UI polish): the built-in face is an SVG, so it stays sharp at any window size (css/scale.css sizes it).
+function classicClockSvg(){
+  let ticks = '';
+  for(let i=0;i<60;i++){
+    const a = i*6*Math.PI/180, major = i%5===0, r1 = major ? 80 : 85, r2 = 89;
+    const x1 = (100+r1*Math.sin(a)).toFixed(2), y1 = (100-r1*Math.cos(a)).toFixed(2), x2 = (100+r2*Math.sin(a)).toFixed(2), y2 = (100-r2*Math.cos(a)).toFixed(2);
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${major?'#8f8a7c':'#c9c3b3'}" stroke-width="${major?3.2:1.4}" stroke-linecap="round"/>`;
+  }
+  return `<svg class="clock-svg" viewBox="0 0 200 200" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+    <defs><radialGradient id="ck-face" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#fbf9f4"/><stop offset="1" stop-color="#ede8dc"/></radialGradient></defs>
+    <circle cx="100" cy="100" r="99" fill="url(#ck-face)"/>
+    <circle cx="100" cy="100" r="95.5" fill="none" stroke="#dcd7c9" stroke-width="7"/>
+    ${ticks}
+    <line class="ck-h" x1="100" y1="108" x2="100" y2="48" stroke="#20242b" stroke-width="7" stroke-linecap="round"/>
+    <line class="ck-m" x1="100" y1="110" x2="100" y2="26" stroke="#20242b" stroke-width="4.6" stroke-linecap="round"/>
+    <line class="ck-s" x1="100" y1="118" x2="100" y2="20" stroke="#E06565" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="6.5" fill="#20242b"/><circle cx="100" cy="100" r="2.4" fill="#E06565"/>
+  </svg>`;
+}
+function renderClassicClock(body){
   body.innerHTML = `
-    <div class="clock-face">
-      <div class="clock-hand hr"></div>
-      <div class="clock-hand min"></div>
-      <div class="clock-hand sec"></div>
-      <div class="clock-dot"></div>
-    </div>
+    ${classicClockSvg()}
     <div class="clock-digital">--:--</div>
     <div class="clock-date">--</div>
     <div class="clock-lunar"></div>
   `;
-  const hr = body.querySelector('.hr'), min = body.querySelector('.min'), sec = body.querySelector('.sec');
+  const hr = body.querySelector('.ck-h'), min = body.querySelector('.ck-m'), sec = body.querySelector('.ck-s');
   const digital = body.querySelector('.clock-digital'), dateEl = body.querySelector('.clock-date');
   const lunarEl = body.querySelector('.clock-lunar');
   function tick(){
     const d = new Date();
     const h = d.getHours()%12, m = d.getMinutes(), s = d.getSeconds();
-    hr.style.transform = `rotate(${h*30 + m*0.5}deg)`;
-    min.style.transform = `rotate(${m*6}deg)`;
-    sec.style.transform = `rotate(${s*6}deg)`;
+    hr.setAttribute('transform', `rotate(${h*30 + m*0.5} 100 100)`);
+    min.setAttribute('transform', `rotate(${m*6 + s*0.1} 100 100)`);
+    sec.setAttribute('transform', `rotate(${s*6} 100 100)`);
     let hh = d.getHours()%12; if(hh===0) hh=12;
     digital.textContent = `${hh}:${String(m).padStart(2,'0')} ${d.getHours()>=12?'PM':'AM'}`;
     if(state.calendarSystem === 'lunar'){
@@ -2533,7 +2716,7 @@ function renderTimer(body, ctx){
   });
   const startBtn = body.querySelector('#t-start');
   function setRunning(isRunning){
-    running = isRunning;
+    running = isRunning; tdBusy('timer', running);
     startBtn.dataset.key = running ? 'pause' : 'start';
     startBtn.textContent = t(startBtn.dataset.key);
   }
@@ -2560,7 +2743,7 @@ function renderTimer(body, ctx){
   });
   render();
   if(pre && pre.go) startBtn.click();   // platform (ClassIn): ?go=1
-  return ()=>clearInterval(iv);
+  return ()=>{ clearInterval(iv); tdBusy('timer', false); };
 }
 
 function renderStopwatch(body, ctx){
@@ -2591,7 +2774,7 @@ function renderStopwatch(body, ctx){
   const startBtn = body.querySelector('#s-start');
   const lapBtn = body.querySelector('#s-lap');
   function setRunning(isRunning){
-    running = isRunning;
+    running = isRunning; tdBusy('stopwatch', running);
     startBtn.dataset.key = running ? 'stop' : 'start';
     startBtn.textContent = t(startBtn.dataset.key);
     lapBtn.disabled = !running;
@@ -2620,21 +2803,50 @@ function renderStopwatch(body, ctx){
   render();
   renderLaps();
   if(ctx && ctx.preset && ctx.preset.go) startBtn.click();   // platform (ClassIn): ?go=1
-  return ()=>clearInterval(iv);
+  return ()=>{ clearInterval(iv); tdBusy('stopwatch', false); };
 }
 
 function renderTraffic(body, ctx){
+  const skins = premiumSkins();
+  if(skins && skins.light){
+    body.innerHTML = `<div class="skin-light"></div><p class="traffic-hint" data-i18n="traffic_hint">${t('traffic_hint')}</p><div class="skin-switch"><button type="button" class="skin-more" data-skin-more="light">${state.lang==='vi'?'Đèn khác…':'More lights…'}</button></div>`;
+    const box = body.querySelector('.skin-light');
+    const ctl = StoreCore.mountLight(box, skins.light);
+    const names = ['red','yellow','green'];
+    box.querySelectorAll('[data-lamp]').forEach(g=>{
+      g.style.cursor = 'pointer';
+      g.addEventListener('click', ()=>{ const i = +g.getAttribute('data-lamp'); ctl.set(i); track('traffic', names[i]); });
+    });
+    const pl = ctx && ctx.preset && ctx.preset.light; if(pl && names.includes(pl)) ctl.set(names.indexOf(pl));
+    return null;
+  }
+  setTimeout(()=>{ if(!body.querySelector('[data-skin-more]')){ const r = document.createElement('div'); r.className = 'skin-switch';
+    r.innerHTML = `<button type="button" class="skin-more" data-skin-more="light">${state.lang==='vi'?'Đèn khác…':'More lights…'}</button>`; body.appendChild(r); } }, 0);
+  // Phase 1 (UI polish): an SVG, so it scales sharply with the window (css/scale.css).
+  const lamp = (c, cy, hi, mid, lo) => `<g class="tl-lamp traffic-lamp ${c}" data-c="${c}">
+      <circle class="tl-glow" cx="50" cy="${cy}" r="27" fill="${mid}" filter="url(#tl-blur)"/>
+      <circle cx="50" cy="${cy}" r="24" fill="url(#tl-off)"/>
+      <circle class="tl-on" cx="50" cy="${cy}" r="24" fill="url(#tl-${c})"/>
+      <circle cx="50" cy="${cy}" r="24" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="2"/>
+    </g>`;
+  const grad = (c, hi, mid, lo) => `<radialGradient id="tl-${c}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="${hi}"/><stop offset=".6" stop-color="${mid}"/><stop offset="1" stop-color="${lo}"/></radialGradient>`;
   body.innerHTML = `
-    <div class="traffic-housing">
-      <div class="traffic-hood"></div>
-      <div class="traffic-lamp red" data-c="red"></div>
-      <div class="traffic-lamp yellow" data-c="yellow"></div>
-      <div class="traffic-lamp green" data-c="green"></div>
-      <div class="traffic-base"></div>
-    </div>
+    <svg class="tl-svg" viewBox="0 0 100 238" role="img" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="tl-housing" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2e33"/><stop offset="1" stop-color="#17191c"/></linearGradient>
+        <radialGradient id="tl-off" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3c3f44"/><stop offset=".72" stop-color="#16181b"/></radialGradient>
+        ${grad('red','#ff8f8f','#E0555A','#a02c2c')}${grad('yellow','#fbe38a','#E8C93D','#a3891c')}${grad('green','#9df0bf','#4FD18A','#1f8a56')}
+        <filter id="tl-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+      </defs>
+      <rect x="32" y="1" width="36" height="10" rx="5" fill="#111"/>
+      <rect x="6" y="8" width="88" height="200" rx="18" fill="url(#tl-housing)" stroke="rgba(0,0,0,.5)" stroke-width="2"/>
+      <rect x="8" y="9.5" width="84" height="3" rx="1.5" fill="rgba(255,255,255,.06)"/>
+      ${lamp('red',46)}${lamp('yellow',108)}${lamp('green',170)}
+      <rect x="43" y="207" width="14" height="22" rx="3" fill="#111"/>
+    </svg>
     <p class="traffic-hint" data-i18n="traffic_hint">${t('traffic_hint')}</p>
   `;
-  const lamps = body.querySelectorAll('.traffic-lamp');
+  const lamps = body.querySelectorAll('.tl-lamp');
   lamps.forEach(l=>{
     l.addEventListener('click', ()=>{
       lamps.forEach(x=>x.classList.remove('on'));
@@ -2642,7 +2854,7 @@ function renderTraffic(body, ctx){
       track('traffic', l.dataset.c);
     });
   });
-  { const pl = ctx && ctx.preset && ctx.preset.light; const lamp = pl && body.querySelector('.traffic-lamp.' + pl); if(lamp) lamp.classList.add('on'); }   // platform (ClassIn): ?light=
+  { const pl = ctx && ctx.preset && ctx.preset.light; const on = pl && body.querySelector('.tl-lamp.' + pl); if(on) on.classList.add('on'); }   // platform (ClassIn): ?light=
   return null;
 }
 
@@ -2739,6 +2951,11 @@ function renderChecklist(body){
       });
       ul.appendChild(li);
     });
+    if(!state.checklist.length){   // polish phase 4: an empty list says what to do instead of showing a blank box
+      const vi = state.lang === 'vi';
+      ul.insertAdjacentHTML('afterend', `<div class="td-empty"><span class="td-empty-ic">✅</span><span><strong>${vi ? 'Chưa có việc nào' : 'Nothing on the list yet'}</strong><br>${vi ? 'Gõ một việc ở trên và nhấn Thêm.' : 'Type a task above and press Add.'}</span></div>`);
+      const inp = body.querySelector('#cl-input'); if(inp) setTimeout(()=>{ if(document.activeElement === document.body) inp.focus({ preventScroll:true }); }, 0);
+    }
     body.querySelector('#cl-add').addEventListener('click', addItem);
     body.querySelector('#cl-input').addEventListener('keydown', e=>{ if(e.key==='Enter') addItem(); });
     function addItem(){
@@ -5945,6 +6162,7 @@ const NOISE_ICONS = {
   vbar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="3" width="7" height="18" rx="2"/><rect x="8.5" y="12" width="7" height="9" rx="2" fill="currentColor"/></svg>',
   hbar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8.5" width="18" height="7" rx="2"/><rect x="3" y="8.5" width="9" height="7" rx="2" fill="currentColor"/></svg>'
 };
+const NOISE_SKIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4-5"/></svg>';   // TEST: the pack's noise meter
 // Graph data lives here, not inside the widget, so closing and reopening the widget keeps it.
 const noiseHistory = { pts:[], step:NOISE_SAMPLE_MS };
 function noiseZone(db){
@@ -5964,12 +6182,20 @@ function renderNoise(body, ctx){
   const hist = noiseHistory;
   if(ctx && ctx.preset && ctx.preset.go) setTimeout(()=>{ const b = body.querySelector('#noise-toggle'); if(b && !running) b.click(); }, 300);   // platform (ClassIn): ?go=1
 
+  const skins = premiumSkins();
+  const styles = (skins && skins.meter) ? NOISE_STYLES.concat(['skin']) : NOISE_STYLES;
   function styleKey(){
     const s = state.noiseMeter && state.noiseMeter.style;
-    return NOISE_STYLES.includes(s) ? s : 'circle';
+    return styles.includes(s) ? s : (skins && skins.meter ? 'skin' : 'circle');
   }
 
   function stageMarkup(style){
+    if(style === 'skin'){
+      return `<div class="noise-stage skin">
+        <div class="noise-skin"></div>
+        <div class="noise-readout"><span class="noise-db">--</span> <span class="noise-unit">dB</span></div>
+      </div>`;
+    }
     if(style === 'vbar'){
       return `<div class="noise-stage vbar">
         <div class="noise-vtrack"><div class="noise-mask"></div></div>
@@ -5992,12 +6218,13 @@ function renderNoise(body, ctx){
       return `<p class="noise-msg" data-i18n="noise_insecure">${t('noise_insecure')}</p>`;
     }
     const cur = styleKey();
-    const pickers = NOISE_STYLES.map(k=>
-      `<button type="button" class="noise-style-btn${k===cur?' active':''}" data-style="${k}" aria-pressed="${k===cur}" title="${t('noise_style_'+k)}" aria-label="${t('noise_style_'+k)}" data-i18n-title="noise_style_${k}" data-i18n-aria="noise_style_${k}">${NOISE_ICONS[k]}</button>`
+    const pickers = styles.map(k=> k === 'skin'
+      ? `<button type="button" class="noise-style-btn${k===cur?' active':''}" data-style="skin" aria-pressed="${k===cur}" title="${skins.meter.name.en}" aria-label="${skins.meter.name.en}">${NOISE_SKIN_ICON}</button>`
+      : `<button type="button" class="noise-style-btn${k===cur?' active':''}" data-style="${k}" aria-pressed="${k===cur}" title="${t('noise_style_'+k)}" aria-label="${t('noise_style_'+k)}" data-i18n-title="noise_style_${k}" data-i18n-aria="noise_style_${k}">${NOISE_ICONS[k]}</button>`
     ).join('');
     return `
       <div class="noise-wrap">
-        <div class="noise-styles" role="group" aria-label="${t('noise_styles_label')}" data-i18n-aria="noise_styles_label">${pickers}</div>
+        <div class="noise-styles" role="group" aria-label="${t('noise_styles_label')}" data-i18n-aria="noise_styles_label">${pickers}<button type="button" class="skin-more" data-skin-more="meter" title="${state.lang==='vi'?'Mọi đồng hồ tiếng ồn':'Every noise meter'}">${state.lang==='vi'?'Thêm…':'More…'}</button></div>
         <div class="noise-stage-slot">${stageMarkup(cur)}</div>
         <div class="noise-status"><span class="noise-level-label">&nbsp;</span><span class="noise-peak-tag" data-i18n="noise_peak_hold">${t('noise_peak_hold')}</span></div>
         <div class="noise-graph">
@@ -6028,7 +6255,7 @@ function renderNoise(body, ctx){
   }
 
   function setStyle(style){
-    if(!NOISE_STYLES.includes(style)) return;
+    if(!styles.includes(style)) return;
     state.noiseMeter.style = style;
     saveState();
     body.querySelectorAll('.noise-style-btn').forEach(b=>{
@@ -6053,6 +6280,8 @@ function renderNoise(body, ctx){
     const dbEl = stage.querySelector('.noise-db');
     const labelEl = body.querySelector('.noise-level-label');
     const mask = stage.querySelector('.noise-mask');
+    const skinBox = stage.querySelector('.noise-skin');
+    if(skinBox && !skinBox._ctl) skinBox._ctl = StoreCore.mountMeter(skinBox, skins.meter);
     wrap.classList.toggle('holding', !!holding);
     let pct = 0, zoneCls = '';
     if(v === null){
@@ -6068,6 +6297,7 @@ function renderNoise(body, ctx){
     }
     const wanted = 'noise-stage ' + style + (zoneCls ? ' ' + zoneCls : '');
     if(stage.className !== wanted) stage.className = wanted;
+    if(skinBox && skinBox._ctl) skinBox._ctl.set(pct / 100);
     if(mask){
       if(style === 'vbar') mask.style.height = (100 - pct) + '%';
       else if(style === 'hbar') mask.style.width = (100 - pct) + '%';
@@ -6119,7 +6349,7 @@ function renderNoise(body, ctx){
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 1024;
     source.connect(analyser);
-    running = true;
+    running = true; tdBusy('noise', true);
     const btn = body.querySelector('#noise-toggle');
     if(btn){ btn.dataset.key = 'noise_stop'; btn.textContent = t('noise_stop'); }
     held = 0; holdUntil = 0; liveNow = 0; bucketMax = 0;
@@ -6229,13 +6459,14 @@ function renderNoise(body, ctx){
     ctx.stroke();
     ctx.lineTo(lastX, yOf(0)); ctx.lineTo(xOf(0), yOf(0)); ctx.closePath();
     const g = ctx.createLinearGradient(0, padT, 0, padT+ph);
-    g.addColorStop(0, 'rgba(245,184,92,0.28)'); g.addColorStop(1, 'rgba(245,184,92,0)');
+    const accRgb = cs.getPropertyValue('--amber-hi-rgb').trim() || '245,184,92';   // polish phase 3: the theme's accent
+    g.addColorStop(0, `rgba(${accRgb},0.28)`); g.addColorStop(1, `rgba(${accRgb},0)`);
     ctx.fillStyle = g; ctx.fill();
     ctx.beginPath(); ctx.arc(lastX, lastY, 3, 0, Math.PI*2); ctx.fillStyle = lineCol; ctx.fill();
   }
 
   function stop(){
-    running = false;
+    running = false; tdBusy('noise', false);
     if(rafId) cancelAnimationFrame(rafId);
     if(source) try{ source.disconnect(); }catch(e){}
     if(audioCtx) try{ audioCtx.close(); }catch(e){}
@@ -6251,6 +6482,7 @@ function renderNoise(body, ctx){
   body.style.flexDirection = 'column';
   body.innerHTML = idleMarkup();
   wire();
+  if(styleKey()==='skin') showLevel(null, false);   // TEST: draw the pack meter before the mic starts
 
   return ()=>{ stop(); if(ro) ro.disconnect(); body.style.display = ''; body.style.flexDirection = ''; };
 }
@@ -8038,9 +8270,40 @@ const PRESETS = [
   { id:'ocean', css:'linear-gradient(180deg,#0e2f3f 0%, #164a5c 55%, #0c2733 100%)' },
   { id:'sunrise', css:'linear-gradient(180deg,#3a2140 0%, #7a4a55 45%, #c98a5e 100%)' },
   { id:'slate', css:'linear-gradient(180deg,#20242c 0%, #2b3038 100%)' },
-  { id:'plain', css:'#12161C' }
+  { id:'plain', css:'#12161C' },
+  // Polish phase 4 (TEST): two free classroom backgrounds; css/polish.css adds their texture
+  { id:'paper', name:'Paper', css:'linear-gradient(180deg,#2b2721 0%, #25221d 55%, #1f1c18 100%)', light:'linear-gradient(180deg,#f8f4ea 0%, #f3ede0 60%, #efe8d9 100%)' },
+  { id:'chalkboard', name:'Chalkboard', css:'linear-gradient(180deg,#1f3a2c 0%, #284836 55%, #1b3326 100%)', light:'linear-gradient(180deg,#e7f0ea 0%, #dce9e1 60%, #e3eee7 100%)' }
 ];
-const presetBg = p => (typeof DeckMode !== 'undefined') ? DeckMode.background(p.id, p.css) : p.css;   // Light mode: the same preset, pale (js/mode.js)
+const presetBg = p => (p.light && document.documentElement.dataset.mode === 'light') ? p.light
+  : (typeof DeckMode !== 'undefined') ? DeckMode.background(p.id, p.css) : p.css;   // Light mode: the same preset, pale (js/mode.js)
+/* Polish phase 2 (TEST): Theme and Background are two settings.
+   state.uiTheme   'classic' | a premium theme id ('glass-blue'): colours, drawings in Clock / Noise Meter / Traffic Light
+   state.bgTheme   true = the premium theme's own background; false = the preset in state.theme
+   state.customBg  true = your own image (as before; it wins over both)
+   state.photoTint true = wash your image with the theme's colour (offered with a premium theme over a photo; off by default) */
+/* TEST (branch glass-blue-test): every theme in js/premium-packs.js (all the Item Store's theme packs) is a premium theme
+   here, open to everyone. Glass Blue and the launch themes first, then the seasonal ones. */
+function addStoreThemes(){   // 13 Nov: runs again when the Shop brings a theme (tdStoreArrived)
+  if(!window.StoreCore) return;
+  const ORDER = ['glass-blue','aurora','ivory','obsidian','noel','tet'], found = [];
+  (window.TD_PREMIUM_PACKS || []).forEach(r=>{
+    if(!r || r.kind !== 'theme') return;
+    const v = StoreCore.validateStorePack(r); if(!v.ok) return;
+    v.pack.items.forEach(it=>{ if(!PRESETS.some(p=>p.id===it.id) && !found.some(f=>f.id===it.id)) found.push({ id:it.id, name:it.name.en, nameVi:it.name.vi, premium:true,
+      css:StoreCore.themeBackground(it, false), light:it.light || undefined, pack:v.pack.id }); });
+  });
+  found.sort((a,b)=> (ORDER.indexOf(a.id)+1 || 99) - (ORDER.indexOf(b.id)+1 || 99));
+  found.forEach(f=>PRESETS.push(f));
+}
+addStoreThemes();
+const PREMIUM_THEMES = PRESETS.filter(p => p.premium);
+if(state.theme && PREMIUM_THEMES.some(p => p.id === state.theme)){ state.uiTheme = state.theme; state.theme = 'dusk'; state.bgTheme = true; }   // saves from the first test build
+if(!state.uiTheme || (state.uiTheme !== 'classic' && !PREMIUM_THEMES.some(p => p.id === state.uiTheme))) state.uiTheme = 'classic';
+// ?theme=glass-blue opens the app in that theme (for testing the demo); your own background, if you have one, stays
+{ const q = new URLSearchParams(location.search).get('theme');
+  if(q && PREMIUM_THEMES.some(p=>p.id===q) && state.uiTheme !== q){ state.uiTheme = q; if(!state.customBg) state.bgTheme = true; state.premiumFace = null; if(state.noiseMeter) state.noiseMeter.style = 'skin'; } }
+const premiumTheme = () => PREMIUM_THEMES.find(p => p.id === state.uiTheme) || null;
 
 const bgLayer = document.getElementById('bg-layer');
 const bgOverlay = document.getElementById('bg-overlay');
@@ -8054,12 +8317,23 @@ let logoImgEl = null;
 let sessionBgUrl = null;
 
 function paintPreset(){
-  const p = PRESETS.find(p=>p.id===state.theme) || PRESETS[0];
+  const pt = premiumTheme();
+  const p = (pt && state.bgTheme) ? pt : (PRESETS.find(p=>p.id===state.theme && !p.premium) || PRESETS[0]);
   bgLayer.style.background = presetBg(p);
   bgLayer.style.backgroundSize = 'cover';
 }
 
 function applyTheme(){
+  const root = document.documentElement, pt = premiumTheme(), photo = !!(sessionBgUrl || state.customBg);
+  if(pt) root.dataset.tdTheme = pt.id; else delete root.dataset.tdTheme;
+  root.dataset.tdBg = photo ? 'image' : (pt && state.bgTheme ? 'theme' : 'preset');
+  root.dataset.tdBgid = photo ? '' : (pt && state.bgTheme ? pt.id : state.theme);   // css/polish.css: paper / chalkboard texture   // css/premium.css: stronger glass over a photo
+  if(pt && photo && state.photoTint) root.dataset.tdTint = '1'; else delete root.dataset.tdTint;
+  // polish phase 5: the theme pack's display font (THEME_FONTS in js/store-core.js) for titles and big readouts
+  const tItem = pt && typeof tdThemeItem === 'function' ? tdThemeItem(pt.id) : null;
+  if(tItem && window.StoreCore && StoreCore.THEME_FONTS[tItem.font]) root.style.setProperty('--theme-font', StoreCore.THEME_FONTS[tItem.font]);
+  else root.style.removeProperty('--theme-font');
+  applySkin(tItem);
   if(sessionBgUrl){
     bgLayer.style.background = `center/cover no-repeat url(${sessionBgUrl})`;
   } else if(state.customBg){
@@ -8067,7 +8341,94 @@ function applyTheme(){
   } else {
     paintPreset();
   }
+  applyWallpaper(tItem, photo);
   bgOverlay.classList.toggle('no-dim', !state.dim);
+}
+/* 13 Nov: a premium theme's animated wallpaper (js/wallpaper.js) over its CSS gradient, which stays underneath as the
+   fallback. Only with the theme's own background, in dark mode, and while "Moving wallpaper" is on (Theme menu). */
+let wallpaperKey = '';
+function applyWallpaper(tItem, photo){
+  if(typeof TDWallpaper === 'undefined') return;
+  const w = tItem && tItem.wallpaper;
+  const want = !!(w && state.bgTheme && !photo && state.wallpaper !== false && document.documentElement.dataset.mode !== 'light');
+  const key = want ? JSON.stringify(w) : '';
+  if(key === wallpaperKey && (!want || TDWallpaper.active())) return;
+  wallpaperKey = key;
+  if(want) TDWallpaper.mount(w, { before: bgOverlay }); else TDWallpaper.unmount();
+  TDWallpaper.pause(tdBusySet.size > 0);
+}
+
+/* 11 Nov: every theme colours the docks and windows. A premium theme brings its pack's tokens; each free background
+   has its own small set (Dusk keeps the classic look). css/premium.css reads the --sk-* tokens under html[data-td-skin]. */
+const PRESET_SKINS = {
+  chalk:     { bgs:'#2b2f26', card:'rgba(74,82,62,.55)', line:'rgba(205,215,180,.26)', ink:'#eef1e4', muted:'#c3c9b0', acc:'#d9c27a', bt:'#2a2306', dock:'rgba(36,40,31,.86)', hov:'rgba(255,255,255,.10)' },
+  ocean:     { bgs:'#0e2f3f', card:'rgba(22,74,92,.48)', line:'rgba(140,220,230,.30)', ink:'#e6fbff', muted:'#a6d4dd', acc:'#5fd3d6', bt:'#032a2c', dock:'rgba(10,40,52,.86)', hov:'rgba(255,255,255,.12)' },
+  sunrise:   { bgs:'#3a2140', card:'rgba(122,74,85,.42)', line:'rgba(255,200,160,.30)', ink:'#fff1e8', muted:'#e8c3b4', acc:'#ffb27a', bt:'#3a1600', dock:'rgba(58,33,64,.86)', hov:'rgba(255,255,255,.12)' },
+  slate:     { bgs:'#20242c', card:'rgba(52,58,68,.62)', line:'rgba(200,210,225,.22)', ink:'#eef1f6', muted:'#b4bccb', acc:'#9fb4d6', bt:'#141a26', dock:'rgba(30,34,42,.9)', hov:'rgba(255,255,255,.10)' },
+  plain:     { bgs:'#12161c', card:'rgba(32,38,47,.72)', line:'rgba(255,255,255,.12)', ink:'#eef1f6', muted:'#a7afbd', acc:'#e0a93b', bt:'#231803', dock:'rgba(20,24,31,.92)', hov:'rgba(255,255,255,.08)' },
+  paper:     { bgs:'#25221d', card:'rgba(64,58,48,.6)', line:'rgba(230,215,190,.24)', ink:'#f6efe2', muted:'#cfc2aa', acc:'#e0b46a', bt:'#2b1d05', dock:'rgba(43,39,33,.9)', hov:'rgba(255,255,255,.10)' },
+  chalkboard:{ bgs:'#1f3a2c', card:'rgba(44,78,60,.55)', line:'rgba(200,235,210,.26)', ink:'#f2f7f1', muted:'#c0d6c8', acc:'#f2efe0', bt:'#1d2b22', dock:'rgba(26,48,37,.9)', hov:'rgba(255,255,255,.10)' },
+};
+function skinRgb(c, fallback){   // '#rrggbb' | '#rgb' | 'rgba(r,g,b,a)' -> 'r,g,b'
+  const s = String(c || '').trim(); let m;
+  if((m = /^#([0-9a-f]{6})/i.exec(s))) return [0,2,4].map(i=>parseInt(m[1].substr(i,2),16)).join(',');
+  if((m = /^#([0-9a-f])([0-9a-f])([0-9a-f])/i.exec(s))) return [m[1],m[2],m[3]].map(h=>parseInt(h+h,16)).join(',');
+  if((m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(s))) return [m[1],m[2],m[3]].join(',');
+  return fallback || '0,0,0';
+}
+const SKIN_PROPS = ['--sk-ink0','--sk-ink1','--sk-ink2','--sk-ink3','--sk-card','--sk-head','--sk-hov','--sk-dock','--sk-dock-soft','--sk-drawer','--sk-pill','--sk-line','--sk-line-rgb',
+  '--sk-ink','--sk-muted','--sk-acc','--sk-acc-rgb','--sk-acc-hi','--sk-acc-hi-rgb','--sk-on','--sk-on-rgb','--sk-radius','--sk-shadow-rgb','--sk-card-photo','--sk-tint','--sk-idle-a','--sk-idle-b'];
+function applySkin(item){
+  const root = document.documentElement, pt = premiumTheme();
+  const tk = item ? item.tokens : (!pt && PRESET_SKINS[state.theme]) || null;
+  ensureDeco(); root.dataset.tdDeco = (item && item.deco) || 'none';
+  themeGreeting(item);
+  if(!tk){ delete root.dataset.tdSkin; SKIN_PROPS.forEach(k=>root.style.removeProperty(k)); return; }
+  const bgs = tk.bgs, acc = tk.acc, accRgb = skinRgb(acc), mix = (rgb, w) => rgb.split(',').map(v=>Math.round(+v + (255 - +v) * w)).join(',');
+  const dark = skinRgb(bgs).split(',').map(v=>Math.round(+v * .35)).join(',');
+  const set = (k, v) => root.style.setProperty(k, v);
+  set('--sk-ink0', bgs); set('--sk-ink1', `color-mix(in srgb, ${bgs} 88%, #ffffff)`); set('--sk-ink2', `color-mix(in srgb, ${bgs} 80%, #ffffff)`); set('--sk-ink3', `color-mix(in srgb, ${bgs} 70%, #ffffff)`);
+  set('--sk-card', tk.card); set('--sk-head', `color-mix(in srgb, ${tk.card} 55%, transparent)`); set('--sk-hov', tk.hov);
+  set('--sk-dock', tk.dock); set('--sk-dock-soft', `color-mix(in srgb, ${tk.dock} 76%, transparent)`); set('--sk-drawer', `color-mix(in srgb, ${bgs} 94%, transparent)`);
+  set('--sk-pill', `color-mix(in srgb, ${tk.hov} 65%, transparent)`); set('--sk-line', tk.line); set('--sk-line-rgb', skinRgb(tk.line, '160,210,255'));
+  set('--sk-ink', tk.ink); set('--sk-muted', tk.muted); set('--sk-acc', acc); set('--sk-acc-rgb', accRgb);
+  set('--sk-acc-hi', `rgb(${mix(accRgb, .3)})`); set('--sk-acc-hi-rgb', mix(accRgb, .3)); set('--sk-on', tk.bt); set('--sk-on-rgb', skinRgb(tk.bt));
+  set('--sk-radius', ((item && item.radius) || 16) + 'px'); set('--sk-shadow-rgb', dark);
+  set('--sk-card-photo', `color-mix(in srgb, ${bgs} 34%, transparent)`); set('--sk-tint', `linear-gradient(135deg, rgba(${skinRgb(bgs)},.55), rgba(${accRgb},.30))`);
+  set('--sk-idle-a', `rgba(${skinRgb(bgs)},.72)`); set('--sk-idle-b', `rgba(${dark},.94)`);
+  root.dataset.tdSkin = pt ? pt.id : state.theme;
+}
+/* 13 Nov (owner's mockups): a theme's own words in the top bar — its greeting from the pack (Tết: "Chúc Mừng Năm Mới ·
+   Đinh Mùi 2027") and a "Premium · name" badge. Plain text (textContent); css/premium.css places and hides it. */
+function themeGreeting(item){
+  const root = document.documentElement, pt = premiumTheme(), g = item && item.greeting;
+  let el = document.getElementById('td-greet');
+  if(!g || !pt){ delete root.dataset.tdGreet; if(el) el.hidden = true; return; }
+  if(!el){
+    el = document.createElement('div'); el.id = 'td-greet';
+    el.innerHTML = '<span class="tg-text"></span><span class="tg-badge"></span>';
+    const top = document.querySelector('.topbar'), after = document.getElementById('dock-top-widgets');
+    if(after && after.parentNode) after.after(el); else if(top) top.appendChild(el); else return;
+  }
+  el.hidden = false;
+  const vi = state.lang === 'vi';
+  el.querySelector('.tg-text').textContent = g[vi ? 'vi' : 'en'] || g.en;
+  el.querySelector('.tg-badge').textContent = (vi ? 'Cao cấp · ' : 'Premium · ') + ((vi && pt.nameVi) || pt.name);
+  root.dataset.tdGreet = '1';
+}
+/* The decoration layer (css/premium.css shows the set the theme names: snow = Noel, lanterns = Tết). Built once. */
+function ensureDeco(){
+  if(document.getElementById('td-deco')) return;
+  const d = document.createElement('div'); d.id = 'td-deco'; d.setAttribute('aria-hidden', 'true');
+  const lantern = cls => `<svg class="dc-lantern ${cls}" viewBox="0 0 84 150"><line x1="42" y1="0" x2="42" y2="22" stroke="#f0c34e" stroke-width="2.5"/><rect x="28" y="20" width="28" height="9" rx="3" fill="#f0c34e"/><ellipse cx="42" cy="66" rx="36" ry="40" fill="#d4202c" stroke="#f0c34e" stroke-width="3"/>` +
+    [-22,-8,8,22].map(dx=>`<path d="M${42+dx} 28 Q${42+dx*1.5} 66 ${42+dx} 104" fill="none" stroke="#f0c34e" stroke-width="1.6" opacity=".75"/>`).join('') +
+    `<ellipse cx="30" cy="52" rx="8" ry="14" fill="#fff" opacity=".18"/><rect x="28" y="104" width="28" height="9" rx="3" fill="#f0c34e"/><line x1="42" y1="113" x2="42" y2="140" stroke="#f0c34e" stroke-width="2.5"/><path d="M36 140 L42 150 L48 140 Z" fill="#f0c34e"/></svg>`;
+  let flames = ''; for(let i = 0; i < 26; i++){ const x = i * 40 - 10, h = 70 + ((i * 37) % 60); flames += `<path d="M${x} 150 Q${x+10} ${150-h*0.55} ${x+22} ${150-h} Q${x+30} ${150-h*0.5} ${x+44} 150 Z" fill="${i%2?'#e0581f':'#b8341a'}" opacity="${i%3?0.85:0.7}"/>`; }
+  for(let i = 0; i < 26; i++){ const x = i * 40 + 6, h = 40 + ((i * 23) % 40); flames += `<path d="M${x} 150 Q${x+8} ${150-h*0.6} ${x+16} ${150-h} Q${x+22} ${150-h*0.5} ${x+32} 150 Z" fill="#f2a33a" opacity=".85"/>`; }
+  let petals = ''; for(let i = 0; i < 14; i++) petals += `<i style="left:${(i * 7.3 + 3) % 100}%;animation-delay:${-(i * 1.9).toFixed(1)}s;animation-duration:${12 + (i % 5) * 2}s"></i>`;
+  d.innerHTML = `<div class="dc-bunting"></div><div class="dc-snow"></div>${lantern('l1')}${lantern('l2')}<svg class="dc-flames" viewBox="0 0 1040 150" preserveAspectRatio="none">${flames}</svg><div class="dc-petals">${petals}</div>`;
+  const bg = document.getElementById('bg-overlay') || document.getElementById('bg-layer');
+  if(bg && bg.parentNode) bg.parentNode.insertBefore(d, bg.nextSibling); else document.body.prepend(d);
 }
 
 async function initCustomBg(){
@@ -8103,22 +8464,175 @@ async function initCustomBg(){
   }
 }
 
-function buildPresetSwatches(){
-  const grid = document.getElementById('theme-presets');
+/* TEST (branch glass-blue-test): the Item Store's five dock styles in Theme → Dock, open to everyone here.
+   js/dockstyle.js (= studentdeck/js/dockstyle.js on item-store) draws them; the dock packs are in js/premium-packs.js. */
+function tdDockItems(){
+  const out = [];
+  (window.TD_PREMIUM_PACKS || []).forEach(r=>{
+    if(!window.StoreCore || !r || r.kind !== 'dock') return;
+    const v = StoreCore.validateStorePack(r); if(!v.ok) return;
+    v.pack.items.forEach(it=>out.push(it));
+  });
+  return out;
+}
+function applyTdDock(){
+  if(typeof DockStyle === 'undefined') return;
+  const it = tdDockItems().find(d=>d.style === state.dockStyle);
+  DockStyle.apply(it ? it.style : 'standard', it || null);
+  if(typeof applyTopBarMode === 'function') applyTopBarMode();
+}
+function buildDockSwatches(){
+  const grid = document.getElementById('dock-styles'); if(!grid) return;
   grid.innerHTML = '';
-  PRESETS.forEach(p=>{
-    const sw = document.createElement('div');
-    sw.className = 'swatch' + ((!state.customBg && !sessionBgUrl && state.theme===p.id) ? ' active' : '');
-    sw.style.background = presetBg(p);
-    sw.title = p.id;
-    sw.addEventListener('click', ()=>{
-      state.theme = p.id; state.customBg = false;
-      if(sessionBgUrl){ URL.revokeObjectURL(sessionBgUrl); sessionBgUrl = null; }
-      saveState(); applyTheme(); buildPresetSwatches();
+  const vi = state.lang === 'vi';
+  const opts = [{ style:'standard', name:{ en:'Standard', vi:'Tiêu chuẩn' }, swatch:'linear-gradient(180deg,#2a3542,#161c25)' }].concat(tdDockItems());
+  opts.forEach(o=>{
+    const b = document.createElement('button'); b.type = 'button';
+    const on = (state.dockStyle || 'standard') === o.style;
+    b.className = 'dock-style-opt' + (on ? ' active' : '');
+    b.setAttribute('aria-pressed', on);
+    b.innerHTML = `<span class="dock-style-sw"></span><span class="dock-style-name"></span>`;
+    b.querySelector('.dock-style-sw').style.background = o.swatch || '#1e2732';
+    b.querySelector('.dock-style-name').textContent = o.name[vi ? 'vi' : 'en'] || o.name.en;
+    b.addEventListener('click', ()=>{
+      state.dockStyle = o.style; saveState(); applyTdDock(); buildDockSwatches();
+      if(o.style === 'radial' && !state.radialHintSeen){   // one time: how to open the rings
+        state.radialHintSeen = true; saveState();
+        toast(vi ? 'Nhấp chuột phải vào chỗ trống (hoặc nhấn giữ trên màn hình cảm ứng) để mở tiện ích.' : 'Right-click an empty part of the screen (or long-press on a touchscreen) to open your widgets.', 7000);
+      }
     });
-    grid.appendChild(sw);
+    grid.appendChild(b);
+  });
+  // With Radial (owner 11 Nov 2026): the rings hold every widget and the gear holds settings, so the docks can go
+  const rm = document.getElementById('radial-mode');
+  if(rm){
+    rm.hidden = state.dockStyle !== 'radial';
+    rm.innerHTML = '';
+    const cur = ['off','compact','keep'].includes(state.radialDocks) ? state.radialDocks : 'off';
+    [['off', vi ? 'Tắt dock' : 'Docks off'], ['compact', vi ? 'Dock gọn' : 'Compact dock'], ['keep', vi ? 'Giữ dock' : 'Keep docks']].forEach(([k, label])=>{
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'topbar-mode-opt' + (cur === k ? ' active' : ''); b.setAttribute('aria-pressed', cur === k); b.textContent = label;
+      b.addEventListener('click', ()=>{ state.radialDocks = k; saveState(); applyTopBarMode(); buildDockSwatches(); });
+      rm.appendChild(b);
+    });
+  }
+  buildFloatingIcons();
+  // Top bar: drop down at the top edge (default for Floating, Magnifying, Circle, and Radial without docks) or always shown
+  const tb = document.getElementById('topbar-mode'); if(!tb) return;
+  const applies = tbDropStyle();
+  tb.hidden = !applies;
+  tb.innerHTML = '';
+  [['drop', vi ? 'Thả xuống ở mép trên' : 'Drop down at the top edge'], ['shown', vi ? 'Luôn hiện' : 'Always shown']].forEach(([k, label])=>{
+    const b = document.createElement('button'); b.type = 'button';
+    const on = (state.topBarMode === 'shown' ? 'shown' : 'drop') === k;
+    b.className = 'topbar-mode-opt' + (on ? ' active' : ''); b.setAttribute('aria-pressed', on); b.textContent = label;
+    b.addEventListener('click', ()=>{ state.topBarMode = k; saveState(); applyTopBarMode(); buildDockSwatches(); });
+    tb.appendChild(b);
   });
 }
+
+function setUiTheme(id){
+  const was = premiumSkins();
+  const arriving = id !== 'classic' && state.uiTheme !== id;
+  state.uiTheme = id;
+  const pt = premiumTheme();
+  if(arriving && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)){   // polish phase 5: a 1 s arrival
+    const r = document.documentElement; r.classList.remove('td-arrive'); void r.offsetWidth; r.classList.add('td-arrive');
+    setTimeout(()=> r.classList.remove('td-arrive'), 1100);
+  }
+  if(pt){ if(!state.customBg && !sessionBgUrl) state.bgTheme = true; state.premiumFace = null; state.meterSkin = null; state.lightSkin = null; if(state.noiseMeter) state.noiseMeter.style = 'skin'; }
+  else state.bgTheme = false;
+  saveState(); applyTheme(); buildPresetSwatches();
+  if(was || premiumSkins()) refreshSkinnedWidgets();
+}
+function useBackground(kind, presetId){   // kind: 'theme' (the premium theme's own) | 'preset'
+  if(sessionBgUrl){ URL.revokeObjectURL(sessionBgUrl); sessionBgUrl = null; }
+  state.customBg = false;
+  state.bgTheme = kind === 'theme';
+  if(kind === 'preset') state.theme = presetId;
+  saveState(); applyTheme(); buildPresetSwatches();
+}
+function buildPresetSwatches(){
+  buildDockSwatches();
+  const vi = state.lang === 'vi', pt = premiumTheme(), photo = !!(state.customBg || sessionBgUrl);
+  document.querySelectorAll('[data-td-label]').forEach(el=>{ const k = el.dataset.tdLabel; el.textContent = k === 'theme' ? (vi ? 'Giao diện' : 'Theme') : (vi ? 'Dock' : 'Dock'); });
+  { const r = document.getElementById('bg-photo-reset'); if(r) r.textContent = vi ? 'Dùng nền có sẵn' : 'Use a background instead'; }
+  // Theme row: Classic + the premium themes (with the Shop: only the ones bought)
+  const tg = document.getElementById('ui-themes');
+  if(tg){
+    tg.innerHTML = '';
+    [{ id:'classic', name: vi ? 'Cổ điển' : 'Classic', css: presetBg(PRESETS[0]) }].concat(PREMIUM_THEMES.map(p => ({ id:p.id, name:p.name, css:p.css, premium:true }))).forEach(o=>{
+      const b = document.createElement('button'); b.type = 'button';
+      const on = state.uiTheme === o.id;
+      b.className = 'ui-theme-opt' + (on ? ' active' : '') + (o.premium ? ' premium' : '');
+      b.setAttribute('aria-pressed', on);
+      b.innerHTML = '<span class="ui-theme-sw"></span><span class="ui-theme-name"></span>';
+      b.querySelector('.ui-theme-sw').style.background = o.css;
+      b.querySelector('.ui-theme-name').textContent = o.name;
+      b.addEventListener('click', ()=> setUiTheme(o.id));
+      tg.appendChild(b);
+    });
+    // 13 Nov (owner): the same card deck as the Clock's faces, for browsing every theme with a preview of each
+    let row = document.getElementById('ui-theme-browse');
+    if(!row){ row = document.createElement('div'); row.id = 'ui-theme-browse'; row.className = 'fp-row'; tg.after(row); }
+    row.innerHTML = '';
+    if(typeof FacePicker !== 'undefined'){
+      const all = [{ id:'classic', name: vi ? 'Cổ điển' : 'Classic', css: presetBg(PRESETS[0]) }].concat(PREMIUM_THEMES.map(p => ({ id:p.id, name:(vi && p.nameVi) || p.name, css:p.css, premium:true })));
+      const cur = all.find(o=>o.id === state.uiTheme) || all[0];
+      const btn = FacePicker.trigger({ lang: vi ? 'vi' : 'en', label: vi ? 'Chọn giao diện' : 'Browse themes', current: { name: cur.name, swatch: cur.css } });
+      FacePicker.attach(btn, ()=>({ lang: vi ? 'vi' : 'en', title: vi ? 'Chọn giao diện' : 'Choose a theme', current: state.uiTheme,
+        options: all.map(o=>({ key:o.id, name:o.name, bg:o.css, mock:true, group: o.premium ? 'Premium' : (vi ? 'Miễn phí' : 'Free') })),
+        onPick: id=>setUiTheme(id), refocus: ()=>document.querySelector('#ui-theme-browse .fp-trigger') }));
+      row.appendChild(btn);
+      if(typeof TD_STORE !== 'undefined' && TD_STORE.enabled){   // 13 Nov (owner): the store in the LMS editions (js/tdstore.js)
+        const shop = document.createElement('button'); shop.type = 'button'; shop.className = 'fp-trigger td-shop-open';
+        shop.innerHTML = '<span class="fp-trigger-sw td-shop-sw" aria-hidden="true">🛍</span><span class="fp-trigger-name"></span>';
+        shop.querySelector('.fp-trigger-name').textContent = vi ? 'Cửa hàng' : 'Shop';
+        shop.setAttribute('aria-haspopup', 'dialog');
+        shop.addEventListener('click', e=>{ e.stopPropagation(); openTdShop(shop); });
+        row.appendChild(shop);
+      }
+    }
+  }
+  // Background row: the theme's own background (premium themes only), then the six presets; your image is the upload below
+  const grid = document.getElementById('theme-presets');
+  grid.innerHTML = '';
+  const opts = (pt ? [{ kind:'theme', p:pt, title: vi ? 'Nền của giao diện' : "Theme's background" }] : [])
+    .concat(PRESETS.filter(p=>!p.premium).map(p=>({ kind:'preset', p, title:p.name || p.id })));
+  opts.forEach(o=>{
+    const sw = document.createElement('div');
+    const on = !photo && (o.kind === 'theme' ? (pt && state.bgTheme) : (!(pt && state.bgTheme) && state.theme === o.p.id));
+    sw.className = 'swatch' + (o.kind === 'theme' ? ' premium theme-bg' : '') + (on ? ' active' : '');
+    sw.style.background = presetBg(o.p);
+    sw.title = o.title;
+    sw.addEventListener('click', ()=> useBackground(o.kind, o.p.id));
+    grid.appendChild(sw);
+  });
+  // "Your image" status + the tint switch (a premium theme over your photo)
+  const st = document.getElementById('bg-photo-state');
+  if(st){
+    st.hidden = !photo;
+    st.querySelector('.bg-photo-text').textContent = vi ? 'Đang dùng ảnh của bạn' : 'Using your image';
+  }
+  if(typeof buildIdleSwitch === 'function') buildIdleSwitch();
+  if(typeof tdIdle !== 'undefined') tdIdle.arm();
+  const tint = document.getElementById('photo-tint-row');
+  if(tint){
+    tint.hidden = !(pt && photo);
+    const cb = tint.querySelector('input'); cb.checked = !!state.photoTint;
+    tint.querySelector('span').textContent = vi ? `Phủ màu ${pt ? pt.name : ''} lên ảnh` : `Tint my image ${pt ? pt.name : ''}`;
+  }
+  const wp = document.getElementById('wallpaper-row');
+  if(wp){
+    const tItem = pt && typeof tdThemeItem === 'function' ? tdThemeItem(pt.id) : null;
+    wp.hidden = !(tItem && tItem.wallpaper && state.bgTheme && !photo);
+    wp.querySelector('input').checked = state.wallpaper !== false;
+    wp.querySelector('span').textContent = vi ? 'Hình nền chuyển động' : 'Moving wallpaper';
+  }
+}
+document.getElementById('wallpaper-toggle')?.addEventListener('change', e=>{ state.wallpaper = e.target.checked; saveState(); applyTheme(); });
+document.getElementById('photo-tint-toggle')?.addEventListener('change', e=>{ state.photoTint = e.target.checked; saveState(); applyTheme(); });
+document.getElementById('bg-photo-reset')?.addEventListener('click', ()=> useBackground(premiumTheme() ? 'theme' : 'preset', state.theme && !PRESETS.find(p=>p.id===state.theme)?.premium ? state.theme : 'dusk'));
 
 document.querySelector('label[for="bg-upload"]').addEventListener('click', e=>{
   if(!isPro()){ e.preventDefault(); openProModal('bg'); }
@@ -8239,7 +8753,7 @@ async function applyAdminTheme(classId, th){
     state.activeBgId = bgIdForClass(); state.customBg = true;
   } else {
     if(sessionBgUrl){ URL.revokeObjectURL(sessionBgUrl); sessionBgUrl = null; }
-    state.theme = th.preset; state.customBg = false;
+    state.theme = th.preset; state.customBg = false; state.bgTheme = false;   // a school's background is a Background: the teacher's Theme stays
   }
   if(typeof th.dim === 'boolean') state.dim = th.dim;
   state.adminThemeSeen[classId] = version;
@@ -8441,7 +8955,7 @@ function buildProStatus(){
     badge.textContent = 'FREE'; badge.classList.remove('is-pro');
     text.textContent = t('pro_status_free'); text.setAttribute('data-i18n','pro_status_free');
     licenseRow.hidden = false;
-    upgradeBtn.hidden = UNI || !!PF;   // no purchase here in UniDeck (campus plan) or the LMS editions (ClassIn, Canvas, Moodle: the order form or a quote); a key can still be entered
+    upgradeBtn.hidden = UNI || !!(PF && !PF.proPurchase);   // no purchase in UniDeck (campus plan) or an LMS edition that doesn't sell Pro (Moodle: the order form or a quote); ClassIn and Canvas sell it (owner, 13 Nov 2026); a key can always be entered
   }
 }
 
@@ -8527,10 +9041,175 @@ function pollProOrder(){
   proOrderTimer = setTimeout(async ()=>{ await checkProOrder(); pollProOrder(); }, PRO_ORDER_POLL_MS);
 }
 
+/* ---- The Shop in the LMS editions (owner, 13 Nov 2026; js/tdstore.js, backend teacherStore.js) ----
+   Theme → Shop opens the card deck with every theme, watch face and dock sold to teachers (price on each card,
+   "Yours" on what the store key owns). Buy → the same VietQR path as Pro, one item per order; the owner presses Mark
+   paid; the item arrives here (checked every 20 s while the dialog is open, and at every start) and is put on. */
+const tdShopVi = () => state.lang === 'vi';
+const SHOP_POLL_MS = 20000;
+let tdShopTimer = null, tdShopCatalog = null;
+if(typeof TD_STORE !== 'undefined' && TD_STORE.enabled){
+  TD_STORE.setCaller(callLicenseFn);
+  TD_STORE.onArrive(tdStoreArrived);
+  setTimeout(()=>{ (TD_STORE.pendingOrder() ? TD_STORE.checkOrder().then(r=>{ if(r && r.status === 'paid') tdShopPaid(r); }) : TD_STORE.refresh()).catch(()=>{}); }, 1500);
+}
+/** Bought packs came down: the app takes them in without a reload. */
+function tdStoreArrived(fresh){
+  tdPremiumCache = null;
+  addStoreThemes();
+  PRESETS.filter(p=>p.premium && !PREMIUM_THEMES.includes(p)).forEach(p=>PREMIUM_THEMES.push(p));
+  buildPresetSwatches(); refreshSkinnedWidgets();
+  const names = fresh.map(p=>p.name[tdShopVi() ? 'vi' : 'en'] || p.name.en).join(', ');
+  const appName = (window.DECK_EDITION && DECK_EDITION.name) || 'TeachersDeck';   // LectureDeck, TinyTeachersDeck
+  if(names) toast((tdShopVi() ? `Đã có trong ${appName}: ` : `Now in ${appName}: `) + names);
+}
+/** Puts on what was just bought (or picked from what the key owns). */
+function tdShopApply(sku){
+  const pack = (window.TD_PREMIUM_PACKS || []).find(p=>p && p.id === sku); if(!pack) return;
+  const it = pack.items[0];
+  if(pack.kind === 'theme'){ setUiTheme(it.id); }
+  else if(pack.kind === 'face'){ state.premiumFace = pack.items.length > 1 ? pack.id + ':' + it.id : pack.id; saveState(); if(widgetEls.clock) rerenderWidget('clock'); else openWidget('clock'); }
+  else if(pack.kind === 'dock'){ state.dockStyle = it.style; saveState(); applyTdDock(); buildDockSwatches(); }
+}
+async function openTdShop(anchor){
+  const vi = tdShopVi(), L = vi ? 'vi' : 'en';
+  let cat;
+  try{ cat = tdShopCatalog = await TD_STORE.catalog(); }
+  catch(e){ toast(vi ? 'Chưa mở được cửa hàng — kiểm tra kết nối mạng.' : 'The Shop could not open — check the connection.'); return; }
+  const owned = new Set(cat.owned || []);
+  const KINDS = { theme: vi ? 'Giao diện' : 'Themes', face: vi ? 'Mặt đồng hồ' : 'Watch faces', dock: vi ? 'Dock' : 'Docks' };
+  const options = [];
+  ['theme', 'face', 'dock'].forEach(kind => cat.catalog.filter(i=>i.kind === kind).forEach(i=>{
+    const pv = (cat.previews || {})[i.sku], first = pv && pv.items && pv.items[0];
+    const o = { key: i.sku, name: i.name[L] || i.name.en, group: KINDS[kind], badge: owned.has(i.sku) ? (vi ? 'Của bạn' : 'Yours') : vndFmt(i.price), price: i.price, owned: owned.has(i.sku) };
+    if(kind === 'theme' && first && window.StoreCore){ o.bg = StoreCore.themeBackground(first, false); o.mock = true; }
+    else if(kind === 'face' && first){ o.svg = first.svg; o.swatch = first.swatch; }
+    else if(first){ o.swatch = first.swatch; }
+    options.push(o);
+  }));
+  if(!options.length){ toast(vi ? 'Cửa hàng chưa có gì.' : 'Nothing in the Shop yet.'); return; }
+  FacePicker.open({ anchor, lang: L, options, current: '', title: vi ? 'Cửa hàng' : 'Shop',
+    pickLabel: o=> o.owned ? (vi ? 'Dùng' : 'Use') : (vi ? 'Mua · ' : 'Buy · ') + vndFmt(o.price),
+    onPick: sku=>{ const o = options.find(x=>x.key === sku); if(o && o.owned) tdShopApply(sku); else openTdShopPay(o); },
+    refocus: ()=>document.querySelector('#ui-theme-browse .td-shop-open') });
+}
+/* The pay dialog: the item, an email for the receipt and the store key, then the VietQR code and the note token. */
+function tdShopDialog(){
+  let d = document.getElementById('td-shop-pay');
+  if(d) return d;
+  d = document.createElement('div'); d.id = 'td-shop-pay'; d.className = 'pro-modal-backdrop'; d.hidden = true;
+  d.innerHTML = `<div class="pro-modal td-shop-modal" role="dialog" aria-modal="true" aria-labelledby="tsp-title">
+    <div class="drawer-head"><h2 id="tsp-title"></h2><button class="icon-btn" id="tsp-close" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button></div>
+    <div class="drawer-body">
+    <div id="tsp-step1">
+      <p class="tsp-item"><b id="tsp-name"></b> · <span id="tsp-price"></span></p>
+      <label class="tsp-label"><span id="tsp-email-l"></span><input type="email" id="tsp-email" autocomplete="email"></label>
+      <p class="muted tsp-note" id="tsp-note"></p>
+      <button class="primary-btn" id="tsp-start" type="button" style="width:100%; margin-top:4px"></button>
+      <p class="dock-vis-hint" id="tsp-msg" role="alert" hidden></p>
+    </div>
+    <div id="tsp-step2" hidden>
+      <div class="qr-box" id="tsp-qr"></div>
+      <p class="pay-amount" id="tsp-amount"></p>
+      <div class="pay-token-row"><span class="pay-token" id="tsp-token"></span><button type="button" class="ghost-btn" id="tsp-copy"></button></div>
+      <div class="vietqr-account-details" id="tsp-bank"></div>
+      <p class="dock-vis-hint pay-wait" id="tsp-wait"></p>
+      <p class="dock-vis-hint" style="text-align:center"><button class="ghost-btn" id="tsp-cancel" type="button"></button></p>
+    </div>
+    <details class="tsp-key"><summary id="tsp-key-s"></summary>
+      <div class="tsp-key-row"><input type="text" id="tsp-key" placeholder="SK-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="ghost-btn" id="tsp-key-use" type="button"></button></div>
+      <p class="dock-vis-hint" id="tsp-key-msg"></p>
+    </details>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+  const close = ()=>{ d.hidden = true; clearTimeout(tdShopTimer); };
+  d.addEventListener('click', e=>{ if(e.target === d) close(); });
+  d.querySelector('#tsp-close').addEventListener('click', close);
+  d.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ e.stopPropagation(); close(); } });
+  d.querySelector('#tsp-start').addEventListener('click', tdShopStart);
+  d.querySelector('#tsp-copy').addEventListener('click', ()=>{ const o = TD_STORE.pendingOrder(); if(o && navigator.clipboard) navigator.clipboard.writeText(o.token).then(()=>toast(tdShopVi() ? 'Đã chép' : 'Copied')).catch(()=>{}); });
+  d.querySelector('#tsp-cancel').addEventListener('click', ()=>{ TD_STORE.cancelLocal(); clearTimeout(tdShopTimer); tdShopShow(); });
+  d.querySelector('#tsp-key-use').addEventListener('click', async ()=>{
+    const vi = tdShopVi(), msg = d.querySelector('#tsp-key-msg');
+    try{ const fresh = await TD_STORE.useKey(d.querySelector('#tsp-key').value); msg.textContent = fresh.length ? '' : (vi ? 'Đã dùng mã. Các mục đã có ở đây.' : 'Key in use. Your items are here.'); tdShopShow(); }
+    catch(e){ msg.textContent = e.code === 'bad-key' ? (vi ? 'Mã có dạng SK-XXXX-XXXX-XXXX.' : 'A store key looks like SK-XXXX-XXXX-XXXX.') : e.status === 404 ? (vi ? 'Không có mã này.' : 'No such store key.') : (vi ? 'Chưa kết nối được.' : 'Could not connect.'); }
+  });
+  return d;
+}
+let tdShopItem = null;
+function openTdShopPay(item){
+  tdShopItem = item || null;
+  const d = tdShopDialog(); tdShopShow(); d.hidden = false;
+  const f = d.querySelector(TD_STORE.pendingOrder() ? '#tsp-copy' : '#tsp-email'); if(f) f.focus();
+  if(TD_STORE.pendingOrder()) tdShopPoll(true);
+}
+function tdShopShow(){
+  const d = tdShopDialog(), vi = tdShopVi(), o = TD_STORE.pendingOrder(), it = tdShopItem;
+  const $ = s=>d.querySelector(s);
+  $('#tsp-title').textContent = vi ? 'Mua trong cửa hàng' : 'Buy from the Shop';
+  $('#tsp-name').textContent = it ? it.name : '';
+  $('#tsp-price').textContent = it ? vndFmt(it.price) : '';
+  $('#tsp-email-l').textContent = vi ? 'Email nhận biên nhận và mã cửa hàng' : 'Email for the receipt and your store key';
+  const em = $('#tsp-email'); if(!em.value){ try{ em.value = localStorage.getItem('td_pay_email') || ''; }catch(e){} }
+  $('#tsp-note').textContent = TD_STORE.key()
+    ? (vi ? `Mục này sẽ thêm vào mã cửa hàng ${TD_STORE.key()}.` : `This goes on your store key ${TD_STORE.key()}.`)
+    : (vi ? 'Sau khi thanh toán, bạn nhận một mã cửa hàng để dùng các mục đã mua trên máy khác.' : 'Once paid you get a store key, to use what you bought on another computer too.');
+  $('#tsp-start').textContent = vi ? 'Thanh toán bằng VietQR' : 'Pay with VietQR';
+  $('#tsp-copy').textContent = vi ? 'Chép' : 'Copy';
+  $('#tsp-cancel').textContent = vi ? 'Huỷ đơn này' : 'Cancel this order';
+  $('#tsp-key-s').textContent = TD_STORE.key() ? (vi ? `Mã cửa hàng: ${TD_STORE.key()}` : `Your store key: ${TD_STORE.key()}`) : (vi ? 'Tôi có mã cửa hàng' : 'I have a store key');
+  $('#tsp-key-use').textContent = vi ? 'Dùng mã' : 'Use key';
+  $('#tsp-step1').hidden = !!o || !it; $('#tsp-step2').hidden = !o;
+  if(o){
+    $('#tsp-qr').innerHTML = o.qrUrl ? `<img src="${escHtml(o.qrUrl)}" alt="VietQR">` : '';
+    $('#tsp-amount').textContent = vndFmt(o.amount);
+    $('#tsp-token').textContent = o.token;
+    const b = o.bank || {};
+    $('#tsp-bank').innerHTML = b.account ? `<div class="vietqr-acct-line vietqr-acct-name">${escHtml(b.accountName || '')}</div><div class="vietqr-acct-line vietqr-acct-number">${escHtml(b.account)}</div><div class="vietqr-acct-line">${escHtml(b.bankName || '')}</div>` : '';
+    $('#tsp-wait').textContent = vi ? `Giữ nguyên ${o.token} trong nội dung chuyển khoản. Chúng tôi đối chiếu thủ công, thường trong một ngày làm việc; mục sẽ tự đến đây (và mã cửa hàng được gửi qua email).`
+      : `Keep ${o.token} in the transfer note exactly as it is. We match transfers by hand, usually within one working day; the item then comes here by itself (and your store key is emailed).`;
+  }
+}
+async function tdShopStart(){
+  const d = tdShopDialog(), vi = tdShopVi(), msg = d.querySelector('#tsp-msg'), btn = d.querySelector('#tsp-start');
+  msg.hidden = true;
+  if(!tdShopItem) return;
+  const email = d.querySelector('#tsp-email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg.textContent = t('pay_email_needed'); msg.hidden = false; d.querySelector('#tsp-email').focus(); return; }
+  btn.disabled = true;
+  try{
+    await TD_STORE.order(tdShopItem.key, email, deviceId());
+    try{ localStorage.setItem('td_pay_email', email); }catch(e){}
+    tdShopShow(); tdShopPoll(false);
+  } catch(e){
+    msg.textContent = e.code === 'owned' ? (vi ? 'Mã cửa hàng của bạn đã có mục này.' : 'Your store key already has this.')
+      : e.code === 'payments-off' ? t('pay_off') : e.code === 'too-many-open' ? t('pay_too_many')
+      : e.code === 'not-released' ? (vi ? 'Mục này chưa ra mắt.' : 'This one is not out yet.')
+      : (e.message === 'network' || e.message === 'not-configured') ? t('pro_license_network_error') : t('pay_failed');
+    msg.hidden = false;
+  } finally { btn.disabled = false; }
+}
+function tdShopPoll(now){
+  clearTimeout(tdShopTimer);
+  const d = document.getElementById('td-shop-pay');
+  if(!TD_STORE.pendingOrder() || !d || d.hidden) return;
+  tdShopTimer = setTimeout(async ()=>{
+    try{ const r = await TD_STORE.checkOrder(); if(r && r.status === 'paid'){ tdShopPaid(r); return; } if(!TD_STORE.pendingOrder()) tdShopShow(); }catch(e){}
+    tdShopPoll(false);
+  }, now ? 0 : SHOP_POLL_MS);
+}
+function tdShopPaid(r){
+  const d = document.getElementById('td-shop-pay'); if(d) d.hidden = true;
+  clearTimeout(tdShopTimer);
+  toast(tdShopVi() ? `Đã thanh toán. Mã cửa hàng của bạn: ${r.storeKey}` : `Paid. Your store key: ${r.storeKey}`);
+  if(r.sku) tdShopApply(r.sku);
+}
+
 const proModalBackdrop = document.getElementById('pro-modal-backdrop');
 function openProModal(){
   if(UNI){ toast(t('pro_uni_campus')); return; }   // UniDeck: Pro comes with the campus plan, never bought by a lecturer here
-  if(PF){ toast(t('pro_platform_order', { name: PF.name || 'TeachersDeck' })); return; }   // LMS editions: 1,250,000 VND a teacher a year, by the order form or a quote (owner, 8 Nov 2026)
+  if(PF && !PF.proPurchase){ toast(t('pro_platform_order', { name: PF.name || 'TeachersDeck' })); return; }   // Moodle: 1,250,000 VND a teacher a year, by the order form or a quote (owner, 8 Nov 2026); ClassIn and Canvas sell Pro here (13 Nov 2026)
   const saved = readProOrder();
   if(saved){ showProOrder(saved); } else { buildPayStep1(); showPayStep(1); }
   proModalBackdrop.hidden = false;
@@ -8607,6 +9286,7 @@ document.getElementById('reset-all').addEventListener('click', ()=>{
 /* ---------------- Language: quick toggle + settings pickers ---------------- */
 function setLanguage(code){
   state.lang = code;
+  { const pt = premiumTheme(); themeGreeting(pt ? tdThemeItem(pt.id) : null); }   // the theme's greeting in the new language
   saveState();
   document.documentElement.lang = code;
   localizeNode(document);
@@ -10461,3 +11141,178 @@ function init(){
 // teacher at all, so init() waits for canvas.js to call it. Everywhere else it runs straight away.
 if(PF && PF.deferInit) window.__tdInit = init;
 else init();
+
+/* TEST (branch glass-blue-test): dock styles (js/dockstyle.js) know TeachersDeck's widgets, categories and tray */
+if(typeof DockStyle !== 'undefined'){
+  DockStyle.configure({
+    widgets: () => WIDGETS.filter(w => !isOff(w.id)).map(w => ({ id: w.id, label: widgetLabel(w.labelKey).replace(/^[^\p{L}\p{N}]+/u, ''), icon: iconSvg(w.icon), cat: w.cat })),   // the dock shows its own icon: no leading emoji
+    categories: () => CATEGORIES.map(c => [c.id, t(c.labelKey)]),
+    favourites: () => widgetsFor('bottom').map(w => w.id),
+    isOpen: id => !!widgetEls[id], toggle: id => toggleWidget(id), openTray: () => openAppTray(),
+    labels: state.lang === 'vi'
+      ? { tray:'Tất cả tiện ích', widgets:'Tiện ích', favourites:'Yêu thích', pin:'Giữ mở', unpin:'Thu gọn', classes:'Lớp', theme:'Giao diện',
+          language:'Ngôn ngữ', light:'Sáng', dark:'Tối', settings:'Cài đặt', search:'Tìm tiện ích', searchClass:'Tìm lớp', searchLang:'Tìm ngôn ngữ',
+          noMatch:'Không tìm thấy', noFavs:'Nhấp chuột phải vào tiện ích để thêm vào Yêu thích', more:'Thêm', dragHint:'Kéo một biểu tượng lên vòng để đổi chỗ' }
+      : { tray:'All widgets', widgets:'Widgets', favourites:'Favourites', pin:'Keep open', unpin:'Let it fold', classes:'Classes', theme:'Theme',
+          language:'Language', light:'Light', dark:'Dark', settings:'Settings', search:'Search widgets', searchClass:'Search classes', searchLang:'Search languages',
+          noMatch:'Nothing found', noFavs:'Right-click a widget to add it to Favourites', more:'More', dragHint:'Drag an icon onto the ring to swap it in' },
+    ringDefaults: { tools:['traffic','dice','namepicker','groupmaker','checklist','poll','scoreboard','exitticket'] },   // a fresh install's outer ring, before usage counts
+    nav: {   // menus scope step 2: what the top bar did, inside the sidebar
+      classLabel: () => classDisplayName(activeClass()),
+      classes: () => classes.list.map(c => ({ id: c.id, label: classDisplayName(c), active: c.id === classes.active })),
+      switchClass: id => switchClass(id),
+      languages: () => LANGS.map(l => ({ code: l.code, label: l.name, active: l.code === state.lang })),
+      langLabel: () => (LANGS.find(l => l.code === state.lang) || LANGS[0]).name,
+      setLanguage: code => setLanguage(code),
+      isLight: () => typeof DeckMode !== 'undefined' && DeckMode.get() === 'light',
+      toggleMode: () => { if(typeof DeckMode !== 'undefined') DeckMode.set(DeckMode.get() === 'light' ? 'dark' : 'light'); },
+      openTheme: () => { const b = document.getElementById('btn-theme'); if(b) b.click(); },
+      openSettings: () => { const b = document.getElementById('btn-settings'); if(b) b.click(); },
+      catIcon: id => iconSvg({ time:'clock', media:'musicNote', tools:'clipboard', language:'chat', cloud:'cloud', course:'book' }[id] || 'files'),
+    },
+  });
+  applyTdDock();
+}
+
+/* TEST (branch glass-blue-test), menus scope step 1: the top bar (#dock-top: class, language, theme, Light / Dark,
+   Settings) stays reachable with every dock style. Floating, Magnifying and Circle tuck it away; it drops down when the
+   pointer rests on the top 6 px for 120 ms, closes 600 ms after the pointer leaves (or with Esc), stays down while the
+   class list is open or focus is inside it. Touchscreens get a pull handle at the top centre; Tab opens it.
+   Theme → Dock → Top bar: "Always shown" keeps it visible. Sidebar hides it (its contents move into the sidebar);
+   Standard and Radial keep it as before. */
+var TOPBAR_DROP_STYLES = ['float', 'magnify', 'circle'];
+var topBar = (function(){
+  let edge = null, handle = null, openT = 0, closeT = 0;
+  const bar = () => document.getElementById('dock-top');
+  const isDrop = () => document.body.classList.contains('tb-drop');
+  const menuOpen = () => { const m = document.getElementById('class-menu'); return !!(m && !m.hidden); };
+  function open(){ clearTimeout(closeT); document.body.classList.add('tb-open'); }
+  function close(force){
+    clearTimeout(openT);
+    const b = bar();
+    if(!force && (menuOpen() || (b && b.contains(document.activeElement)))) return;
+    document.body.classList.remove('tb-open');
+  }
+  function laterClose(){ clearTimeout(closeT); closeT = setTimeout(()=>close(false), 600); }
+  function build(){
+    if(edge) return;
+    edge = document.createElement('div'); edge.id = 'tb-edge'; edge.setAttribute('aria-hidden', 'true');
+    edge.addEventListener('mouseenter', ()=>{ if(!isDrop()) return; clearTimeout(openT); openT = setTimeout(open, 120); });
+    edge.addEventListener('mouseleave', ()=>{ clearTimeout(openT); if(!document.body.classList.contains('tb-open')) return; laterClose(); });
+    handle = document.createElement('button'); handle.id = 'tb-handle'; handle.type = 'button';
+    handle.setAttribute('aria-label', state.lang === 'vi' ? 'Mở thanh trên cùng' : 'Show the top bar');
+    handle.addEventListener('click', ()=>{ document.body.classList.contains('tb-open') ? close(true) : open(); });
+    let y0 = null;
+    handle.addEventListener('touchstart', e=>{ y0 = e.touches[0].clientY; }, { passive:true });
+    handle.addEventListener('touchmove', e=>{ if(y0 !== null && e.touches[0].clientY - y0 > 16){ open(); y0 = null; } }, { passive:true });
+    document.body.appendChild(edge); document.body.appendChild(handle);
+    const b = bar();
+    if(b){
+      b.addEventListener('mouseenter', ()=>{ if(isDrop()) clearTimeout(closeT); });
+      b.addEventListener('mouseleave', ()=>{ if(isDrop()) laterClose(); });
+      b.addEventListener('focusin', ()=>{ if(isDrop()) open(); });
+      b.addEventListener('focusout', ()=>{ if(isDrop()) laterClose(); });
+    }
+    document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && isDrop() && document.body.classList.contains('tb-open') && !menuOpen()) close(true); });
+    document.addEventListener('pointerdown', e=>{   // a tap elsewhere folds it (touch has no "pointer leaves")
+      if(!isDrop() || !document.body.classList.contains('tb-open')) return;
+      const b = bar(); if((b && b.contains(e.target)) || e.target === handle || menuOpen()) return;
+      close(true);
+    });
+  }
+  return { build, close };
+})();
+function radialDocks(){ return ['off','compact','keep'].includes(state.radialDocks) ? state.radialDocks : 'off'; }
+function tbDropStyle(){   // a dock style whose top bar tucks away: Floating, Magnifying, Circle, and Radial unless it keeps the docks
+  const s = state.dockStyle || 'standard';
+  return (TOPBAR_DROP_STYLES || ['float','magnify','circle']).includes(s) || (s === 'radial' && radialDocks() !== 'keep');
+}
+function applyTopBarMode(){
+  const s = state.dockStyle || 'standard';
+  document.body.classList.toggle('rad-off', s === 'radial' && radialDocks() === 'off');
+  document.body.classList.toggle('rad-compact', s === 'radial' && radialDocks() === 'compact');
+  const dropStyle = tbDropStyle();
+  const drop = dropStyle && state.topBarMode !== 'shown';
+  document.body.classList.toggle('tb-drop', drop);
+  document.body.classList.toggle('tb-keep', dropStyle && !drop);
+  if(!topBar) return;   // called by applyTdDock() before this part of the file has run; the call below catches up
+  if(drop) topBar.build(); else topBar.close(true);
+}
+applyTopBarMode();
+
+/* Polish phase 5 (TEST): the idle clock. With a premium theme that has a watch face, after a few minutes with no pointer,
+   key or touch (and nothing running: Timer, Stopwatch, Noise Meter), the theme's face fills the screen as a projector
+   screensaver, with the time and date under it. Any move, key or tap brings the wall back. Theme → "Watch face when
+   idle" turns it off. ?idle=10 shortens the wait to 10 seconds for testing. */
+var tdIdle = (function(){   // var: buildPresetSwatches() asks for it before this line runs
+  const q = Number(new URLSearchParams(location.search).get('idle'));
+  const WAIT = (q > 0 && q < 3600 ? q : 180) * 1000;
+  let timer = 0, overlay = null, face = null, tick = 0;
+  function enabled(){ const s = premiumSkins(); return !!(s && s.faces.length) && state.idleClock !== false; }
+  function arm(){ clearTimeout(timer); if(enabled()) timer = setTimeout(show, WAIT); }
+  function show(){
+    if(overlay || !enabled()) return;
+    if(document.body.classList.contains('td-busy') || document.querySelector('.drawer:not([hidden])') || document.hidden){ arm(); return; }
+    const s = premiumSkins(), f = s.faces.find(x => x.key === state.premiumFace) || s.faces[0];
+    overlay = document.createElement('div'); overlay.className = 'td-idle';
+    overlay.innerHTML = '<div class="td-idle-face"></div><div class="td-idle-time"></div><div class="td-idle-date"></div>';
+    document.body.appendChild(overlay);
+    face = StoreCore.mountFace(overlay.querySelector('.td-idle-face'), f, { lang: state.lang === 'vi' ? 'vi' : 'en', reduceMotion: reduceMotionNow() });
+    const tEl = overlay.querySelector('.td-idle-time'), dEl = overlay.querySelector('.td-idle-date');
+    const paint = () => { const d = new Date(); let h = d.getHours() % 12 || 12; tEl.textContent = `${h}:${String(d.getMinutes()).padStart(2,'0')} ${d.getHours() >= 12 ? 'PM' : 'AM'}`; dEl.textContent = d.toLocaleDateString(LOCALE_MAP[state.lang] || 'en-US', { weekday:'long', month:'long', day:'numeric' }); };
+    paint(); tick = setInterval(paint, 15000);
+    requestAnimationFrame(()=> overlay && overlay.classList.add('on'));
+  }
+  function hide(){
+    if(!overlay) return;
+    clearInterval(tick); if(face) face.stop(); face = null;
+    const o = overlay; overlay = null; o.classList.remove('on'); setTimeout(()=> o.remove(), 300);
+  }
+  function wake(){ if(overlay) hide(); arm(); }
+  ['pointermove','pointerdown','keydown','wheel','touchstart'].forEach(ev => document.addEventListener(ev, wake, { passive:true, capture:true }));
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) arm(); });
+  arm();
+  return { arm, hide };
+})();
+function buildIdleSwitch(){
+  const row = document.getElementById('idle-clock-row'); if(!row) return;
+  const s = premiumSkins();
+  row.hidden = !(s && s.faces.length);
+  row.querySelector('span').textContent = state.lang === 'vi' ? 'Hiện mặt đồng hồ khi không dùng' : 'Watch face when idle';
+  const cb = row.querySelector('input'); cb.checked = state.idleClock !== false;
+}
+document.getElementById('idle-clock-toggle')?.addEventListener('change', e=>{ state.idleClock = e.target.checked; saveState(); tdIdle.arm(); });
+buildIdleSwitch();
+
+/* Floating icons (Pro; menus scope, owner 11 Nov 2026): take the panel away behind a dock so its icons float on the
+   wallpaper by themselves, chosen per dock. Each icon keeps a faint backing and a soft shadow so it stays readable
+   on any background (css/premium.css, body.df-*). Without Pro the switches show a Pro badge and open the Pro window. */
+var FLOAT_PARTS = [['bottom', 'Bottom dock', 'Dock dưới'], ['sides', 'Side docks', 'Dock bên'], ['top', 'Top bar', 'Thanh trên'], ['rings', 'Rings', 'Vòng tròn']];
+function applyFloatingIcons(){
+  const f = (isPro() && state.dockFrameless) || {};
+  FLOAT_PARTS.forEach(([k]) => document.body.classList.toggle('df-' + k, !!f[k]));
+}
+function buildFloatingIcons(){
+  const box = document.getElementById('floating-icons'); if(!box || !FLOAT_PARTS) return;   // FLOAT_PARTS is set at the end of this file; the call at startup comes first
+  const vi = state.lang === 'vi', pro = isPro(), f = state.dockFrameless || {};
+  box.innerHTML = '';
+  const head = document.createElement('p'); head.className = 'drawer-label floating-head';
+  head.innerHTML = `<span></span><span class="pro-badge">Pro</span>`;
+  head.querySelector('span').textContent = vi ? 'Biểu tượng nổi (bỏ viền dock)' : 'Floating icons (no dock frame)';
+  box.appendChild(head);
+  const row = document.createElement('div'); row.className = 'topbar-mode floating-opts';
+  FLOAT_PARTS.forEach(([k, en, viL])=>{
+    const b = document.createElement('button'); b.type = 'button';
+    const on = pro && !!f[k];
+    b.className = 'topbar-mode-opt' + (on ? ' active' : '') + (pro ? '' : ' locked'); b.setAttribute('aria-pressed', on);
+    b.textContent = vi ? viL : en;
+    b.addEventListener('click', ()=>{
+      if(!isPro()){ openProModal(); return; }
+      state.dockFrameless = Object.assign({}, state.dockFrameless, { [k]: !f[k] });
+      saveState(); applyFloatingIcons(); buildFloatingIcons();
+    });
+    row.appendChild(b);
+  });
+  box.appendChild(row);
+}
+applyFloatingIcons(); buildFloatingIcons();

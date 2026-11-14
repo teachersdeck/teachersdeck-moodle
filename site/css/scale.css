@@ -1,0 +1,36 @@
+/* UI polish, phase 1: widgets that grow with their window (every theme, free and premium).
+   Display widgets (Clock, Traffic Light, Noise Meter) size their drawing from the window with container units;
+   text widgets are zoomed to fit by attachAutoFit() in js/app.js (the .fit-wrap below), the way Instructions works.
+   Nothing gets smaller than it was: every size has today's value as its minimum. */
+
+.widget:is([data-wid="clock"],[data-wid="traffic"],[data-wid="noise"]) > .widget-body{ container-type:size; }
+
+/* Clock: the face fills what the time and date leave free */
+.widget[data-wid="clock"] > .widget-body{ display:flex; flex-direction:column; align-items:center; }
+.widget[data-wid="clock"] .clock-svg,
+.widget[data-wid="clock"] .skin-face{ display:block; flex:1 1 0; min-height:104px; width:100%; height:auto; margin:0 0 4px; }
+.widget[data-wid="clock"] .clock-digital{ font-size:clamp(22px, 12cqmin, 150px); line-height:1.1; flex:none; }
+.widget[data-wid="clock"] .clock-date{ font-size:clamp(12.5px, 5.5cqmin, 64px); flex:none; }
+.widget[data-wid="clock"] .clock-lunar{ font-size:clamp(11px, 4.5cqmin, 52px); min-height:0; flex:none; }
+.widget[data-wid="clock"] .skin-switch{ flex:none; }
+
+/* Traffic light: the light fills the window above its hint */
+.widget[data-wid="traffic"] > .widget-body{ display:flex; flex-direction:column; align-items:center; }
+.widget[data-wid="traffic"] .tl-svg,
+.widget[data-wid="traffic"] .skin-light{ display:block; flex:1 1 0; min-height:170px; width:100%; height:auto; }
+.widget[data-wid="traffic"] .traffic-hint{ flex:none; font-size:clamp(12px, 4.5cqmin, 40px); margin:8px 0 0; }
+.tl-lamp{ cursor:pointer; }
+.tl-lamp .tl-on, .tl-lamp .tl-glow{ opacity:0; transition:opacity .15s ease; }
+.tl-lamp.on .tl-on{ opacity:1; }
+.tl-lamp.on .tl-glow{ opacity:.85; }
+
+/* Noise meter: the gauge (or the pack's meter) grows with the window; the graph keeps the rest */
+.widget[data-wid="noise"] .noise-gauge{ width:clamp(120px, min(60cqw, 32cqh), 460px); height:clamp(120px, min(60cqw, 32cqh), 460px); }
+.widget[data-wid="noise"] .noise-gauge .noise-db{ font-size:clamp(32px, min(15cqw, 8cqh), 130px); }
+.widget[data-wid="noise"] .noise-gauge .noise-unit{ font-size:clamp(11px, min(4cqw, 2.4cqh), 36px); }
+.widget[data-wid="noise"] .noise-stage.vbar{ height:clamp(140px, 34cqh, 520px); }
+.widget[data-wid="noise"] .noise-skin{ max-width:none; width:100%; height:clamp(180px, 36cqh, 560px); }
+.widget[data-wid="noise"] .noise-stage.skin .noise-db{ font-size:clamp(24px, min(9cqw, 5cqh), 90px); }
+
+/* Text widgets: the zoomed content box (js/app.js attachAutoFit) */
+.fit-wrap{ display:block; box-sizing:border-box; }

@@ -1,0 +1,12 @@
+Fonts in this folder (TeachersDeck premium themes):
+  Mystery Quest (Noel Christmas theme), by Sideshow, and Playfair Display (Tết and other display themes), by Claus
+  Eggers Sørensen. Both from Google Fonts, licensed under the SIL Open Font License 1.1 (https://openfontlicense.org).
+  They may be bundled and redistributed with software; the fonts themselves may not be sold on their own.
+
+Added 13 Nov 2026 (one face per premium theme; latin, latin-ext and Vietnamese subsets), all from Google Fonts under
+the SIL Open Font License 1.1 (https://openfontlicense.org), with the same terms:
+  Lexend (Glass Blue, Ocean Lagoon), by Bonnie Shaver-Troup, Thomas Jockin and others — lexend-*.woff2
+  Comfortaa (Aurora Glass, Garden Mint), by Johan Aakerlund — comfortaa-*.woff2
+  Cormorant Garamond (Ivory Scholar, Frost Glass, Maple Amber), by Christian Thalmann — cormorant-*.woff2
+  Josefin Sans (Obsidian Gold, Northern Lights), by Santiago Orozco — josefin-*.woff2
+  Dancing Script (Cherry Blossom, Mango Sunset), by Pablo Impallari — dancing-*.woff2

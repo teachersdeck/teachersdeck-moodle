@@ -1,0 +1,76 @@
+/* UI polish, phase 4: the free look, tidied (every theme, free and premium; owner 11 Nov 2026: all of it stays free).
+   Built only on the theme tokens (--line, --text-lo, --amber-rgb, --shadow-panel...), so Light mode and premium themes
+   follow without their own rules. Loaded after scale.css and premium.css. */
+
+:root{
+  --ease-out:cubic-bezier(.2,.8,.2,1);   /* one easing curve for the whole app */
+  --t-fast:120ms; --t-mid:200ms; --t-slow:320ms;
+  --radius-panel:16px;                   /* widgets, docks, drawers, panels */
+  --radius-chip:10px;                    /* buttons, pills, dock items */
+}
+
+/* ---------- Corners: three radii for the big surfaces ---------- */
+.widget{ border-radius:var(--radius-panel); }
+.dock, .edge-dock-left, .edge-dock-right, .edge-dock-top{ border-radius:var(--radius-panel); }
+.dock-item, .icon-btn, .class-pill, .wbtn, .dock-top-item{ border-radius:var(--radius-chip); }
+
+/* ---------- Calmer title bars ---------- */
+.widget-head{ font-size:12.5px; font-weight:700; letter-spacing:.2px; padding:10px 10px 9px 12px; }
+@media (hover:hover){
+  .widget-head-actions, .widget-drag{ opacity:0; transition:opacity var(--t-fast) var(--ease-out); }
+  .widget:hover .widget-head-actions, .widget:focus-within .widget-head-actions, .widget.is-front .widget-head-actions,
+  .widget:hover .widget-drag, .widget:focus-within .widget-drag{ opacity:1; }
+}
+
+/* ---------- Depth that means something: the front widget stands forward ---------- */
+.widget{ transition:box-shadow var(--t-mid) var(--ease-out), border-color var(--t-mid) var(--ease-out); }
+.widget.is-front:not(.dragging){
+  box-shadow:var(--shadow-panel), 0 18px 46px rgba(0,0,0,.26);
+  border-color:rgba(var(--amber-rgb), .42);
+}
+html.bento .widget.is-front:not(.dragging){ border-color:var(--bento-line, var(--line)); }   /* tiles: no accent edge in the grid */
+
+/* ---------- Motion: one curve, three durations ---------- */
+@keyframes td-open{ from{ opacity:0; transform:translateY(8px) scale(.97); } to{ opacity:1; transform:none; } }
+.widget.td-opening{ animation:td-open var(--t-mid) var(--ease-out); }
+.drawer{ animation-duration:var(--t-mid); animation-timing-function:var(--ease-out); }
+.dock-item{ transition:background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+.edge-dock{ transition:transform var(--t-mid) var(--ease-out); }
+@media (prefers-reduced-motion:reduce){
+  .widget.td-opening{ animation:none; }
+  .widget, .dock-item, .edge-dock, .widget-head-actions, .widget-drag{ transition:none; }
+}
+
+/* ---------- Better built-in backgrounds: a soft light pool and fine grain (no banding on projectors) ---------- */
+.bg-layer::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(110% 70% at 50% 112%, rgba(255,255,255,.07), transparent 62%),
+    radial-gradient(70% 50% at 12% -8%, rgba(255,255,255,.05), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html[data-mode="light"] .bg-layer::before{
+  background:
+    radial-gradient(110% 70% at 50% 112%, rgba(255,255,255,.55), transparent 62%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .4 0 0 0 0 .4 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html[data-td-bg="image"] .bg-layer::before{ display:none; }   /* your photo is shown as it is */
+/* Paper: a stronger, fibrous grain */
+html[data-td-bgid="paper"] .bg-layer::before{
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.06), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55 .9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+}
+/* Chalkboard: faint chalk dust where the board was wiped */
+html[data-td-bgid="chalkboard"] .bg-layer::before{
+  background:
+    radial-gradient(40% 22% at 28% 30%, rgba(255,255,255,.06), transparent 70%),
+    radial-gradient(36% 18% at 70% 62%, rgba(255,255,255,.05), transparent 70%),
+    radial-gradient(60% 30% at 50% 100%, rgba(255,255,255,.05), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Empty states: one friendly line and a way forward ---------- */
+.td-empty{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:16px 10px 8px; text-align:center; color:var(--text-lo); font-size:13px; line-height:1.45; }
+.td-empty-ic{ font-size:26px; line-height:1; opacity:.85; }
+.td-empty strong{ color:var(--text-hi); font-weight:600; }

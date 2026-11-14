@@ -12,3 +12,17 @@ html[data-mode="light"] .bg-overlay{ background:rgba(255,255,255,0.45); }
 /* The stoplight colours (On track / Monitor / Needs attention) are neon on dark; on a light page they'd be unreadable as
    text and harsh as borders, so Light mode uses deeper versions of the same three. Tile fills keep their soft tints. */
 html[data-mode="light"], html[data-mode="light"] .sx-wrap .sx-tile[data-st]{ --st-good:#15803d; --st-watch:#a16207; --st-bad:#dc2626; }   /* where this app defines them */
+
+/* polish phase 3: the dot on a selected day used a literal the generator turned pale; it is a token now */
+html[data-mode="light"] .cal-cell.selected .cal-dot{ background:#f7f1e9; }
+
+/* polish phase 4, Light contrast check (11 Nov 2026): the generated dark-orange accent reads at about 2.8:1 on the pale
+   top bar; the XP level and badge count take a deeper orange (about 5.6:1). Today's date when it is also the selected
+   day kept "today" orange on the orange cell (1.7:1): the selected day's own text colour wins. */
+html[data-mode="light"] .xp-lv, html[data-mode="light"] #badge-n{ color:#8a5300; }
+html[data-mode="light"] .cal-cell.today.selected{ color:var(--text-on-accent); }
+/* Secondary text (--text-lo) read 4.0 to 4.3:1 on tinted panels (Cloud Class, Notes Home): one step deeper, about 5:1.
+   The roster points, the "quiet" activity line and "Read" were generated light accents (3.0 to 3.6:1): deeper versions. */
+:root:where([data-mode="light"]){ --text-lo:#545a65; }
+html[data-mode="light"] .cc-roster-xp, html[data-mode="light"] .cc-act.quiet{ color:#8a5300; }
+html[data-mode="light"] .nh-status.read{ color:#155f34; }

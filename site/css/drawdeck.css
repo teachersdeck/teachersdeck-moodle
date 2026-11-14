@@ -95,3 +95,9 @@ body.dd-fs .dd-widget .widget-head{ display:none; }
 /* tracing (host.tracing): the letter and number picker */
 .dd-tracegrid{ display:grid; grid-template-columns:repeat(6, 48px); gap:4px; padding:2px 4px 4px; }
 .dd-tch{ text-align:center; font-size:18px; padding:8px 0; }
+
+/* Item Store: bought stickers in the picture menu */
+.dd-stk{display:grid;grid-template-columns:repeat(4,44px);gap:4px;padding:4px 8px 8px}
+.dd-stk-b{width:44px;height:44px;padding:4px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer}
+.dd-stk-b:hover,.dd-stk-b:focus-visible{border-color:var(--gold,#e0a93b);background:rgba(255,255,255,.06)}
+.dd-stk-b svg{width:100%;height:100%;display:block}

@@ -561,6 +561,7 @@ const LOCALE_MAP = { en:'en-US', vi:'vi-VN', es:'es-ES', fr:'fr-FR', zh:'zh-CN',
 const STRINGS = {
   clock:        { en:'⏰ Clock', vi:'Đồng hồ', es:'Reloj', fr:'Horloge', zh:'时钟', ja:'時計', ko:'시계', tl:'Orasan' },
   timer:        { en:'⏱️ Timer', vi:'Hẹn giờ', es:'Temporizador', fr:'Minuteur', zh:'计时器', ja:'タイマー', ko:'타이머', tl:'Timer' },
+  tellingtime:  { en:'🕒 Telling Time', vi:'Xem giờ tiếng Anh' },
   stopwatch:    { en:'⏲️ Stopwatch', vi:'Bấm giờ', es:'Cronómetro', fr:'Chronomètre', zh:'秒表', ja:'ストップウォッチ', ko:'스톱워치', tl:'Stopwatch' },
   traffic:      { en:'🚦 Traffic Light', vi:'Đèn giao thông', es:'Semáforo', fr:'Feu tricolore', zh:'交通灯', ja:'信号機', ko:'신호등', tl:'Ilaw-trapiko' },
   dice:         { en:'🎲 Dice', vi:'Xúc xắc', es:'Dados', fr:'Dés', zh:'骰子', ja:'サイコロ', ko:'주사위', tl:'Dice' },
@@ -1426,6 +1427,7 @@ const ICONS = {
   draw:`<path d="M4 20l1.2-4.3L16 5l3 3L8.3 18.8 4 20Z"/><path d="M14 7l3 3"/><path d="M3 4h6M3 8h3" opacity=".55"/>`,
   stats:`<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>`,
   clock:`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>`,
+  tellingtime:`<circle cx="12" cy="12" r="9"/><path d="M12 6.5V12l-3.8 2.2"/><path d="M12 3v1.6M21 12h-1.6M12 21v-1.6M3 12h1.6"/>`,
   timer:`<path d="M10 2h4"/><path d="M12 6v0"/><circle cx="12" cy="14" r="8"/><path d="M12 14V9"/><path d="M18 6l1.5-1.5"/>`,
   stopwatch:`<circle cx="12" cy="13" r="8"/><path d="M12 13V9"/><path d="M9 3h6"/>`,
   traffic:`<rect x="8" y="2" width="8" height="20" rx="4"/><circle cx="12" cy="6.5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="17.5" r="1.4"/>`,
@@ -1501,6 +1503,7 @@ const WIDGETS = [
   { id:'clock', cat:'time', labelKey:'clock', icon:'clock', w:200, h:222, render:renderClock },
   { id:'timer', cat:'time', labelKey:'timer', icon:'timer', w:220, h:210, render:renderTimer },
   { id:'stopwatch', cat:'time', labelKey:'stopwatch', icon:'stopwatch', w:220, h:280, render:renderStopwatch },
+  { id:'tellingtime', cat:'time', labelKey:'tellingtime', icon:'tellingtime', w:340, h:500, render:renderTellingTime },   // Telling Time (Nov 2026): free; its premium faces are Pro
   { id:'traffic', cat:'tools', labelKey:'traffic', icon:'traffic', w:180, h:250, render:renderTraffic },
   { id:'dice', cat:'tools', labelKey:'dice', icon:'dice', w:200, h:200, render:renderDice },
   { id:'checklist', cat:'tools', labelKey:'checklist', icon:'checklist', w:260, h:270, render:renderChecklist },
@@ -1601,7 +1604,7 @@ const saveWprefs = () => { try{ localStorage.setItem(WPREF_KEY, JSON.stringify(w
 const isOff = id => !KINDER && (!!wprefs.off[id] || !!(PF && PF.hides(id)));   // Kinder: the school decides, so nothing is switched off here   // platform: the widgets this platform leaves out
 const WIDGET_TIERS = {
   core:   ['classbuilder', 'clock', 'timer', 'namepicker', 'groupmaker', 'scoreboard', 'poll', 'attendance', 'traffic', 'noise', 'agenda', 'files', 'calendar', 'assignments', 'progressreports', 'lessonplanner', 'cloudclass', 'rewardpoints', 'noteshome'],
-  keep:   ['checklist', 'games', 'music', 'hallpass', 'qrcode', 'ttsreader', 'convocards', 'idiomday', 'grammarref', 'instructions', 'classactivity', 'stats', 'badgecase', 'drawdeck', 'scrapreview', 'boardreview'],
+  keep:   ['tellingtime', 'checklist', 'games', 'music', 'hallpass', 'qrcode', 'ttsreader', 'convocards', 'idiomday', 'grammarref', 'instructions', 'classactivity', 'stats', 'badgecase', 'drawdeck', 'scrapreview', 'boardreview'],
   shelve: ['stopwatch', 'dice', 'videoplayer', 'soundboard', 'exitticket', 'meet', 'countdown', 'unitconverter', 'announcements', 'readinglog']
 };
 const tierOf = id => Object.keys(WIDGET_TIERS).find(k => WIDGET_TIERS[k].includes(id)) || 'keep';
@@ -2486,6 +2489,19 @@ function renderClock(body){
   return ()=>clearInterval(iv);
 }
 
+/* Telling Time (Nov 2026): the tile is js/tellingtime-tile.js on the engine js/tellingtime.js (the same files in StudentDeck).
+   Free; the premium clock faces follow the Pro gate. Kinder (when it syncs this): o'clock and half past, the basic face. */
+function renderTellingTime(body){
+  if(!window.TellingTimeTile || !window.TellingTime){ body.textContent = 'Telling Time is not in this build.'; return null; }
+  return TellingTimeTile.mount(body, {
+    lang: () => document.documentElement.lang || state.lang,
+    isPro,
+    openPro: () => openProModal('tellingtime'),
+    maxStep: KINDER ? 2 : 6,
+    faces: KINDER ? ['basic'] : null
+  });
+}
+
 function renderTimer(body, ctx){
   body.innerHTML = `
     <div class="big-readout">05:00</div>
@@ -3079,6 +3095,7 @@ Object.assign(STRINGS, {
   wc_instructions:    { en:'Step-by-step directions, with a Vietnamese line.', vi:'Hướng dẫn từng bước, kèm dòng tiếng Việt.' },
   wc_stats:           { en:'Your XP, streaks and activity history.', vi:'XP, chuỗi ngày và lịch sử hoạt động của bạn.' },
   wc_badgecase:       { en:'Your own badge display case — every badge you’ve earned, on shelves.', vi:'Tủ huy hiệu của riêng bạn — mọi huy hiệu bạn đã đạt, trưng bày trên kệ.' },
+  wc_tellingtime:     { en:'Teach telling the time in English: drag the hands, hide and reveal, British or American.', vi:'Dạy xem giờ bằng tiếng Anh: kéo kim, ẩn rồi hiện đáp án, Anh-Anh hoặc Anh-Mỹ.' },
   wc_stopwatch:       { en:'Rarely needed — Timer covers almost every case.', vi:'Ít khi cần — Hẹn giờ đã đáp ứng gần như mọi trường hợp.' },
   wc_dice:            { en:'A novelty; Name Picker and Group Maker cover classroom randomising.', vi:'Chủ yếu để vui; Chọn tên và Chia nhóm đã lo phần ngẫu nhiên.' },
   wc_videoplayer:     { en:'Overlaps Files (open a link) and the browser; local clips are heavy.', vi:'Trùng với Tệp (mở liên kết) và trình duyệt; video cục bộ khá nặng.' },

@@ -38,6 +38,12 @@ window.TD_BUILTIN_GAMES = [
     "instructions": "instructions.html"
   },
   {
+    "name": "Telling Time",
+    "folder": "Telling-Time",
+    "entry": "telling_time.html",
+    "instructions": "instructions.html"
+  },
+  {
     "name": "Number Ninja",
     "folder": "Number-Ninja",
     "entry": "number_ninja.html",

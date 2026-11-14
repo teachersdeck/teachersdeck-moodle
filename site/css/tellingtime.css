@@ -1,0 +1,54 @@
+/* Telling Time tile (js/tellingtime-tile.js). ONE FILE IN EVERY APP THAT HAS THE TILE: teachersdeck/css/tellingtime.css
+   is the copy to edit (tools/check_shared.py). Colours come from the app's own theme variables (--text-hi, --text-lo,
+   --line, --amber), so Light/Dark and premium themes need nothing here. The clock face itself stays light in every
+   theme: it is read from the back of a classroom. */
+.tt-tile{ display:flex; flex-direction:column; gap:6px; height:100%; min-height:0; container-type:size; color:var(--text-hi, inherit); }
+.tt-tile [hidden]{ display:none !important; }
+.tt-tile:fullscreen{ background:var(--bg, #0d1220); padding:3vmin; gap:2vmin; }
+.tt-bar, .tt-actions, .tt-hide, .tt-row{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.tt-spacer{ flex:1; }
+.tt-modes{ display:flex; gap:2px; padding:2px; border-radius:10px; background:rgba(127,127,127,.12); }
+.tt-btn{ font:inherit; font-size:12px; line-height:1.2; color:inherit; background:rgba(127,127,127,.14); border:1px solid var(--line, rgba(127,127,127,.25));
+  border-radius:9px; padding:4px 9px; cursor:pointer; white-space:nowrap; }
+.tt-modes .tt-btn{ border-color:transparent; background:transparent; }
+.tt-btn:hover{ background:rgba(127,127,127,.24); }
+.tt-btn:focus-visible, .tt-face:focus-visible, .tt-clock:focus-visible{ outline:2px solid var(--amber, #E8A33D); outline-offset:2px; }
+.tt-btn.on, .tt-modes .tt-btn.on{ background:var(--amber, #E8A33D); border-color:var(--amber, #E8A33D); color:#1b1206; font-weight:600; }
+.tt-primary{ background:var(--amber, #E8A33D); border-color:var(--amber, #E8A33D); color:#1b1206; font-weight:600; }
+.tt-ico{ padding:4px 7px; }
+.tt-vibtn{ font-weight:700; letter-spacing:.04em; }
+.tt-vibtn[aria-pressed="true"]{ background:#c53030; border-color:#c53030; color:#fff; }   /* the colour of the Vietnamese flag */
+.tt-chip{ font-size:11px; padding:3px 8px; }
+.tt-hide-l{ font-size:11px; color:var(--text-lo, inherit); margin-right:2px; }
+.tt-stage{ position:relative; flex:1 1 auto; min-height:90px; display:flex; align-items:center; justify-content:center; }
+.tt-clockbox{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+.tt-clockbox .tt-clock{ width:100%; height:100%; max-width:100%; max-height:100%; cursor:grab; outline:none; border-radius:50%; }
+.tt-clockbox .tt-clock:active{ cursor:grabbing; }
+.tt-clock.tt-nohands .tt-hand{ visibility:hidden; }
+.tt-count{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
+  font:800 clamp(40px, 30cqmin, 220px)/1 'Baloo 2', Inter, system-ui, sans-serif; color:var(--amber, #E8A33D);
+  text-shadow:0 2px 12px rgba(0,0,0,.35); }
+.tt-read{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:1px; }
+.tt-num{ font:700 clamp(14px, 6cqi, 56px)/1.1 Inter, system-ui, sans-serif; font-variant-numeric:tabular-nums; color:var(--text-lo, inherit); }
+.tt-words{ font:700 clamp(17px, 8cqi, 80px)/1.15 'Baloo 2', Inter, system-ui, sans-serif; }
+.tt-dwords{ font:500 clamp(12px, 4.6cqi, 40px)/1.2 Inter, system-ui, sans-serif; color:var(--text-lo, inherit); min-height:1.2em; }
+.tt-masked{ color:var(--text-lo, inherit); opacity:.7; letter-spacing:.2em; }
+.tt-vi{ margin-top:3px; font-size:clamp(12px, 4.2cqi, 34px); padding:3px 10px; border-radius:8px; background:rgba(197,48,48,.16); border:1px solid rgba(197,48,48,.4); }
+.tt-actions{ justify-content:center; }
+.tt-hide{ justify-content:center; }
+.tt-settings{ display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:10px; background:rgba(127,127,127,.1); border:1px solid var(--line, rgba(127,127,127,.25));
+  max-height:60%; overflow:auto; font-size:12px; }
+.tt-row > span:first-child, .tt-row > label{ min-width:72px; color:var(--text-lo, inherit); }
+.tt-row-top{ align-items:flex-start; }
+.tt-select{ font:inherit; font-size:12px; color:inherit; background:rgba(127,127,127,.14); border:1px solid var(--line, rgba(127,127,127,.25)); border-radius:8px; padding:3px 6px; }
+.tt-select option{ color:#111; }
+.tt-faces{ flex:1; display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:5px; }
+.tt-face{ position:relative; font:inherit; font-size:10px; color:inherit; background:rgba(127,127,127,.1); border:2px solid transparent; border-radius:10px;
+  padding:4px 2px 3px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.tt-face svg{ width:46px; height:46px; }
+.tt-face.on{ border-color:var(--amber, #E8A33D); }
+.tt-face.locked svg{ opacity:.55; }
+.tt-face em{ position:absolute; top:2px; right:3px; font-style:normal; font-size:9px; font-weight:700; padding:0 4px; border-radius:6px;
+  background:var(--amber, #E8A33D); color:#1b1206; }
+.tt-tile:fullscreen .tt-btn{ font-size:clamp(13px, 2vmin, 22px); padding:.4em .9em; }
+@container (max-height: 300px){ .tt-hide{ display:none; } }

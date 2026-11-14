@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telling Time | TeachersDeck</title>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{--stage:#0b1430;--panel:#142250;--panel2:#1c2f6b;--gold:#f5c542;--ink:#eef2ff;--muted:#9fb0d8;--ok:#38c172;--bad:#ef5350;--blue:#4da3ff;--pink:#ff6fae;--mint:#3ddbb0;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--stage);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:'Baloo 2','Inter',sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,.tt-clock:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.hdr{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:3px solid var(--gold)}
+.hdr h1{font-size:1.7rem;color:var(--gold);margin-right:auto}
+.lv{display:flex;gap:4px;background:var(--stage);padding:4px;border-radius:999px}
+.lv button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;color:var(--muted)}
+.lv button.on[data-l=easy]{background:var(--ok);color:#06210f}
+.lv button.on[data-l=moderate]{background:var(--gold);color:#2a2000}
+.lv button.on[data-l=hard]{background:var(--bad);color:#2b0806}
+.hbtn{border:2px solid var(--muted);background:transparent;padding:6px 14px;border-radius:999px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:18px 20px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.stage{background:var(--panel);border-radius:var(--r);padding:22px;min-height:460px}
+.btn{border:0;border-radius:12px;padding:12px 22px;font-weight:700;background:var(--gold);color:#2a2000;font-size:1.05rem}
+.btn.ghost{background:transparent;border:2px solid var(--muted);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.side{background:var(--panel);border-radius:var(--r);padding:16px;align-self:start}
+.side h2{font-size:1.25rem;margin-bottom:10px}
+.team{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;background:var(--panel2);border:3px solid transparent;border-radius:12px;padding:10px;margin-bottom:10px;cursor:pointer}
+.team.act{border-color:var(--gold)}
+.team .nm{font-family:'Baloo 2';font-weight:700;font-size:1.15rem;outline:none;min-width:0}
+.team .sc{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--gold);grid-row:span 2}
+.team .pm{display:flex;gap:6px}
+.team .pm button{border:0;width:34px;height:30px;border-radius:8px;background:var(--stage);font-weight:800}
+.side .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.side .row button{flex:1;font-size:.85rem;padding:8px 10px}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:var(--stage);padding:12px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.ftr{text-align:center;color:var(--muted);font-size:.8rem;padding:14px}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shake{animation:shake .3s}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-weight:600}
+#time{font-size:2.4rem;color:var(--gold)}#time.low{color:var(--bad)}
+#turn{font-family:'Baloo 2';font-size:1.4rem;color:var(--ink)}
+.stats{display:flex;gap:22px;justify-content:center;margin-top:14px;color:var(--muted);font-weight:600}
+.stats b{color:var(--gold);font-family:'Baloo 2';font-size:1.5rem}
+#msg{text-align:center;font-family:'Baloo 2';font-size:1.4rem;min-height:2.1rem;margin-top:12px}
+.ctl{text-align:center;margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#q{text-align:center;font-family:'Baloo 2';font-weight:800;font-size:clamp(1.4rem,3vw,2.2rem);line-height:1.2;margin:8px 0 12px;min-height:1.3em}
+
+/* Telling Time */
+.sty{display:flex;gap:4px;background:var(--stage);padding:4px;border-radius:999px}
+.sb{border:0;background:transparent;padding:5px 12px;border-radius:999px;font-weight:700;color:var(--muted);font-size:.9rem}
+.sb.on{background:var(--blue);color:#06183a}.sb:disabled{cursor:default}.sb:disabled:not(.on){opacity:.45}
+.card{display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:24px;align-items:center;margin-top:6px}
+@media(max-width:700px){.card{grid-template-columns:1fr}}
+.show{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:220px}
+.show .clk{width:100%;max-width:340px;aspect-ratio:1}
+.show .clk svg{width:100%;height:100%;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
+.digi{font-family:'Inter';font-weight:800;font-size:clamp(3rem,8vw,5.5rem);font-variant-numeric:tabular-nums;background:#0f1d24;color:#7cffb2;border:6px solid #2b3f4a;border-radius:22px;padding:6px 26px;letter-spacing:.02em}
+.words{font-family:'Baloo 2';font-weight:800;font-size:clamp(1.8rem,4.6vw,3rem);text-align:center;background:var(--panel2);border-radius:18px;padding:16px 22px;line-height:1.15}
+.tt-act{font-size:clamp(3rem,7vw,4.6rem);line-height:1}   /* not .act: the kit marks the active team with .act */
+.ap{font-weight:700;color:var(--muted)}
+.spk{width:150px;height:150px;border-radius:50%;border:6px solid var(--blue);background:var(--panel2);font-size:4.2rem}
+.spk:hover{background:var(--blue)}
+.sent{font-family:'Baloo 2';font-weight:700;font-size:1.4rem;padding:6px 16px;border-radius:12px}
+.sent.bad{background:rgba(239,83,80,.18);border:2px solid var(--bad);text-decoration:line-through;text-decoration-color:rgba(239,83,80,.8)}
+.ans{display:flex;flex-direction:column;gap:12px}
+.ch{font-family:'Baloo 2';font-weight:700;font-size:clamp(1.15rem,2.2vw,1.6rem);text-align:left;padding:12px 20px;background:var(--panel2);border:3px solid var(--blue);border-radius:16px;line-height:1.2}
+.ch:hover:not(:disabled){background:var(--blue);color:#06183a}
+.ch:disabled{cursor:default}
+.ch.yes{background:var(--ok);border-color:var(--ok);color:#06210f}
+.ch.no{background:var(--bad);border-color:var(--bad);color:#2b0806}
+.target{font-family:'Baloo 2';font-weight:800;font-size:clamp(1.8rem,4vw,2.8rem);color:var(--gold);line-height:1.15}
+.tip{color:var(--muted);font-size:.95rem;margin:0}
+.hint{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
+.hb{display:flex;gap:10px;justify-content:center}
+#viB{border:2px solid #c53030;background:transparent;color:#ffb3b3;font-weight:800;letter-spacing:.06em;border-radius:999px;padding:6px 16px}
+#viB[aria-pressed=true]{background:#c53030;color:#fff}
+#vi{max-width:720px;text-align:center;background:rgba(197,48,48,.15);border:1px solid rgba(197,48,48,.5);border-radius:12px;padding:10px 16px;font-size:1.05rem;line-height:1.45}
+[hidden]{display:none!important}
+</style></head><body>
+<div id="td-header"></div>
+<div class="wrap">
+<main class="stage">
+<div class="top"><span id="prog"></span><span id="turn"></span><span class="sty" id="sty" role="group" aria-label="English style"></span><span id="time" class="disp"></span></div>
+<div id="q">Ready?</div>
+<div class="card"><div class="show" id="show"></div><div class="ans" id="ans"></div></div>
+<div id="msg" role="status"></div>
+<div class="hint"><div class="hb"><button id="viB" type="button" hidden title="Gợi ý tiếng Việt" lang="vi">VI</button><button class="btn ghost" id="next" type="button" hidden>Next &rarr;</button></div><div id="vi" lang="vi" hidden></div></div>
+<div class="ctl" id="ctl"></div>
+<div class="stats"><span>Right <b id="nr">0</b></span><span>Streak <b id="ns">0</b></span><span>Best streak <b id="nb">0</b></span></div>
+</main>
+<aside id="td-teams"></aside>
+</div>
+<div class="ftr">A TeachersDeck game</div>
+<div id="toast" role="status"></div>
+<script src="telling_time.js"></script>
+</body></html>

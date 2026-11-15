@@ -10,3 +10,8 @@ the SIL Open Font License 1.1 (https://openfontlicense.org), with the same terms
   Cormorant Garamond (Ivory Scholar, Frost Glass, Maple Amber), by Christian Thalmann — cormorant-*.woff2
   Josefin Sans (Obsidian Gold, Northern Lights), by Santiago Orozco — josefin-*.woff2
   Dancing Script (Cherry Blossom, Mango Sunset), by Pablo Impallari — dancing-*.woff2
+
+Added 15 Nov 2026, from Google Fonts under the SIL Open Font License 1.1 (https://openfontlicense.org), same terms:
+  Baloo 2 (Noel Christmas: body text, and the Vietnamese letters Mystery Quest lacks), by Ek Type — baloo-2-*.woff2
+  (copyright 2019 The Baloo 2 Project Authors, https://github.com/EkType/Baloo2)
+  M PLUS Rounded 1c (Matcha Fuji), by Coji Morishita and M+ Fonts Project, regular weight — mplus-rounded-*.woff2

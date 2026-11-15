@@ -1,0 +1,33 @@
+/* A premium theme's own artwork (js/themeart.js sets --td-art-<slot> from the theme pack and lists the slots it has in
+   html[data-td-art]). Under the widgets, never in Light mode or print, and nothing here catches clicks.
+   The same file in TeachersDeck, StudentDeck and ParentDeck; the window corner and Clock badge are in each app's
+   premium.css, because their windows are built differently. */
+#td-deco{ position:fixed; inset:0; z-index:1; pointer-events:none; display:none; overflow:hidden; }
+html[data-td-art]:not([data-mode="light"]) #td-deco{ display:block; }
+#td-deco > *{ display:none; position:absolute; }
+/* scene: drawn wide (1600 x 900, its own preserveAspectRatio) and anchored to the bottom; drift: 2400 x 300 clouds,
+   repeated sideways and sliding left one full width every 4 minutes */
+html[data-td-art~="scene"] #td-deco .dc-scene{ display:block; inset:0; background:var(--td-art-scene) center bottom/cover no-repeat; }
+html[data-td-art~="drift"] #td-deco .dc-drift{ display:block; left:0; right:0; top:6%; height:300px; background:var(--td-art-drift) 0 0/auto 100% repeat-x; animation:dc-drift 240s linear infinite; }
+@keyframes dc-drift{ from{ background-position:0 0; } to{ background-position:-2400px 0; } }
+/* sail: boats on the scene's water. The scene covers the screen from the bottom, so one scene unit is --sc; the strip
+   sits with its bottom at scene y 790, two drawings wide, and slides one drawing left every 7 minutes */
+html[data-td-art~="sail"] #td-deco .dc-sail{ --sc:max(100vw / 1600, 100vh / 900); display:block; left:0; bottom:calc(var(--sc) * 110); height:calc(var(--sc) * 160);
+  width:calc(var(--sc) * 4800); background:var(--td-art-sail) 0 0/50% 100% repeat-x; animation:dc-sail 420s linear infinite; }
+@keyframes dc-sail{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+html[data-td-art~="tile"] #td-deco .dc-tile{ display:block; inset:0; background:var(--td-art-tile) repeat; }
+html[data-td-art~="band"] #td-deco .dc-band{ display:block; left:0; right:0; top:0; height:28px; background:var(--td-art-band) repeat-x 0 0/auto 100%; filter:drop-shadow(0 3px 4px rgba(0,0,0,.25)); }
+html[data-td-art~="hang"] #td-deco .dc-hang{ display:block; top:-6px; width:84px; height:150px; background:var(--td-art-hang) center top/contain no-repeat;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.35)); transform-origin:50% 0; }
+html[data-td-art~="hang"] #td-deco .dc-hang.h1{ left:27%; animation:dc-sway 6s ease-in-out infinite; }
+html[data-td-art~="hang"] #td-deco .dc-hang.h2{ left:68%; animation:dc-sway 7s ease-in-out -2s infinite; }
+html[data-td-art~="band"][data-td-art~="hang"] #td-deco .dc-hang{ top:4px; }   /* hung from the bunting */
+html[data-td-art~="bottom"] #td-deco .dc-bottom{ display:block; left:0; right:0; bottom:0; height:150px; background:var(--td-art-bottom) center bottom/100% 100% no-repeat; }
+html[data-td-art~="fall"] #td-deco .dc-fall{ display:block; inset:0; }
+#td-deco .dc-fall i{ position:absolute; top:0; width:14px; height:14px; background:var(--td-art-fall) center/contain no-repeat; animation:dc-fall 14s linear infinite; }
+@keyframes dc-sway{ 0%,100%{ transform:rotate(-3deg); } 50%{ transform:rotate(3deg); } }
+@keyframes dc-fall{ 0%{ transform:translateY(-10vh) rotate(0); opacity:0; } 10%{ opacity:.9; } 100%{ transform:translateY(105vh) rotate(260deg); opacity:.2; } }
+@media (max-width:700px){ html[data-td-art~="drift"] #td-deco .dc-drift{ height:200px; animation-name:dc-drift-s; } html[data-td-art~="hang"] #td-deco .dc-hang{ width:56px; height:100px; } html[data-td-art~="bottom"] #td-deco .dc-bottom{ height:96px; } }
+@keyframes dc-drift-s{ from{ background-position:0 0; } to{ background-position:-1600px 0; } }
+@media (prefers-reduced-motion:reduce){ #td-deco *{ animation:none !important; } }
+@media print{ #td-deco{ display:none !important; } }

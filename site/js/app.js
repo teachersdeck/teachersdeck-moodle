@@ -8413,7 +8413,7 @@ const SKIN_PROPS = ['--sk-ink0','--sk-ink1','--sk-ink2','--sk-ink3','--sk-card',
 function applySkin(item){
   const root = document.documentElement, pt = premiumTheme();
   const tk = item ? item.tokens : (!pt && PRESET_SKINS[state.theme]) || null;
-  ensureDeco(); root.dataset.tdDeco = (item && item.deco) || 'none';
+  themeArt(item);   // the theme's own artwork from its pack, and its finishing touches (data-td-deco)
   themeGreeting(item);
   if(!tk){ delete root.dataset.tdSkin; SKIN_PROPS.forEach(k=>root.style.removeProperty(k)); return; }
   const bgs = tk.bgs, acc = tk.acc, accRgb = skinRgb(acc), mix = (rgb, w) => rgb.split(',').map(v=>Math.round(+v + (255 - +v) * w)).join(',');
@@ -8448,19 +8448,10 @@ function themeGreeting(item){
   el.querySelector('.tg-badge').textContent = (vi ? 'Cao cấp · ' : 'Premium · ') + ((vi && pt.nameVi) || pt.name);
   root.dataset.tdGreet = '1';
 }
-/* The decoration layer (css/premium.css shows the set the theme names: snow = Noel, lanterns = Tết). Built once. */
-function ensureDeco(){
-  if(document.getElementById('td-deco')) return;
-  const d = document.createElement('div'); d.id = 'td-deco'; d.setAttribute('aria-hidden', 'true');
-  const lantern = cls => `<svg class="dc-lantern ${cls}" viewBox="0 0 84 150"><line x1="42" y1="0" x2="42" y2="22" stroke="#f0c34e" stroke-width="2.5"/><rect x="28" y="20" width="28" height="9" rx="3" fill="#f0c34e"/><ellipse cx="42" cy="66" rx="36" ry="40" fill="#d4202c" stroke="#f0c34e" stroke-width="3"/>` +
-    [-22,-8,8,22].map(dx=>`<path d="M${42+dx} 28 Q${42+dx*1.5} 66 ${42+dx} 104" fill="none" stroke="#f0c34e" stroke-width="1.6" opacity=".75"/>`).join('') +
-    `<ellipse cx="30" cy="52" rx="8" ry="14" fill="#fff" opacity=".18"/><rect x="28" y="104" width="28" height="9" rx="3" fill="#f0c34e"/><line x1="42" y1="113" x2="42" y2="140" stroke="#f0c34e" stroke-width="2.5"/><path d="M36 140 L42 150 L48 140 Z" fill="#f0c34e"/></svg>`;
-  let flames = ''; for(let i = 0; i < 26; i++){ const x = i * 40 - 10, h = 70 + ((i * 37) % 60); flames += `<path d="M${x} 150 Q${x+10} ${150-h*0.55} ${x+22} ${150-h} Q${x+30} ${150-h*0.5} ${x+44} 150 Z" fill="${i%2?'#e0581f':'#b8341a'}" opacity="${i%3?0.85:0.7}"/>`; }
-  for(let i = 0; i < 26; i++){ const x = i * 40 + 6, h = 40 + ((i * 23) % 40); flames += `<path d="M${x} 150 Q${x+8} ${150-h*0.6} ${x+16} ${150-h} Q${x+22} ${150-h*0.5} ${x+32} 150 Z" fill="#f2a33a" opacity=".85"/>`; }
-  let petals = ''; for(let i = 0; i < 14; i++) petals += `<i style="left:${(i * 7.3 + 3) % 100}%;animation-delay:${-(i * 1.9).toFixed(1)}s;animation-duration:${12 + (i % 5) * 2}s"></i>`;
-  d.innerHTML = `<div class="dc-bunting"></div><div class="dc-snow"></div>${lantern('l1')}${lantern('l2')}<svg class="dc-flames" viewBox="0 0 1040 150" preserveAspectRatio="none">${flames}</svg><div class="dc-petals">${petals}</div>`;
-  const bg = document.getElementById('bg-overlay') || document.getElementById('bg-layer');
-  if(bg && bg.parentNode) bg.parentNode.insertBefore(d, bg.nextSibling); else document.body.prepend(d);
+/* A premium theme's artwork (js/themeart.js draws what its pack carries; css/themeart.css places it). */
+function themeArt(item) {
+  if (typeof TDThemeArt === 'undefined') { document.documentElement.dataset.tdDeco = (item && item.deco) || 'none'; return; }
+  TDThemeArt.apply(item, d => { const bg = document.getElementById('bg-overlay') || document.getElementById('bg-layer'); if (bg && bg.parentNode) bg.parentNode.insertBefore(d, bg.nextSibling); else document.body.prepend(d); });
 }
 
 async function initCustomBg(){

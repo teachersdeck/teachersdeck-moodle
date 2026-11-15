@@ -65,14 +65,18 @@
     system: 'system-ui, -apple-system, "Segoe UI", sans-serif',
     serif: 'Georgia, "Times New Roman", serif',
     display: '"Playfair Display", Georgia, "Times New Roman", serif',
-    rounded: 'Nunito, "Segoe UI Rounded", system-ui, sans-serif',
-    hand: '"Mystery Quest", "Segoe Print", "Comic Sans MS", cursive',   // Noel; bundled where an app ships fonts/ (TeachersDeck)
+    // 15 Nov 2026: Noel's body face is Baloo 2 (bundled, with Vietnamese; Nunito was never bundled, so it fell back to
+    // the system font). Mystery Quest has no Vietnamese letters, so Baloo 2 draws those (Giáng Sinh, Đồng hồ).
+    rounded: '"Baloo 2", Nunito, "Segoe UI Rounded", system-ui, sans-serif',
+    hand: '"Mystery Quest", "Baloo 2", "Segoe Print", "Comic Sans MS", cursive',   // Noel; bundled where an app ships fonts/
     // 13 Nov 2026: a face of its own for every premium theme (SIL OFL, with Vietnamese; bundled in TeachersDeck's fonts/)
     modern: 'Lexend, "Segoe UI", system-ui, sans-serif',
     soft: 'Comfortaa, "Segoe UI Rounded", system-ui, sans-serif',
     classic: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
     deco: '"Josefin Sans", "Segoe UI", system-ui, sans-serif',
     script: '"Dancing Script", "Segoe Script", cursive',
+    // 15 Nov 2026 (Matcha Fuji): M PLUS Rounded 1c, a soft rounded face with a Japanese feel (bundled, with Vietnamese)
+    matcha: '"M PLUS Rounded 1c", Comfortaa, "Segoe UI Rounded", system-ui, sans-serif',
   };
   var THEME_TOKENS = ['bg', 'bgs', 'card', 'line', 'ink', 'muted', 'acc', 'bb', 'bt', 'dock', 'hov'];
   var THEME_DECOS = ['none', 'snow', 'lanterns'];
@@ -86,6 +90,23 @@
     if (cs.length < 2 || cs.length > WALLPAPER_SHADERS[w.shader] || !cs.every(function (c) { return typeof c === 'string' && HEX6_RE.test(c); })) return null;
     var num = function (v, lo, hi, d) { v = Number(v); return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
     return { shader: w.shader, colors: cs.map(function (c) { return c.toLowerCase(); }), speed: num(w.speed, 0, 2, 0.5), scale: num(w.scale, 0.25, 4, 1) };
+  }
+  // A theme's own artwork (15 Nov 2026: Noel, Tết): SVG drawings the apps' js/themeart.js shows as images in fixed
+  // places, so a pack brings its decorations instead of naming ones built into the app. Every slot is optional; each
+  // drawing passes checkSkinSvg like a watch face (defined below, hoisted).
+  // scene + drift (Matcha Fuji): a full-screen landscape behind everything and clouds drifting across the sky;
+  // sail (Hạ Long Jade): boats sliding slowly along the scene's water line.
+  // A slot an app does not know yet is left out (so a newer pack still works in an older app); a bad drawing refuses.
+  var ART_SLOTS = ['scene', 'drift', 'sail', 'tile', 'band', 'hang', 'bottom', 'corner', 'badge', 'fall'];
+  function validateThemeArt(a) {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return null;
+    var out = {}, n = 0;
+    for (var k in a) {
+      if (!Object.prototype.hasOwnProperty.call(a, k) || ART_SLOTS.indexOf(k) < 0) continue;
+      if (checkSkinSvg(a[k])) return null;
+      out[k] = a[k].trim(); n++;
+    }
+    return n ? out : null;
   }
   function validateThemeItem(r, where, errors) {
     var nm = bilingual(r.name); if (!nm) { errors.push(where + '.name'); return null; }
@@ -112,6 +133,7 @@
       fontBody: THEME_FONTS[r.fontBody] ? r.fontBody : 'system',
       deco: THEME_DECOS.indexOf(r.deco) >= 0 ? r.deco : 'none',
     };
+    if (r.art !== undefined) { var art = validateThemeArt(r.art); if (!art) { errors.push(where + '.art'); return null; } item.art = art; }
     if (wallpaper) item.wallpaper = wallpaper;
     if (greeting) item.greeting = greeting;   // only when the theme has one, so older packs stay byte-for-byte the same
     return item;
@@ -175,6 +197,16 @@
     if (stack.length) return 'nesting';
     return null;
   }
+  // A face may carry one picture (15 Nov 2026: the Deckie faces): a WebP or PNG as a base64 data URL, placed by the app
+  // (drawInto) where the drawing has <rect data-img>. The drawing itself still allows no images or links; a picture
+  // can't run anything. Checked by its type and its first bytes, and kept small.
+  var MAX_IMG = 240000;   // characters of data URL (about 175 KB of picture)
+  var IMG_RE = /^data:image\/(webp|png);base64,[A-Za-z0-9+\/]+={0,2}$/;
+  function checkFaceImg(src) {
+    if (typeof src !== 'string' || src.length > MAX_IMG || !IMG_RE.test(src)) return false;
+    var b = src.slice(src.indexOf(',') + 1, src.indexOf(',') + 13);
+    return src.indexOf('image/webp') === 5 ? b.indexOf('UklGR') === 0 : b.indexOf('iVBORw0KGgo') === 0;
+  }
   function hasHook(svg, attr, value) { return new RegExp('\\s' + attr + '="' + value + '"').test(svg); }
 
   function validateSkinItem(kind, r, where, errors) {
@@ -188,6 +220,10 @@
       it.form = FACE_FORMS.indexOf(r.form) >= 0 ? r.form : 'watch';
       if (it.style === 'analogue' && !(hasHook(svg, 'data-h', 'hh') && hasHook(svg, 'data-h', 'mh'))) { errors.push(where + ':no-hands'); return null; }
       if (it.style === 'digital' && !/\sdata-f="(time|time12|time24)"/.test(svg) && !/\sdata-seg="[Hh]1"/.test(svg)) { errors.push(where + ':no-time'); return null; }
+      if (r.img !== undefined) {
+        if (!checkFaceImg(r.img) || !/<rect\s[^>]*data-img=/.test(svg)) { errors.push(where + '.img'); return null; }
+        it.img = r.img;
+      }
     } else if (kind === 'meter') {
       if (!hasHook(svg, 'data-h', 'needle')) { errors.push(where + ':no-needle'); return null; }
       var sw = Number(r.sweep);
@@ -274,6 +310,15 @@
     container.innerHTML = scopeSvg(item.svg, 'sk' + (++seq) + '-');   // validated data, ids scoped
     var svg = container.querySelector('svg');
     if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.setAttribute('preserveAspectRatio', 'xMidYMid meet'); }
+    // A face's picture goes where the drawing marks it (under the hands, inside any clip of that group)
+    var spot = svg && item.img && checkFaceImg(item.img) ? svg.querySelector('rect[data-img]') : null;
+    if (spot) {
+      var im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      ['x', 'y', 'width', 'height'].forEach(function (a) { im.setAttribute(a, spot.getAttribute(a) || '0'); });
+      im.setAttribute('preserveAspectRatio', spot.getAttribute('data-fit') === 'slice' ? 'xMidYMax slice' : 'xMidYMax meet');
+      im.setAttribute('href', item.img);
+      spot.parentNode.insertBefore(im, spot);
+    }
     return svg;
   }
   function pivotOf(el) { var c = (el.getAttribute('data-c') || '200 200').split(/[\s,]+/).map(Number); return (c[0] || 0) + ' ' + (c[1] || 0); }
@@ -289,6 +334,7 @@
       case 'ampm': return h < 12 ? 'AM' : 'PM';
       case 'day': return (DAYS[lang] || DAYS.en)[d.getDay()];
       case 'date': return pad(d.getDate());
+      case 'md': return pad(d.getMonth() + 1) + '/' + pad(d.getDate());   // 11/09 (the Deckie Squad)
       case 'dmy': return pad(d.getDate()) + '-' + pad(d.getMonth() + 1) + '-' + String(d.getFullYear()).slice(2);
       default: return '';
     }
@@ -368,7 +414,7 @@
   }
 
   return {
-    FORMAT: FORMAT, TIERS: TIERS, SKIN_KINDS: SKIN_KINDS, DOCK_STYLES: DOCK_STYLES, FACE_FORMS: FACE_FORMS, THEME_TOKENS: THEME_TOKENS, THEME_FONTS: THEME_FONTS, WALLPAPER_SHADERS: WALLPAPER_SHADERS, MAX_SVG: MAX_SVG,
+    FORMAT: FORMAT, TIERS: TIERS, SKIN_KINDS: SKIN_KINDS, DOCK_STYLES: DOCK_STYLES, FACE_FORMS: FACE_FORMS, THEME_TOKENS: THEME_TOKENS, THEME_FONTS: THEME_FONTS, WALLPAPER_SHADERS: WALLPAPER_SHADERS, ART_SLOTS: ART_SLOTS, MAX_IMG: MAX_IMG, checkFaceImg: checkFaceImg, MAX_SVG: MAX_SVG,
     isColor: isColor, isGradient: isGradient, checkSkinSvg: checkSkinSvg, validateStorePack: validateStorePack,
     themeVars: themeVars, themeBackground: themeBackground, scopeSvg: scopeSvg, slotText: slotText, handAngles: handAngles, segDigit: segDigit, litSegments: litSegments,
     mountFace: mountFace, mountMeter: mountMeter, mountLight: mountLight,

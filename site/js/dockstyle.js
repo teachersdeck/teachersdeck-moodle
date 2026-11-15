@@ -11,6 +11,10 @@
  *            and a gear inside, icons only; the chosen list outside, at most 8 + More (menus scope, owner 11 Nov 2026)
  *   radial   right-click (or long-press) on an empty part of the wall opens the same two rings at the pointer; the
  *            standard docks stay
+ * addInner(item) adds a segment of the app's own to the inner ring of both (the Whiteboard background's markers, Nov 2026:
+ * one corner button for the Circle dock and the whiteboard): { key, visible(), label(), icon, buttons() -> [{ key, label,
+ * icon, on, lock, dis, close, act() }] }. Its outer ring is those buttons. A right-click or long-press on the whiteboard
+ * while a marker is out draws instead of opening the Radial rings.
  * Esc or a click outside closes a ring; Tab moves through every button. */
 (function (root) {
   'use strict';
@@ -319,7 +323,8 @@
     ids[i] = b; ids[j] = a;
     var all = readJSON(ORDER_KEY); all[key] = ids; writeJSON(ORDER_KEY, all);
   }
-  var ring = { armed: null, idleT: 0 };
+  var ring = { armed: null, idleT: 0 }, extras = [];
+  function addInner(item) { extras = extras.filter(function (x) { return x.key !== item.key; }).concat([item]); }
   function closeRingPanel() { if (nodes.ringPanel) { nodes.ringPanel.remove(); nodes.ringPanel = null; } }
   function closeRings() {
     closeRingPanel(); clearTimeout(ring.idleT); ring.armed = null;
@@ -365,6 +370,7 @@
     var n = nav(), veil = el('div', 'dk-veil');
     var cats = cfg.categories().filter(function (c) { return cfg.widgets().some(function (w) { return w.cat === c[0]; }); });
     var inner = [{ key: 'fav', label: L('favourites'), icon: IC.star }].concat(cats.map(function (c) { return { key: 'cat:' + c[0], label: c[1], icon: (n.catIcon && n.catIcon(c[0])) || IC.folder }; }));
+    extras.forEach(function (x) { if (!x.visible || x.visible()) inner.push({ key: 'x:' + x.key, label: x.label(), icon: x.icon, extra: x }); });
     if (n.openSettings || n.openTheme || n.languages) inner.push({ key: 'gear', label: L('settings'), icon: IC.gear });
     var W = window.innerWidth, H = window.innerHeight, R1 = 70, R2 = 146, pad = R2 + 34;
     cx = Math.max(pad, Math.min(W - pad, cx)); cy = Math.max(pad, Math.min(H - pad, cy));
@@ -417,6 +423,14 @@
       var idx = 0; inner.forEach(function (it, i) { if (it.key === key) idx = i; });
       Array.prototype.forEach.call(rg.querySelectorAll('.dk-cat'), function (b, j) { b.classList.toggle('on', j === idx); b.setAttribute('aria-expanded', String(j === idx)); });
       var mid = idx * 360 / inner.length, btns = [];
+      if (inner[idx] && inner[idx].extra) {
+        inner[idx].extra.buttons().forEach(function (x) {
+          var b = action(x.icon, x.label, function () { if (x.dis) return; x.act(); if (x.close) closeRings(); else show(key); });
+          if (x.on) b.classList.add('on'); if (x.lock) b.classList.add('wb-lock'); if (x.dis) b.classList.add('wb-dis');
+          b.dataset.x = x.key; btns.push(b);
+        });
+        return lay(btns, mid);
+      }
       if (key === 'gear') {
         if (n.classes) btns.push(action(IC.people, n.classLabel ? n.classLabel() : L('classes'), function (b) { listPanel(L('classes'), n.classes().map(function (c) { return { label: c.label, on: c.active, icon: IC.people, act: function () { n.switchClass(c.id); updateNavRows(); } }; }), b); }));
         if (n.openTheme) btns.push(action(IC.theme, L('theme'), function () { closeRings(); n.openTheme(); }));
@@ -505,6 +519,7 @@
     if (style !== 'radial') return;
     var wall = document.getElementById('wall');
     if (!wall || !wall.contains(e.target) || e.target.closest('.widget,.panel,[data-widget],input,textarea,[contenteditable]')) return;
+    if (e.target.closest('.dd-wall:not(.dd-wall-off)')) return;   // a marker is out on the whiteboard: the press draws
     e.preventDefault(); openRings(e.clientX, e.clientY);
   }
   function onDown(e) {
@@ -552,5 +567,5 @@
     document.addEventListener('contextmenu', onContext);
     document.addEventListener('pointerdown', onDown); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
   }
-  root.DockStyle = { STYLES: STYLES, MAX_DOCK: MAX_DOCK, configure: configure, apply: apply, refresh: refresh, foldSidebar: function () { foldAll(true); }, current: function () { return style; }, openRings: openRings, closeRings: closeRings };
+  root.DockStyle = { STYLES: STYLES, MAX_DOCK: MAX_DOCK, configure: configure, apply: apply, refresh: refresh, foldSidebar: function () { foldAll(true); }, current: function () { return style; }, openRings: openRings, closeRings: closeRings, addInner: addInner };
 })(typeof self !== 'undefined' ? self : this);

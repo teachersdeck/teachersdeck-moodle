@@ -79,6 +79,7 @@ function setLicense(l){
   state.license = l;
   writeSharedLicense(l);
   saveState();
+  if(typeof TDWhiteboard !== 'undefined') TDWhiteboard.refreshTier();
 }
 
 function loadClasses(){
@@ -1475,8 +1476,36 @@ function iconSvg(name, cls=''){
 /* Each widget: id, label, icon, w/h default, render(body, ctx) */
 /* DrawDeck (v0.22.0): full-screen whiteboard + mind map + flowchart. The widget lives in js/drawdeck.js; this is only the glue. */
 Object.assign(STRINGS, DrawDeck.strings);
+/* Whiteboard background (Nov 2026, hq/docs/WHITEBOARD-SCOPE.md): DrawDeck's engine on the wall, under the widgets, with a
+   corner radial menu (js/whiteboard.js). Picked in Theme → Backgrounds; state.whiteboard is per class (so is its board). */
+if(typeof TDWhiteboard !== 'undefined'){
+  Object.assign(STRINGS, TDWhiteboard.strings);
+  TDWhiteboard.setup({
+    t, toast: (m, ms) => toast(m, ms), idb: () => idb,
+    tier: () => (isPro() || (typeof TD_STORE !== 'undefined' && TD_STORE.has('whiteboard-premium')) ? 'pro' : 'free'),   // Pro includes it, or the store key owns it (250,000 VND)
+    classId: () => activeClassId(), className: () => classDisplayName(activeClass()),
+    get: k => state[k], set: (k, v) => { state[k] = v; saveState(); },
+    wanted: () => !!state.whiteboard,
+    // TinyTeachersDeck: bigger free markers (8 px), DrawDeck's preschool tools in the bars, an adult clears the board
+    preschool: KINDER, markerSize: KINDER ? 2 : undefined,
+    adultGate: KINDER ? () => (window.KinderAdultGate ? window.KinderAdultGate() : false) : null,
+    onLocked: () => openWhiteboardOffer(),
+    // "Open in DrawDeck" (premium): the full DrawDeck opens on this class's whiteboard board; the wall comes back when it closes
+    openFull: id => {
+      try{ const p = JSON.parse(localStorage.getItem('td_drawdeck_v1') || '{}') || {}; p.last = id; localStorage.setItem('td_drawdeck_v1', JSON.stringify(p)); }catch(e){}
+      TDWhiteboard.suspend();
+      if(!widgetEls.drawdeck) toggleWidget('drawdeck'); else TDWhiteboard.resume();
+    },
+    cloudClassId: () => (!KINDER && typeof TDCloud !== 'undefined' && TDCloud.isConfigured() && TDCloud.getSession() && state.cloudClassId) ? state.cloudClassId : null,
+    share: (dataUrl) => TDCloud.shareBoard(state.cloudClassId, dataUrl),
+    stopShare: () => TDCloud.stopSharingBoard(state.cloudClassId),
+    assignBoard: (title, thumbDataUrl, imageDataUrl) => TDCloud.assignBoard(state.cloudClassId, title, thumbDataUrl, imageDataUrl),
+    watermark: (typeof Watermark !== 'undefined') ? Watermark : null,
+    download: (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+  });
+}
 function renderDrawDeck(body, ctx){
-  return DrawDeck.mount(body, {
+  const off = DrawDeck.mount(body, {
     t, toast,
     tracing: KINDER,   // TinyTeachersDeck: tracing pages for letters, numbers, names, strokes and shapes
     preschool: KINDER, kidModeSwitch: KINDER,   // drawing only, the preschool maths and templates; Kid Mode for a child at the screen
@@ -1497,6 +1526,8 @@ function renderDrawDeck(body, ctx){
     // "Assign this page to students" (v0.29.0, backend v2.9.0) — DrawDeck scope step D.
     assignBoard: (title, thumbDataUrl, imageDataUrl) => TDCloud.assignBoard(state.cloudClassId, title, thumbDataUrl, imageDataUrl)
   });
+  // the Whiteboard background lent its board to this DrawDeck ("Open in DrawDeck"): it takes it back when DrawDeck closes
+  return () => { off(); if(typeof TDWhiteboard !== 'undefined') setTimeout(() => TDWhiteboard.resume(), 0); };
 }
 
 const WIDGETS = [
@@ -8343,6 +8374,7 @@ function applyTheme(){
   }
   applyWallpaper(tItem, photo);
   bgOverlay.classList.toggle('no-dim', !state.dim);
+  if(typeof TDWhiteboard !== 'undefined') TDWhiteboard.sync(!!state.whiteboard);
 }
 /* 13 Nov: a premium theme's animated wallpaper (js/wallpaper.js) over its CSS gradient, which stays underneath as the
    fallback. Only with the theme's own background, in dark mode, and while "Moving wallpaper" is on (Theme menu). */
@@ -8545,7 +8577,9 @@ function setUiTheme(id){
   saveState(); applyTheme(); buildPresetSwatches();
   if(was || premiumSkins()) refreshSkinnedWidgets();
 }
-function useBackground(kind, presetId){   // kind: 'theme' (the premium theme's own) | 'preset'
+function useBackground(kind, presetId){   // kind: 'theme' (the premium theme's own) | 'preset' | 'whiteboard'
+  if(kind === 'whiteboard'){ state.whiteboard = true; saveState(); applyTheme(); buildPresetSwatches(); return; }   // over the current background (Premium: "ink on my background")
+  state.whiteboard = false;
   if(sessionBgUrl){ URL.revokeObjectURL(sessionBgUrl); sessionBgUrl = null; }
   state.customBg = false;
   state.bgTheme = kind === 'theme';
@@ -8597,14 +8631,16 @@ function buildPresetSwatches(){
   // Background row: the theme's own background (premium themes only), then the six presets; your image is the upload below
   const grid = document.getElementById('theme-presets');
   grid.innerHTML = '';
-  const opts = (pt ? [{ kind:'theme', p:pt, title: vi ? 'Nền của giao diện' : "Theme's background" }] : [])
+  const wbOk = typeof TDWhiteboard !== 'undefined' && !document.documentElement.classList.contains('bento');
+  const opts = (wbOk ? [{ kind:'whiteboard', p:{ id:'whiteboard', css:'#fff' }, title: t('wb_name') }] : [])
+    .concat(pt ? [{ kind:'theme', p:pt, title: vi ? 'Nền của giao diện' : "Theme's background" }] : [])
     .concat(PRESETS.filter(p=>!p.premium).map(p=>({ kind:'preset', p, title:p.name || p.id })));
   opts.forEach(o=>{
     const sw = document.createElement('div');
-    const on = !photo && (o.kind === 'theme' ? (pt && state.bgTheme) : (!(pt && state.bgTheme) && state.theme === o.p.id));
-    sw.className = 'swatch' + (o.kind === 'theme' ? ' premium theme-bg' : '') + (on ? ' active' : '');
-    sw.style.background = presetBg(o.p);
-    sw.title = o.title;
+    const on = o.kind === 'whiteboard' ? !!state.whiteboard : (!state.whiteboard && !photo && (o.kind === 'theme' ? (pt && state.bgTheme) : (!(pt && state.bgTheme) && state.theme === o.p.id)));
+    sw.className = 'swatch' + (o.kind === 'theme' ? ' premium theme-bg' : '') + (o.kind === 'whiteboard' ? ' wb-swatch' : '') + (on ? ' active' : '');
+    sw.style.background = o.kind === 'whiteboard' ? '#fff' : presetBg(o.p);
+    sw.title = o.title; sw.setAttribute('role', 'button'); sw.setAttribute('aria-label', o.title); sw.setAttribute('aria-pressed', String(!!on));
     sw.addEventListener('click', ()=> useBackground(o.kind, o.p.id));
     grid.appendChild(sw);
   });
@@ -8641,6 +8677,7 @@ document.getElementById('bg-upload').addEventListener('change', async e=>{
   const file = e.target.files[0];
   e.target.value = '';   // lets the same file be picked again later
   if(!file) return;
+  state.whiteboard = false;   // your image is a background of its own (Premium Whiteboard can write over it: "ink on my background")
   // 1) Show it right away, straight from the picked file — this doesn't depend
   //    on any browser storage, so the background always changes.
   if(sessionBgUrl) URL.revokeObjectURL(sessionBgUrl);
@@ -9048,9 +9085,10 @@ function pollProOrder(){
 const tdShopVi = () => state.lang === 'vi';
 const SHOP_POLL_MS = 20000;
 let tdShopTimer = null, tdShopCatalog = null;
-if(typeof TD_STORE !== 'undefined' && TD_STORE.enabled){
+if(typeof TD_STORE !== 'undefined' && (TD_STORE.enabled || TD_STORE.features)){   // features: the Premium Whiteboard, in every edition that takes payments
   TD_STORE.setCaller(callLicenseFn);
   TD_STORE.onArrive(tdStoreArrived);
+  TD_STORE.onChange(() => { if(typeof TDWhiteboard !== 'undefined') TDWhiteboard.refreshTier(); });
   setTimeout(()=>{ (TD_STORE.pendingOrder() ? TD_STORE.checkOrder().then(r=>{ if(r && r.status === 'paid') tdShopPaid(r); }) : TD_STORE.refresh()).catch(()=>{}); }, 1500);
 }
 /** Bought packs came down: the app takes them in without a reload. */
@@ -9063,8 +9101,16 @@ function tdStoreArrived(fresh){
   const appName = (window.DECK_EDITION && DECK_EDITION.name) || 'TeachersDeck';   // LectureDeck, TinyTeachersDeck
   if(names) toast((tdShopVi() ? `Đã có trong ${appName}: ` : `Now in ${appName}: `) + names);
 }
+/** The Premium Whiteboard (owner, 15 Nov 2026): a locked whiteboard button offers it. 250,000 VND on the store key, or
+    TeachersDeck Pro, which includes it. The pay dialog is the Shop's; the price here is only shown (the server prices). */
+const WB_SKU = 'whiteboard-premium', WB_PRICE = 250000;
+function openWhiteboardOffer(){
+  if(typeof TD_STORE === 'undefined' || !TD_STORE.features){ toast(t('wb_locked'), 5000); openProModal(); return; }
+  openTdShopPay({ key: WB_SKU, name: t('wb_premium'), price: WB_PRICE, blurb: t('wb_premium_blurb'), altPro: !isPro() && !UNI && !(PF && !PF.proPurchase) });
+}
 /** Puts on what was just bought (or picked from what the key owns). */
 function tdShopApply(sku){
+  if(sku === WB_SKU){ if(typeof TDWhiteboard !== 'undefined'){ TDWhiteboard.refreshTier(); } toast(t('wb_premium_on')); return; }
   const pack = (window.TD_PREMIUM_PACKS || []).find(p=>p && p.id === sku); if(!pack) return;
   const it = pack.items[0];
   if(pack.kind === 'theme'){ setUiTheme(it.id); }
@@ -9103,6 +9149,8 @@ function tdShopDialog(){
     <div class="drawer-body">
     <div id="tsp-step1">
       <p class="tsp-item"><b id="tsp-name"></b> · <span id="tsp-price"></span></p>
+      <p class="muted tsp-blurb" id="tsp-blurb" hidden></p>
+      <p class="tsp-alt" id="tsp-alt" hidden><span id="tsp-alt-t"></span> <button class="ghost-btn" id="tsp-alt-pro" type="button"></button></p>
       <label class="tsp-label"><span id="tsp-email-l"></span><input type="email" id="tsp-email" autocomplete="email"></label>
       <p class="muted tsp-note" id="tsp-note"></p>
       <button class="primary-btn" id="tsp-start" type="button" style="width:100%; margin-top:4px"></button>
@@ -9128,6 +9176,7 @@ function tdShopDialog(){
   d.querySelector('#tsp-close').addEventListener('click', close);
   d.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ e.stopPropagation(); close(); } });
   d.querySelector('#tsp-start').addEventListener('click', tdShopStart);
+  d.querySelector('#tsp-alt-pro').addEventListener('click', ()=>{ close(); openProModal(); });
   d.querySelector('#tsp-copy').addEventListener('click', ()=>{ const o = TD_STORE.pendingOrder(); if(o && navigator.clipboard) navigator.clipboard.writeText(o.token).then(()=>toast(tdShopVi() ? 'Đã chép' : 'Copied')).catch(()=>{}); });
   d.querySelector('#tsp-cancel').addEventListener('click', ()=>{ TD_STORE.cancelLocal(); clearTimeout(tdShopTimer); tdShopShow(); });
   d.querySelector('#tsp-key-use').addEventListener('click', async ()=>{
@@ -9150,6 +9199,8 @@ function tdShopShow(){
   $('#tsp-title').textContent = vi ? 'Mua trong cửa hàng' : 'Buy from the Shop';
   $('#tsp-name').textContent = it ? it.name : '';
   $('#tsp-price').textContent = it ? vndFmt(it.price) : '';
+  $('#tsp-blurb').hidden = !(it && it.blurb); $('#tsp-blurb').textContent = (it && it.blurb) || '';
+  $('#tsp-alt').hidden = !(it && it.altPro && !o); $('#tsp-alt-t').textContent = t('wb_pro_alt'); $('#tsp-alt-pro').textContent = t('wb_see_pro');
   $('#tsp-email-l').textContent = vi ? 'Email nhận biên nhận và mã cửa hàng' : 'Email for the receipt and your store key';
   const em = $('#tsp-email'); if(!em.value){ try{ em.value = localStorage.getItem('td_pay_email') || ''; }catch(e){} }
   $('#tsp-note').textContent = TD_STORE.key()

@@ -792,6 +792,12 @@
 :where(html[data-mode="light"]) .dd-stk-b:focus-visible{
   background:rgba(15,23,42,0.066);
 }
+:where(html[data-mode="light"]) .dd-wall.dd-wall-chrome .dd-top,
+:where(html[data-mode="light"]) .dd-wall.dd-wall-chrome .dd-rail,
+:where(html[data-mode="light"]) .dd-wall.dd-wall-chrome .dd-bottom{
+  background:var(--ink-2, rgba(241,242,245,0.92));
+  box-shadow:0 8px 28px rgba(0,0,0,0.158);
+}
 
 /* ---- css/light.extra.css (hand-written) ---- */
 /* TeachersDeck — hand-written part of css/light.css (tools/gen_light_css.py appends this file).

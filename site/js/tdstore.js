@@ -28,6 +28,10 @@
   // premium themes, faces and docks here: DECK_EDITION.store); ?store=1 tries the Shop anywhere else (testing only).
   var ED = root.DECK_EDITION || {};
   var enabled = !!(PF && PF.store) || !!ED.store || q.get('store') === '1';
+  // Features (15 Nov 2026, the Premium Whiteboard, 250,000 VND): a store key and an order work in every TeachersDeck
+  // that can take a payment, even where the Shop of themes is off (plain TeachersDeck: its themes come built in).
+  // Not where the platform sends teachers to an order form instead (Moodle: proPurchase false and no store).
+  var features = enabled || !PF || !!PF.proPurchase;
   function read() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
   function write(d) { try { localStorage.setItem(LS, JSON.stringify(d)); } catch (e) { /* storage off: the items stay for this visit */ } }
   var data = read();
@@ -39,11 +43,13 @@
     Object.keys(data.packs).forEach(function (id) { if (!list.some(function (p) { return p && p.id === id; })) list.push(data.packs[id]); });
   }
 
-  var caller = null, arrive = [];
+  var caller = null, arrive = [], changed = [];
+  function fireChanged() { changed.forEach(function (fn) { try { fn(); } catch (e) { /* one listener failing never stops another */ } }); }
   function call(name, body) { if (!caller) return Promise.reject(new Error('not-configured')); return caller(name, body); }
 
   function key() { return data.key || null; }
   function owned() { return (data.skus || []).slice(); }
+  function has(sku) { return (data.skus || []).indexOf(sku) >= 0; }
   function catalog() { return call('getTeacherStore', { storeKey: data.key || undefined }); }
 
   function addPacks(packs) {
@@ -66,6 +72,7 @@
       data.skus = r.skus || [];
       write(data);
       if (fresh.length) arrive.forEach(function (fn) { try { fn(fresh); } catch (e) { /* one listener failing never stops another */ } });
+      fireChanged();
       return fresh;
     });
   }
@@ -102,10 +109,11 @@
   function cancelLocal() { data.order = null; write(data); }
 
   root.TD_STORE = {
-    enabled: enabled,
+    enabled: enabled, features: features,
     setCaller: function (fn) { caller = fn; },
-    key: key, owned: owned, catalog: catalog, refresh: refresh, useKey: useKey,
+    key: key, owned: owned, has: has, catalog: catalog, refresh: refresh, useKey: useKey,
     order: order, pendingOrder: pendingOrder, checkOrder: checkOrder, cancelLocal: cancelLocal,
     onArrive: function (fn) { arrive.push(fn); },
+    onChange: function (fn) { changed.push(fn); },   // after every refresh (what the key owns may have changed)
   };
 })(typeof window !== 'undefined' ? window : this);

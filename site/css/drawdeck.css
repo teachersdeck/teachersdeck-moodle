@@ -101,3 +101,16 @@ body.dd-fs .dd-widget .widget-head{ display:none; }
 .dd-stk-b{width:44px;height:44px;padding:4px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer}
 .dd-stk-b:hover,.dd-stk-b:focus-visible{border-color:var(--gold,#e0a93b);background:rgba(255,255,255,.06)}
 .dd-stk-b svg{width:100%;height:100%;display:block}
+
+/* ================= Whiteboard background (DrawDeck surface:'wall', Nov 2026) =================
+   The engine fills the element the host gives it (the wall layer, under the widgets). The stage is the whole layer and never
+   changes size, so ink keeps its place; DrawDeck's own bars only float over it (chrome(true): the Pro tools panel). */
+.dd-root.dd-wall{ position:absolute; inset:0; display:block; background:transparent; }
+.dd-wall .dd-main{ position:absolute; inset:0; display:block; }
+.dd-wall .dd-stage{ position:absolute; inset:0; background:transparent; }
+.dd-wall .dd-top, .dd-wall .dd-rail, .dd-wall .dd-bottom, .dd-wall .dd-hint, .dd-wall .dd-unfocus{ display:none; }
+.dd-wall.dd-wall-off .dd-canvas{ cursor:auto; }
+.dd-wall.dd-wall-chrome .dd-top, .dd-wall.dd-wall-chrome .dd-rail, .dd-wall.dd-wall-chrome .dd-bottom{ display:flex; position:absolute; z-index:3; border:1px solid var(--line); border-radius:14px; background:var(--ink-2, rgba(20,24,32,.92)); box-shadow:0 8px 28px rgba(0,0,0,.35); backdrop-filter:blur(10px); }
+.dd-wall.dd-wall-chrome .dd-top{ top:10px; left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); }
+.dd-wall.dd-wall-chrome .dd-rail{ top:64px; left:10px; max-height:calc(100% - 150px); }
+.dd-wall.dd-wall-chrome .dd-bottom{ bottom:10px; left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); }

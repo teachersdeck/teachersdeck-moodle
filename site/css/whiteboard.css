@@ -1,0 +1,63 @@
+/* ================= Whiteboard background (Nov 2026; js/whiteboard.js, the DrawDeck engine's surface:'wall') =================
+   The ink layer is #wall's first child: widgets (z 11+), the document stage and pinned widgets paint above it. */
+.wall-ink{ position:absolute; inset:0; z-index:0; }
+.wall-ink .dd-root{ font-size:13px; }
+
+/* the premium bars (DrawDeck's own, "All drawing tools"): a layer above the widgets, under the corner button and rings;
+   placed below TeachersDeck's top bar and clear of its docks */
+.wall-ink-bars{ position:fixed; inset:0; z-index:40; pointer-events:none; }
+.wall-ink-bars > .dd-root.dd-wall-bars{ position:absolute; inset:0; pointer-events:none; }
+.dd-wall-bars > *{ pointer-events:auto; }
+.dd-wall-bars.dd-wall-chrome .dd-top{ top:64px; }
+.dd-wall-bars.dd-wall-chrome .dd-bottom{ bottom:118px; }   /* above the bottom dock */
+.dd-wall-bars.dd-wall-chrome .dd-rail{ top:140px; left:76px; max-height:calc(100% - 290px); }
+body.dk-sidebar .dd-wall-bars.dd-wall-chrome .dd-rail{ left:124px; }
+
+/* the Premium Whiteboard offer in the Shop's pay dialog */
+.tsp-blurb{ margin:4px 0 10px; font-size:13px; line-height:1.45; }
+.tsp-alt{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px; font-size:13px; }
+
+/* on a white board the top bar's bare text (title, XP and streak pills) would vanish: give it the panels' plate */
+body.wb-light .topbar > .brand, body.wb-light .topbar > .xp-pill, body.wb-light .topbar > .badge-chip{
+  background:rgba(18,22,30,.86); border-radius:999px; padding:5px 12px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+html[data-mode="light"] body.wb-light .topbar > :is(.brand,.xp-pill,.badge-chip){ background:rgba(255,255,255,.92); box-shadow:0 2px 10px rgba(0,0,0,.12); }
+
+/* glass widgets (Glass Blue and the other premium themes) are nearly clear: over a white board their light text washes
+   out, so in dark mode they get a solid, dark glass while the board is white */
+html:not([data-mode="light"]) body.wb-light #wall > .widget{ background-color:rgba(18,26,40,.92) !important; }
+html:not([data-mode="light"]) body.wb-light #wall > .widget.is-front{ background-color:rgba(18,26,40,.95) !important; }
+
+/* the corner button: the dock launcher's look (css/dockstyle.css), bottom-left; the Circle dock style owns it when on */
+.wb-launcher{ left:calc(22px + env(safe-area-inset-left,0px)); right:auto; }
+.wb-launcher svg{ width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.wb-launcher.wb-active{ box-shadow:0 0 0 4px var(--wb-ink, rgba(255,255,255,.85)), 0 10px 26px rgba(0,0,0,.4); }
+body.dk-circle .wb-launcher{ display:none; }
+body.dk-sidebar .wb-launcher{ left:calc(78px + env(safe-area-inset-left,0px)); }
+body.dd-fs .wb-launcher{ display:none; }
+
+/* ring buttons */
+.wb-rings .dk-cat .dk-ic, .wb-rings .dk-wid .dk-ic{ display:grid; place-items:center; }
+.wb-rings .dk-cat svg, .wb-rings .dk-wid svg, .wb-rings .dk-hub svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.wb-dot{ display:block; width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,.85); box-shadow:0 0 0 1px rgba(0,0,0,.35); }
+.dk-cat.on .wb-dot{ border-color:#10131a; }
+.wb-lock{ position:absolute; }
+.wb-lock-ic{ position:absolute; right:-4px; top:-4px; width:18px; height:18px; border-radius:50%; background:var(--amber, #E8A33D); color:#1b1306; display:grid; place-items:center; }
+.wb-lock-ic svg{ width:11px !important; height:11px !important; stroke-width:2.4 !important; }
+.wb-dis{ opacity:.38; cursor:default; }
+
+/* surface choices */
+.wb-sf{ width:22px; height:22px; border-radius:5px; border:1px solid rgba(0,0,0,.25); background:#fff; }
+.wb-sf-chalk{ background:#22332c; }
+.wb-sf-grid{ background:#fff linear-gradient(#dfe4ec 1px, transparent 1px) 0 0/6px 6px, #fff linear-gradient(90deg, #dfe4ec 1px, transparent 1px) 0 0/6px 6px; }
+.wb-sf-graph{ background:#fff linear-gradient(#c5d0e2 1px, transparent 1px) 0 0/11px 11px, #fff linear-gradient(90deg, #c5d0e2 1px, transparent 1px) 0 0/11px 11px; }
+.wb-sf-lined{ background:#fff linear-gradient(#cfdcf0 1px, transparent 1px) 0 0/100% 6px; }
+.wb-sf-writing{ background:#fff linear-gradient(#a9c0e4 1px, transparent 1px) 0 2px/100% 8px; }
+.wb-sf-dots{ background:#fff radial-gradient(#b9c2d3 1px, transparent 1.4px) 0 0/6px 6px; }
+.wb-sf-axes{ background:#fff linear-gradient(#1a1a1a, #1a1a1a) 50% 0/1.5px 100% no-repeat, linear-gradient(#1a1a1a, #1a1a1a) 0 50%/100% 1.5px no-repeat; }
+
+/* the Whiteboard swatch in Theme → Backgrounds */
+.swatch.wb-swatch{ background:#fff !important; position:relative; }
+.swatch.wb-swatch::after{ content:""; position:absolute; inset:22% 14%; background:
+  linear-gradient(#1a1a1a, #1a1a1a) 0 20%/62% 2px no-repeat,
+  linear-gradient(#1e88e5, #1e88e5) 0 50%/82% 2px no-repeat,
+  linear-gradient(#e53935, #e53935) 0 80%/46% 2px no-repeat; }

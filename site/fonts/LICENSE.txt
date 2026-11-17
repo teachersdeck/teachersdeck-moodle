@@ -15,3 +15,10 @@ Added 15 Nov 2026, from Google Fonts under the SIL Open Font License 1.1 (https:
   Baloo 2 (Noel Christmas: body text, and the Vietnamese letters Mystery Quest lacks), by Ek Type — baloo-2-*.woff2
   (copyright 2019 The Baloo 2 Project Authors, https://github.com/EkType/Baloo2)
   M PLUS Rounded 1c (Matcha Fuji), by Coji Morishita and M+ Fonts Project, regular weight — mplus-rounded-*.woff2
+
+Added 17 Nov 2026 (the interface fonts, bundled instead of fetched from Google Fonts each time an app opens; latin,
+latin-ext and Vietnamese subsets), from Google Fonts under the SIL Open Font License 1.1 (https://openfontlicense.org),
+same terms; css/tokens.css declares them:
+  Quicksand (titles, buttons, numbers), by Andrew Paglinawan and The Quicksand Project Authors — quicksand-*.woff2
+  Inter (reading text), by Rasmus Andersson and The Inter Project Authors — inter-*.woff2
+  Kalam (handwritten labels; regular and bold, no Vietnamese subset), by Indian Type Foundry — kalam-*.woff2

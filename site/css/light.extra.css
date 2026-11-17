@@ -11,7 +11,8 @@
 html[data-mode="light"] .bg-overlay{ background:rgba(255,255,255,0.45); }
 /* The stoplight colours (On track / Monitor / Needs attention) are neon on dark; on a light page they'd be unreadable as
    text and harsh as borders, so Light mode uses deeper versions of the same three. Tile fills keep their soft tints. */
-html[data-mode="light"], html[data-mode="light"] .sx-wrap .sx-tile[data-st]{ --st-good:#15803d; --st-watch:#a16207; --st-bad:#dc2626; }   /* where this app defines them */
+html[data-mode="light"], html[data-mode="light"] .sx-wrap .sx-tile[data-st],
+html[data-mode="light"] .sx-wrap, html[data-mode="light"] .ss-stlegend{ --st-good:#15803d; --st-watch:#a16207; --st-bad:#dc2626; }   /* where this app defines them */
 
 /* polish phase 3: the dot on a selected day used a literal the generator turned pale; it is a token now */
 html[data-mode="light"] .cal-cell.selected .cal-dot{ background:#f7f1e9; }

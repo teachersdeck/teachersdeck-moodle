@@ -15,6 +15,7 @@ html[data-td-skin]:not([data-mode="light"]){
   --amber:var(--sk-acc);
   --amber-hi:var(--sk-acc-hi);
   --amber-rgb:var(--sk-acc-rgb);        /* polish phase 3: every accent in style.css reads these */
+  --tk-accent:var(--sk-acc); --tk-accent-hi:var(--sk-acc-hi); --tk-accent-rgb:var(--sk-acc-rgb); --tk-accent-hi-rgb:var(--sk-acc-hi-rgb);   /* cleanup Phase 2: the tokens follow the theme too, so shared rules can use them */
   --amber-hi-rgb:var(--sk-acc-hi-rgb);
   --text-on-accent:var(--sk-on);
   --text-on-accent-rgb:var(--sk-on-rgb);

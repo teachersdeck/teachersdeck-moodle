@@ -345,7 +345,7 @@ if(!state.nhLayoutV21){ state.nhLayoutV21 = true; const nl = state.layout && sta
    ========================================================= */
 // v2.3.0: real subscription pricing (official pricing sheet). VND only; must equal the quote engine and the backend's
 // payments.js PRICES (the server prices every order; these are only shown).
-const PRO_PRICING_VND = { monthly: 240000, annual: 2100000, founding: 1300000 };
+const PRO_PRICING_VND = { monthly: 120000, annual: 1050000, founding: 650000 };   // halved (owner, 18 Nov 2026)
 // v0.41.0: paid by VietQR only, with a note token per order (createOrder). The bank account comes from the backend,
 // so the order form, the HSBC constants and the Stripe/card link are gone.
 

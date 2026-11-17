@@ -364,6 +364,10 @@ const PRO_WIDGETS_DECIDED = [
 const PRO_WIDGET_IDS = PRO_GATE ? PRO_WIDGETS_DECIDED : [];
 function isPro(){ return !PRO_GATE || !!(state.license && state.license.pro) || !!(PF && PF.schoolPro && state.school && state.school.pro); }   // platform (Canvas): school-level Pro
 function isProWidget(id){ return PRO_WIDGET_IDS.includes(id); }
+// Floating dock icons are premium even while the Pro gate is off (owner, 18 Nov 2026): a real Pro licence (or the
+// school's), or an owned dock style from the store. Everyone else has the standard dock.
+function ownsFloatingDocks(){ return !!(state.license && state.license.pro) || !!(PF && PF.schoolPro && state.school && state.school.pro)
+  || (typeof TD_STORE !== 'undefined' && typeof TD_STORE.has === 'function' && ['dock-float', 'dock-magnify', 'dock-sidebar', 'dock-circle', 'dock-radial'].some(s => TD_STORE.has(s))); }
 
 // ---- License key format: TDPRO-AAAA-BBBB-CCCC ----------------------------
 // A shape check only, so a mistyped key is rejected instantly without a round
@@ -11332,12 +11336,12 @@ buildIdleSwitch();
    on any background (css/premium.css, body.df-*). Without Pro the switches show a Pro badge and open the Pro window. */
 var FLOAT_PARTS = [['bottom', 'Bottom dock', 'Dock dưới'], ['sides', 'Side docks', 'Dock bên'], ['top', 'Top bar', 'Thanh trên'], ['rings', 'Rings', 'Vòng tròn']];
 function applyFloatingIcons(){
-  const f = (isPro() && state.dockFrameless) || {};
+  const f = (ownsFloatingDocks() && state.dockFrameless) || {};
   FLOAT_PARTS.forEach(([k]) => document.body.classList.toggle('df-' + k, !!f[k]));
 }
 function buildFloatingIcons(){
   const box = document.getElementById('floating-icons'); if(!box || !FLOAT_PARTS) return;   // FLOAT_PARTS is set at the end of this file; the call at startup comes first
-  const vi = state.lang === 'vi', pro = isPro(), f = state.dockFrameless || {};
+  const vi = state.lang === 'vi', pro = ownsFloatingDocks(), f = state.dockFrameless || {};
   box.innerHTML = '';
   const head = document.createElement('p'); head.className = 'drawer-label floating-head';
   head.innerHTML = `<span></span><span class="pro-badge">Pro</span>`;
@@ -11350,7 +11354,7 @@ function buildFloatingIcons(){
     b.className = 'topbar-mode-opt' + (on ? ' active' : '') + (pro ? '' : ' locked'); b.setAttribute('aria-pressed', on);
     b.textContent = vi ? viL : en;
     b.addEventListener('click', ()=>{
-      if(!isPro()){ openProModal(); return; }
+      if(!ownsFloatingDocks()){ openProModal(); return; }
       state.dockFrameless = Object.assign({}, state.dockFrameless, { [k]: !f[k] });
       saveState(); applyFloatingIcons(); buildFloatingIcons();
     });

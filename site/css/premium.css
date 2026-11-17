@@ -31,7 +31,7 @@ html[data-td-skin]:not([data-mode="light"]){
   --bento-label:var(--sk-muted);
   --bento-glass:var(--sk-dock);
   --bento-glass-line:var(--sk-line);
-  --bento-pop:var(--sk-ink1);
+  --bento-pop:var(--sk-ink1); --tk-surface-0:var(--sk-ink0); --tk-surface-1:var(--sk-ink1); --tk-surface-2:var(--sk-ink2); --tk-surface-3:var(--sk-ink3); --tk-line:var(--sk-line); --tk-text-hi:var(--sk-ink); --tk-text-lo:var(--sk-muted); --tk-text-on-accent:var(--sk-on); --tk-text-on-accent-rgb:var(--sk-on-rgb); --tk-teal:var(--sk-acc); --tk-radius-panel:var(--sk-radius); --tk-radius-chip:12px; --tk-shadow-panel:0 14px 34px rgba(var(--sk-shadow-rgb),.45), 0 2px 6px rgba(var(--sk-shadow-rgb),.3);   /* cleanup Phase 2: the tokens follow too */
 }
 html[data-td-skin]:not([data-mode="light"]) body{ background:var(--sk-ink0); }
 

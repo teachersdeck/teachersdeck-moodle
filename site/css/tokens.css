@@ -63,6 +63,17 @@
   --tk-radius-chip: 10px;
   --tk-shadow-panel: 0 12px 30px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25);
 
+  /* windows (owner's decision, 17 Nov 2026: the staff windows' structure, the family windows' bigger buttons) */
+  --tk-win-btn: 26px;
+  --tk-win-icon: 15px;
+  --tk-win-glass: 86%;
+  /* docks (owner's decisions, 18 Nov 2026): each palette its own panel colour; a side dock's buttons as wide as the
+     bottom dock's */
+  --tk-dock-btn: 72px;
+  --tk-dock-bg: rgba(17,22,29,.72);
+  --tk-edge-bg: rgba(17,22,29,.78);
+  --tk-edge-shadow: var(--tk-shadow-panel);          /* how much of the panel colour a window shows; the rest is the blurred wall behind */
+
   /* fonts: always through these, so the fallbacks are the same everywhere */
   --tk-font-ui:'Quicksand', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --tk-font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

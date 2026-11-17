@@ -24,6 +24,8 @@ html[data-mode="light"] .xp-lv, html[data-mode="light"] #badge-n{ color:#8a5300;
 html[data-mode="light"] .cal-cell.today.selected{ color:var(--text-on-accent); }
 /* Secondary text (--text-lo) read 4.0 to 4.3:1 on tinted panels (Cloud Class, Notes Home): one step deeper, about 5:1.
    The roster points, the "quiet" activity line and "Read" were generated light accents (3.0 to 3.6:1): deeper versions. */
-:root:where([data-mode="light"]){ --text-lo:#545a65; }
+:root:where([data-mode="light"]){ --text-lo:#545a65;
+  --tk-text-lo:#545a65;   /* cleanup Phase 2: the token follows too */
+}
 html[data-mode="light"] .cc-roster-xp, html[data-mode="light"] .cc-act.quiet{ color:#8a5300; }
 html[data-mode="light"] .nh-status.read{ color:#155f34; }

@@ -1,4 +1,5 @@
 @import url('tokens.css');
+@import url('shell.css');
 @import url('shell-staff.css');
 
 :root{
@@ -113,11 +114,11 @@
 .icon-btn svg{ width:18px; height:18px; fill:currentColor; }
 .widget-drag svg{ width:13px; height:13px; }
 .widget-close, .widget-min, .widget-pin{
-  width:20px; height:20px; border-radius:6px; border:none;
+  width:var(--tk-win-btn); height:var(--tk-win-btn); border-radius:var(--tk-radius-chip); border:none;
   background:transparent; color:var(--text-lo); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
 }
-.widget-close svg, .widget-min svg, .widget-pin svg{ width:12px; height:12px; }
+.widget-close svg, .widget-min svg, .widget-pin svg{ width:var(--tk-win-icon); height:var(--tk-win-icon); }
 .widget-pin:hover{ background:rgba(255,255,255,0.08); color:var(--text-hi); }
 .widget-body{
   padding:16px; flex:1; user-select:text; overflow-y:auto;

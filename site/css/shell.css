@@ -1,0 +1,96 @@
+/* =========================================================
+   The shared shell of every TeachersDeck Suite app (cleanup Phase 2, Nov 2026).
+   ---------------------------------------------------------
+   ONE FILE IN FOUR APPS: teachersdeck/css/shell.css is the copy to edit; tools/check_shared.py keeps the StudentDeck,
+   ParentDeck and AdminDeck copies identical. Each app's css/style.css loads it after css/tokens.css (and the family
+   palette) and before its pair's file (css/shell-staff.css or css/shell-family.css), before its own rules.
+
+   What is here: rules the staff shell and the family shell had word for word, moved, not rewritten, by
+   tools/cleanup/merge_shells.py (a rule moves only if nothing above it in its pair file could be beating it). The pair
+   files keep what still differs; as those rules are brought into line they move here, until the pair files are empty.
+   ========================================================= */
+*{ box-sizing:border-box; }
+/* ---------- Dock ---------- */
+.dock-wrap{
+  position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+  z-index:5; display:flex; flex-direction:column; align-items:center;
+  max-width:calc(100vw - 40px);
+}
+.app-tray-backdrop[hidden]{ display:none; }
+.app-tray-handle{
+  display:block; width:44px; height:5px; border-radius:3px; margin:6px auto 14px;
+  background:var(--line); border:none; cursor:pointer; padding:0;
+}
+/* ---------- Layout mode selector ---------- */
+.layout-mode-grid{ display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+/* ---------- Locked controls (dock composition set by layout mode) ---------- */
+.switch-row.locked, .dock-vis-row.locked{ opacity:.45; }
+.edge-dock[hidden]{ display:none; }
+.edge-dock-left{ left:12px; }
+.edge-dock-right{ right:12px; }
+/* ---------- Bottom dock: hide until the tab is hovered (v0.13.0) ----------
+   The whole .dock-wrap (tab + dock) slides down until only the tab is left flush
+   with the bottom edge. The wrap's bottom offset becomes padding so its box reaches
+   the screen edge: the pointer stays "inside" it while the dock slides back up, which
+   stops the hover flickering. Collapsing waits a beat so a slow mouse doesn't lose it. */
+.dock-wrap.auto-hide{
+  bottom:0; padding-bottom:16px;
+  transform:translateX(-50%) translateY(calc(100% - 20px));
+  transition:transform .22s ease .35s;
+}
+.dock-wrap.auto-hide:hover,
+.dock-wrap.auto-hide:has(:focus-visible){   /* keyboard focus only: a mouse click leaves focus on the button, which would pin the dock open */
+  transform:translateX(-50%);
+  transition-delay:0s;
+}
+.demopanel[hidden]{ display:none; }
+.app-tray-item .dock-ic{ width:38px; height:38px; }
+.edge-dock-left, .edge-dock-right{
+  top:50%; transform:translateY(-50%);
+  border-radius:14px; padding:10px 6px;
+}
+.edge-dock-left .dock-item:hover{ transform:translateX(2px); }
+.edge-dock-right .dock-item:hover{ transform:translateX(-2px); }
+.app-tray-tab:hover{ background:rgba(255,255,255,.1); }
+.app-tray-tab-line{
+  display:block; width:22px; height:4px; border-radius:2px;
+  background:var(--tk-text-lo); transition:background .15s ease;
+}
+.app-tray-tab:hover .app-tray-tab-line{ background:var(--tk-text-hi); }
+.app-tray-tab.open .app-tray-tab-line{ background:var(--tk-accent-hi); }
+.app-tray-backdrop{
+  position:fixed; inset:0; z-index:45; background:rgba(6,9,14,.55);
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.app-tray{
+  width:100%; max-width:760px; max-height:72vh; overflow-y:auto;
+  background:var(--tk-surface-1); border:1px solid var(--tk-line); border-bottom:none;
+  border-radius:20px 20px 0 0; box-shadow:0 -16px 40px rgba(0,0,0,.45);
+  padding:8px 18px 24px; animation: traysheetup .2s ease;
+}
+.dock-item:hover{ background:rgba(255,255,255,.08); color:var(--tk-text-hi); z-index:2; transform:translateY(-2px); }
+.dock-item.active .dock-ic{ background:rgba(var(--tk-accent-rgb),.16); color:var(--tk-accent-hi); }
+.dock-ic{
+  width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.04); color:inherit;
+}
+.app-tray-item:hover{ background:rgba(255,255,255,.08); color:var(--tk-text-hi); transform:translateY(-2px); }
+.app-tray-item.active .dock-ic{ background:rgba(var(--tk-accent-rgb),.16); color:var(--tk-accent-hi); }
+.layout-mode-opt:hover{ background:rgba(255,255,255,.03); }
+.layout-mode-desc{ font-size:11px; color:var(--tk-text-lo); line-height:1.4; }
+.dock-vis-row{
+  display:flex; align-items:center; gap:8px; font-size:12.5px;
+  padding:6px 8px; border-radius:8px; border:1px solid var(--tk-line);
+  background:rgba(255,255,255,.02);
+}
+.widget-resize{position:absolute;right:2px;bottom:2px;width:18px;height:18px;cursor:nwse-resize;opacity:.45;touch-action:none;background:linear-gradient(135deg,transparent 55%,var(--tk-text-lo) 55% 62%,transparent 62% 76%,var(--tk-text-lo) 76% 83%,transparent 83%)}
+   /* the family apps' three stripes (owner, 18 Nov 2026), not the drawn two lines */
+.widget-resize:hover{opacity:1}
+/* ---------- Side & top edge drawers (left/right widget drawers, top pill drawer) ---------- */
+.edge-dock{
+  position:fixed; z-index:6;
+  background:var(--tk-edge-bg); border:1px solid var(--tk-line);
+  backdrop-filter: blur(12px); box-shadow:var(--tk-edge-shadow);
+  transition:transform .22s ease;
+}
+.edge-dock-left .dock-item, .edge-dock-right .dock-item{ width:var(--tk-dock-btn); margin:1px 0; }

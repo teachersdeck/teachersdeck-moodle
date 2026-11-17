@@ -8,10 +8,9 @@
    bar, windows, the docks, the app tray, the layout switch). They were moved, not rewritten. A rule moved only if
    nothing left behind in either app could have been beating it before, so every tie still falls the same way.
 
-   This is the first slice. Rules the two apps have under the same selector with different values, and StudentDeck's
-   and ParentDeck's shell (css/shell-family.css), come here as they are brought into line; the aim is one css/shell.css.
+   What both shells have word for word is in css/shell.css (all four apps), loaded just before this file; what is
+   left here still differs from the family shell (css/shell-family.css).
    ========================================================= */
-*{ box-sizing:border-box; }
 html,body{ height:100%; margin:0; overflow:hidden; }
 /* ---------- Background theme layer ---------- */
 .bg-layer{
@@ -22,7 +21,7 @@ html,body{ height:100%; margin:0; overflow:hidden; }
 }
 .bg-overlay{
   position:fixed; inset:0; z-index:1; pointer-events:none;
-  background: rgba(6,9,14,0.28);
+  background: rgba(6,9,14,.28);
   transition: opacity .3s ease;
 }
 .bg-overlay.no-dim{ opacity:0; }
@@ -42,8 +41,8 @@ html,body{ height:100%; margin:0; overflow:hidden; }
 }
 .dock-top-widgets:empty{ display:none; }
 .lang-toggle{
-  display:flex; border:1px solid var(--line); border-radius:11px; overflow:hidden;
-  background:rgba(20,26,34,0.55); backdrop-filter: blur(6px); height:38px;
+  display:flex; border:1px solid var(--tk-line); border-radius:11px; overflow:hidden;
+  background:rgba(20,26,34,.55); backdrop-filter: blur(6px); height:38px;
 }
 .icon-btn:active{ transform:scale(.94); }
 /* ---------- Wall (widget canvas) ---------- */
@@ -54,72 +53,40 @@ html,body{ height:100%; margin:0; overflow:hidden; }
 .widget-head:active{ cursor:grabbing; }
 .widget-drag{
   flex-shrink:0; width:20px; height:20px; border:none; border-radius:6px;
-  background:transparent; color:var(--text-lo); cursor:grab;
+  background:transparent; color:var(--tk-text-lo); cursor:grab;
   display:flex; align-items:center; justify-content:center; touch-action:none;
 }
-.widget-drag:hover{ background:rgba(255,255,255,0.06); color:var(--text-hi); }
+.widget-drag:hover{ background:rgba(255,255,255,.06); color:var(--tk-text-hi); }
 .widget-drag:active{ cursor:grabbing; }
 .widget-title{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .widget-head-actions{ display:flex; gap:2px; flex-shrink:0; }
 .widget.minimized{ height:auto !important; }
 .wbtn:active{ transform:scale(.97); }
-input[type=text]:focus, textarea:focus{ outline:2px solid var(--amber); outline-offset:1px; }
-select:focus{ outline:2px solid var(--amber); outline-offset:1px; }
-/* ---------- Dock ---------- */
-.dock-wrap{
-  position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
-  z-index:5; display:flex; flex-direction:column; align-items:center;
-  max-width:calc(100vw - 40px);
-}
+input[type=text]:focus, textarea:focus{ outline:2px solid var(--tk-accent); outline-offset:1px; }
+select:focus{ outline:2px solid var(--tk-accent); outline-offset:1px; }
 .dock{
   z-index:5; display:flex; gap:4px; padding:8px 10px;
-  background:rgba(17,22,29,0.72); border:1px solid var(--line);
+  background:var(--tk-dock-bg); border:1px solid var(--tk-line);
   border-radius:16px; backdrop-filter: blur(12px);
-  box-shadow:var(--shadow-panel);
+  box-shadow:var(--tk-shadow-panel);
   max-width:100%; overflow-x:auto;
 }
 .wsvg{ fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 /* ---------- App tray tab + sheet ---------- */
 .app-tray-tab{
   z-index:6; width:46px; height:20px; padding:0; flex-shrink:0;
-  border-radius:12px 12px 4px 4px; border:1px solid var(--line); border-bottom:none;
-  background:rgba(17,22,29,0.72); color:var(--text-lo); cursor:pointer;
+  border-radius:12px 12px 4px 4px; border:1px solid var(--tk-line); border-bottom:none;
+  background:var(--tk-dock-bg); color:var(--tk-text-lo); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  backdrop-filter:blur(12px); box-shadow:var(--shadow-panel);
+  backdrop-filter:blur(12px); box-shadow:var(--tk-shadow-panel);
   transition:background .15s ease;
   margin-bottom:-1px; /* overlaps the dock's own top border so the two read as one piece */
 }
-.app-tray-tab:hover{ background:rgba(255,255,255,0.1); }
-.app-tray-tab-line{
-  display:block; width:22px; height:4px; border-radius:2px;
-  background:var(--text-lo); transition:background .15s ease;
-}
-.app-tray-tab:hover .app-tray-tab-line{ background:var(--text-hi); }
-.app-tray-tab.open .app-tray-tab-line{ background:var(--amber-hi); }
-.app-tray-backdrop{
-  position:fixed; inset:0; z-index:45; background:rgba(6,9,14,0.55);
-  display:flex; align-items:flex-end; justify-content:center;
-}
-.app-tray-backdrop[hidden]{ display:none; }
-.app-tray{
-  width:100%; max-width:760px; max-height:72vh; overflow-y:auto;
-  background:var(--ink-1); border:1px solid var(--line); border-bottom:none;
-  border-radius:20px 20px 0 0; box-shadow:0 -16px 40px rgba(0,0,0,.45);
-  padding:8px 18px 24px; animation: traysheetup .2s ease;
-}
-.app-tray-handle{
-  display:block; width:44px; height:5px; border-radius:3px; margin:6px auto 14px;
-  background:var(--line); border:none; cursor:pointer; padding:0;
-}
-/* ---------- Layout mode selector ---------- */
-.layout-mode-grid{ display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
-/* ---------- Locked controls (dock composition set by layout mode) ---------- */
-.switch-row.locked, .dock-vis-row.locked{ opacity:.45; }
-.lock-hint{ color:var(--amber-hi) !important; margin-top:-4px; }
+.lock-hint{ color:var(--tk-accent-hi) !important; margin-top:-4px; }
 select:disabled{ cursor:not-allowed; opacity:.7; }
 .drawer-head{
   display:flex; align-items:center; justify-content:space-between;
-  padding:16px 16px 12px; border-bottom:1px solid var(--line);
+  padding:16px 16px 12px; border-bottom:1px solid var(--tk-line);
 }
 .drawer-body{ padding:16px; overflow-y:auto; flex:1; }
 .swatch{
@@ -128,119 +95,71 @@ select:disabled{ cursor:not-allowed; opacity:.7; }
 }
 .ghost-btn{
   width:100%; padding:9px; border-radius:9px; margin-top:8px;
-  background:transparent; border:1px solid var(--line); color:var(--text-hi); cursor:pointer;
+  background:transparent; border:1px solid var(--tk-line); color:var(--tk-text-hi); cursor:pointer;
 }
 .dock-vis-list{
   display:grid; grid-template-columns:1fr; gap:6px; margin-bottom:6px;
   max-height:260px; overflow-y:auto; padding-right:2px;
 }
-.edge-dock[hidden]{ display:none; }
 .edge-dock-items{ display:flex; }
-.edge-dock-left{ left:12px; }
-.edge-dock-right{ right:12px; }
 .edge-dock-left .edge-dock-items, .edge-dock-right .edge-dock-items{
   flex-direction:column; gap:4px;
-}
-/* ---------- Bottom dock: hide until the tab is hovered (v0.13.0) ----------
-   The whole .dock-wrap (tab + dock) slides down until only the tab is left flush
-   with the bottom edge. The wrap's bottom offset becomes padding so its box reaches
-   the screen edge: the pointer stays "inside" it while the dock slides back up, which
-   stops the hover flickering. Collapsing waits a beat so a slow mouse doesn't lose it. */
-.dock-wrap.auto-hide{
-  bottom:0; padding-bottom:16px;
-  transform:translateX(-50%) translateY(calc(100% - 20px));
-  transition:transform .22s ease .35s;
-}
-.dock-wrap.auto-hide:hover,
-.dock-wrap.auto-hide:has(:focus-visible){   /* keyboard focus only: a mouse click leaves focus on the button, which would pin the dock open */
-  transform:translateX(-50%);
-  transition-delay:0s;
 }
 .ss-st[data-st="good"]::before{ content:'●'; }
  .ss-st[data-st="watch"]::before{ content:'▲'; }
  .ss-st[data-st="bad"]::before{ content:'■'; }
 /* v0.15.3 — demo mode (js/demo.js): the Cloud demo panel */
 .demobar{ position:fixed; left:10px; bottom:84px; z-index:900; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
-.demopanel[hidden]{ display:none; }
 body{
   font-family:'Inter', system-ui, sans-serif;
-  color:var(--text-hi);
-  background:var(--ink-0);
+  color:var(--tk-text-hi);
+  background:var(--tk-surface-0);
   -webkit-font-smoothing:antialiased;
 }
 .lang-toggle button{
-  border:none; background:transparent; color:var(--text-lo); cursor:pointer;
+  border:none; background:transparent; color:var(--tk-text-lo); cursor:pointer;
   font-family:'Quicksand'; font-weight:700; font-size:12px; padding:0 12px;
   letter-spacing:.3px;
 }
-.lang-toggle button.active{ background:var(--amber); color:var(--text-on-accent); }
-.lang-toggle button:not(.active):hover{ background:rgba(255,255,255,0.06); color:var(--text-hi); }
-.icon-btn:hover{ background:rgba(30,39,50,0.85); }
+.lang-toggle button.active{ background:var(--tk-accent); color:var(--tk-text-on-accent); }
+.lang-toggle button:not(.active):hover{ background:rgba(255,255,255,.06); color:var(--tk-text-hi); }
+.icon-btn:hover{ background:rgba(30,39,50,.85); }
 .widget.dragging{ opacity:.92; box-shadow:0 20px 40px rgba(0,0,0,.5); }
-.widget-min:hover{ background:rgba(255,255,255,0.08); color:var(--text-hi); }
-.widget-close:hover{ background:rgba(224,101,101,0.18); color:var(--danger); }
+.widget-min:hover{ background:rgba(255,255,255,.08); color:var(--tk-text-hi); }
+.widget-close:hover{ background:rgba(224,101,101,.18); color:var(--tk-danger); }
 .widget.minimized .widget-body,
 .widget.minimized .widget-resize{ display:none; }
-.widget-resize{
-  position:absolute; right:1px; bottom:1px; width:18px; height:18px;
-  cursor:nwse-resize; opacity:.4; touch-action:none;
-  display:flex; align-items:center; justify-content:center;
-}
-.widget-resize:hover{ opacity:.9; }
+.widget-resize svg{ display:none; }
 .wbtn:hover{ background:#37424f; }
-.wbtn.primary{ background:var(--amber); color:var(--text-on-accent); border-color:transparent; }
-.wbtn.primary:hover{ background:var(--amber-hi); }
+.wbtn.primary{ background:var(--tk-accent); color:var(--tk-text-on-accent); border-color:transparent; }
+.wbtn.primary:hover{ background:var(--tk-accent-hi); }
 .wbtn:disabled{ opacity:.4; cursor:not-allowed; }
 select{
-  background:var(--ink-2); border:1px solid var(--line); border-radius:8px;
-  color:var(--text-hi); padding:6px 8px; font-family:'Inter'; font-size:12.5px;
+  background:var(--tk-surface-2); border:1px solid var(--tk-line); border-radius:8px;
+  color:var(--tk-text-hi); padding:6px 8px; font-family:'Inter'; font-size:12.5px;
 }
-.dock-item:hover{ background:rgba(255,255,255,0.08); color:var(--text-hi); z-index:2; transform:translateY(-2px); }
-.dock-item.active .dock-ic{ background:rgba(var(--amber-rgb),0.16); color:var(--amber-hi); }
-.dock-ic{
-  width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,0.04); color:inherit;
-}
-.app-tray-item .dock-ic{ width:38px; height:38px; }
-.app-tray-item:hover{ background:rgba(255,255,255,0.08); color:var(--text-hi); transform:translateY(-2px); }
-.app-tray-item.active .dock-ic{ background:rgba(var(--amber-rgb),0.16); color:var(--amber-hi); }
 .layout-mode-opt{
   display:flex; flex-direction:column; align-items:flex-start; gap:3px;
   width:100%; text-align:left; padding:10px 12px; border-radius:10px;
-  border:1px solid var(--line); background:transparent; color:var(--text-hi); cursor:pointer;
+  border:1px solid var(--tk-line); background:transparent; color:var(--tk-text-hi); cursor:pointer;
   transition:border-color .15s ease, background .15s ease;
 }
-.layout-mode-opt:hover{ background:rgba(255,255,255,0.03); }
 .drawer[hidden]{ display:none; }
 .drawer-head h2{ font-family:'Quicksand'; font-size:15px; margin:0; }
 .placement-row select{
-  flex-shrink:0; background:var(--ink-2); color:var(--text-hi); border:1px solid var(--line);
+  flex-shrink:0; background:var(--tk-surface-2); color:var(--tk-text-hi); border:1px solid var(--tk-line);
   border-radius:7px; font-size:11.5px; padding:4px 6px; max-width:120px;
 }
-/* ---------- Side & top edge drawers (left/right widget drawers, top pill drawer) ---------- */
-.edge-dock{
-  position:fixed; z-index:6;
-  background:rgba(17,22,29,0.78); border:1px solid var(--line);
-  backdrop-filter: blur(12px); box-shadow:var(--shadow-panel);
-  transition:transform .22s ease;
-}
-.edge-dock-left, .edge-dock-right{
-  top:50%; transform:translateY(-50%);
-  border-radius:14px; padding:10px 6px;
-}
-.edge-dock-left .dock-item, .edge-dock-right .dock-item{ width:60px; margin:1px 0; }
-.edge-dock-left .dock-item:hover{ transform:translateX(2px); }
-.edge-dock-right .dock-item:hover{ transform:translateX(-2px); }
 /* the colour key above a stoplight-tiled grid — same pill pattern as AdminDeck's School Stats legend */
 .ss-st[data-st]{ display:inline-block; padding:1px 9px; border-radius:999px; border:1.5px solid currentColor; font-weight:700; line-height:1.5; }
 .ss-st[data-st]::before{ font-size:.7em; margin-right:5px; vertical-align:.1em; }
-.ss-stlegend details{ flex:1 1 260px; color:var(--text-lo); font-weight:500; font-size:12.5px; margin-left:6px; }
+.ss-stlegend details{ flex:1 1 260px; color:var(--tk-text-lo); font-weight:500; font-size:12.5px; margin-left:6px; }
 .ss-stlegend details p{ margin:5px 0 0; }
 /* ================= v0.14.1 ================= */
 /* The header bar sits above the widget layer; let clicks fall through its empty space so a widget dragged to the very top
    can still be grabbed by its title bar (the brand, XP pill, launchers and pills stay clickable). */
 .topbar{ pointer-events:none; }
-.brand-mark{ color:var(--amber); font-size:14px; }
+.brand-mark{ color:var(--tk-accent); font-size:14px; }
 .brand-name{
   font-family:'Quicksand', sans-serif; font-weight:700; font-size:17px;
   letter-spacing:.2px;
@@ -250,43 +169,37 @@ select{
   /* the whole title bar drags, so it needs the pointer to itself */
   cursor:grab; touch-action:none;
   padding:9px 10px;
-  border-bottom:1px solid var(--line);
+  border-bottom:1px solid var(--tk-line);
   font-family:'Quicksand', sans-serif; font-weight:600; font-size:11.5px;
-  letter-spacing:.6px; color:var(--text-lo);
-  background:rgba(255,255,255,0.02);
+  letter-spacing:.6px; color:var(--tk-text-lo);
+  background:rgba(255,255,255,.02);
 }
 .app-tray-title{
   font-family:'Quicksand'; font-weight:700; font-size:12.5px; letter-spacing:.4px;
-  color:var(--text-lo); text-align:center; margin:0 0 14px;
+  color:var(--tk-text-lo); text-align:center; margin:0 0 14px;
 }
 .app-tray-item{
   display:flex; flex-direction:column; align-items:center; gap:6px;
-  padding:10px 4px 8px; cursor:pointer; border:none; background:rgba(255,255,255,0.03);
-  color:var(--text-lo); font-family:'Quicksand'; font-weight:600; font-size:10.5px;
+  padding:10px 4px 8px; cursor:pointer; border:none; background:rgba(255,255,255,.03);
+  color:var(--tk-text-lo); font-family:var(--tk-font-ui); font-weight:600; font-size:10.5px;
   border-radius:14px; transition:background .15s ease, color .15s ease, transform .12s ease;
 }
 .layout-mode-name{ font-family:'Quicksand'; font-weight:700; font-size:12.5px; }
-.layout-mode-desc{ font-size:11px; color:var(--text-lo); line-height:1.4; }
-.switch-row{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--text-lo); margin-top:4px; }
+.switch-row{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--tk-text-lo); margin-top:4px; }
 .primary-btn{
   margin-top:10px; width:100%; padding:10px; border-radius:9px; border:none;
-  background:var(--amber); color:var(--text-on-accent); font-weight:700; font-family:'Inter'; cursor:pointer;
+  background:var(--tk-accent); color:var(--tk-text-on-accent); font-weight:700; font-family:'Inter'; cursor:pointer;
 }
-.dock-vis-hint{ font-size:11.5px; color:var(--text-lo); margin:0 0 10px; }
-.dock-vis-row{
-  display:flex; align-items:center; gap:8px; font-size:12.5px;
-  padding:6px 8px; border-radius:8px; border:1px solid var(--line);
-  background:rgba(255,255,255,0.02);
-}
+.dock-vis-hint{ font-size:11.5px; color:var(--tk-text-lo); margin:0 0 10px; }
 .dock-vis-row span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
 .app-version{
-  margin:18px 0 0; font-size:11px; color:var(--text-lo); text-align:center; letter-spacing:.3px;
+  margin:18px 0 0; font-size:11px; color:var(--tk-text-lo); text-align:center; letter-spacing:.3px;
 }
 /* Toast */
 .toast{
   position:fixed; left:50%; bottom:90px; transform:translateX(-50%);
-  background:var(--ink-2); border:1px solid var(--line); padding:9px 16px;
-  border-radius:10px; font-size:12.5px; z-index:30; box-shadow:var(--shadow-panel);
+  background:var(--tk-surface-2); border:1px solid var(--tk-line); padding:9px 16px;
+  border-radius:10px; font-size:12.5px; z-index:30; box-shadow:var(--tk-shadow-panel);
   /* longer messages (e.g. the Lesson Planner's) wrap inside a sensible column
      instead of squeezing into the right half of the screen */
   width:max-content; max-width:min(440px, 92vw); text-align:center; line-height:1.45;
@@ -295,25 +208,25 @@ select{
 .widget{
   position:absolute;
   min-width:220px;
-  background:rgba(22,28,37,0.86);
-  border:1px solid var(--line);
-  border-radius:var(--radius-panel);
-  box-shadow:var(--shadow-panel);
+  background:rgba(22,28,37,.86);
+  border:1px solid var(--tk-line);
+  border-radius:var(--tk-radius-panel);
+  box-shadow:var(--tk-shadow-panel);
   backdrop-filter: blur(10px);
   display:flex; flex-direction:column;
   overflow:hidden;
   user-select:none;
 }
 .wbtn{
-  border:1px solid var(--line); background:var(--ink-3); color:var(--text-hi);
-  padding:7px 14px; border-radius:var(--radius-chip); font-size:13px; cursor:pointer;
+  border:1px solid var(--tk-line); background:var(--tk-surface-3); color:var(--tk-text-hi);
+  padding:7px 14px; border-radius:var(--tk-radius-chip); font-size:13px; cursor:pointer;
   font-family:'Inter'; font-weight:600;
 }
 .dock-item{
   display:flex; flex-direction:column; align-items:center; gap:5px;
-  width:72px; padding:8px 4px 6px; cursor:pointer;
-  border:none; background:rgba(255,255,255,0.03); color:var(--text-lo);
-  font-family:'Quicksand'; font-weight:600; font-size:10.5px;
+  width:var(--tk-dock-btn); padding:8px 4px 6px; cursor:pointer;
+  border:none; background:rgba(255,255,255,.03); color:var(--tk-text-lo);
+  font-family:var(--tk-font-ui); font-weight:600; font-size:10.5px;
   transition:background .15s ease, color .15s ease, transform .12s ease;
   position:relative;
   border-radius:12px;
@@ -325,7 +238,7 @@ select{
 /* ---------- Drawers ---------- */
 .drawer{
   position:fixed; top:0; right:0; height:100%; width:340px; z-index:20;
-  background:var(--ink-1); border-left:1px solid var(--line);
+  background:var(--tk-surface-1); border-left:1px solid var(--tk-line);
   box-shadow:-16px 0 40px rgba(0,0,0,.4);
   display:flex; flex-direction:column;
   animation: slidein .18s ease;
@@ -333,3 +246,10 @@ select{
 .ss-st[data-st="good"]{ color:var(--st-good); background:var(--st-good-bg); }
 .ss-st[data-st="watch"]{ color:var(--st-watch); background:var(--st-watch-bg); }
 .ss-st[data-st="bad"]{ color:var(--st-bad); background:var(--st-bad-bg); }
+
+/* ---- The combined window look (owner's decision, 17 Nov 2026) ----
+   The title starts at the left like the family apps' windows, in the brighter text colour; the drag handle (a cue only:
+   the whole title bar drags) moves next to the window buttons instead of holding the title in from the left. */
+.widget-title{ order:-1; color:var(--tk-text-hi); }
+.widget-drag{ order:0; }
+.widget-head-actions{ order:1; }

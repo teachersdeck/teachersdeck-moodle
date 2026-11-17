@@ -442,6 +442,7 @@ const LICENSE_RECHECK_MS = 24*60*60*1000;          // re-validate with the serve
 const LICENSE_OFFLINE_GRACE_MS = 7*24*60*60*1000;  // trust a cached "valid" for up to 7 days without a round-trip
 
 async function callLicenseFn(name, body){
+  if(window.TDBackend) await TDBackend.ready;   // lights-on: the address backend.json names (js/backend.js)
   const base = licenseFnBase();
   if(!base) { const e = new Error('not-configured'); throw e; }
   let res;

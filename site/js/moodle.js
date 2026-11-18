@@ -19,6 +19,10 @@
   const stamp = (() => {
     try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch (e) { return ''; }
   })();
+  const APP_FILES = (() => {   // js/app.js and its parts in page order (tools/build_platform.py writes data-app)
+    const list = document.currentScript && document.currentScript.dataset.app;
+    return list ? list.split(/\s+/).filter(Boolean) : ['js/app.js'];
+  })();
 
   const MSG = {
     notInMoodle: { en: 'This page only opens from inside a Moodle course.', vi: 'Trang này chỉ mở được từ trong một khóa học Moodle.' },
@@ -59,9 +63,11 @@
     }
   }
 
-  // Load the app's own scripts, in order, after the state is in place.
+  // Load the app's own scripts, in order, after the state is in place. js/app.js comes in parts (cleanup Phase 4):
+  // tools/build_platform.py lists them in page order on this script's data-app, js/app.js last.
+
   function loadApp() {
-    const files = ['js/app.js', 'js/update.js'];
+    const files = APP_FILES.concat('js/update.js');
     const next = () => {
       const f = files.shift();
       if (!f) return;

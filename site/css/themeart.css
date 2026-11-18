@@ -16,9 +16,9 @@ html[data-td-art~="sail"] #td-deco .dc-sail{ --sc:max(100vw / 1600, 100vh / 900)
   width:calc(var(--sc) * 4800); background:var(--td-art-sail) 0 0/50% 100% repeat-x; animation:dc-sail 420s linear infinite; }
 @keyframes dc-sail{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
 html[data-td-art~="tile"] #td-deco .dc-tile{ display:block; inset:0; background:var(--td-art-tile) repeat; }
-html[data-td-art~="band"] #td-deco .dc-band{ display:block; left:0; right:0; top:0; height:28px; background:var(--td-art-band) repeat-x 0 0/auto 100%; filter:drop-shadow(0 3px 4px rgba(0,0,0,.25)); }
+html[data-td-art~="band"] #td-deco .dc-band{ display:block; left:0; right:0; top:0; height:28px; background:var(--td-art-band) repeat-x 0 0/auto 100%; filter:drop-shadow(0 3px 4px var(--tk-shadow-2)); }
 html[data-td-art~="hang"] #td-deco .dc-hang{ display:block; top:-6px; width:84px; height:150px; background:var(--td-art-hang) center top/contain no-repeat;
-  filter:drop-shadow(0 8px 14px rgba(0,0,0,.35)); transform-origin:50% 0; }
+  filter:drop-shadow(0 8px 14px var(--tk-shadow-3)); transform-origin:50% 0; }
 html[data-td-art~="hang"] #td-deco .dc-hang.h1{ left:27%; animation:dc-sway 6s ease-in-out infinite; }
 html[data-td-art~="hang"] #td-deco .dc-hang.h2{ left:68%; animation:dc-sway 7s ease-in-out -2s infinite; }
 html[data-td-art~="band"][data-td-art~="hang"] #td-deco .dc-hang{ top:4px; }   /* hung from the bunting */

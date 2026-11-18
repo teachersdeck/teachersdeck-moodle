@@ -9,7 +9,7 @@ html.dkd-dragging, html.dkd-dragging *{ cursor:grabbing !important; -webkit-user
 .dkd-ghost{
   position:fixed !important; left:0 !important; top:0 !important; margin:0 !important; z-index:4000 !important;
   pointer-events:none !important; opacity:.95; transition:none !important; animation:none !important;
-  box-shadow:0 14px 34px rgba(0,0,0,.45) !important; border-radius:14px;
+  box-shadow:0 14px 34px var(--tk-shadow-4) !important; border-radius:14px;
   scale:1.08; will-change:transform;
 }
 .dkd-ghost > span:not(.dock-ic){ white-space:nowrap; }
@@ -26,15 +26,15 @@ html.dkd-dragging, html.dkd-dragging *{ cursor:grabbing !important; -webkit-user
 .dkd-zone{ transition:outline-color .12s ease, background-color .12s ease; outline:2px dashed transparent; outline-offset:3px; }
 html.dkd-dragging .dkd-zone.dkd-empty{ display:flex !important; min-width:52px; min-height:46px; outline-color:rgba(127,127,127,.45); }
 .dkd-zone.dkd-over{ outline-color:var(--amber, #e8a33d); }
-.dkd-zone.dkd-full{ outline-color:#e06565; background:rgba(224,101,101,.10); }
+.dkd-zone.dkd-full{ outline-color:var(--tk-danger); background:rgba(var(--tk-danger-rgb), .10); }
 
 /* The app-tray tab: drop a dock icon here to take it off the docks */
 .dkd-tab{ position:relative; outline:2px dashed rgba(127,127,127,.55); outline-offset:2px; }
-.dkd-tab.dkd-over{ outline-color:#e06565; background:rgba(224,101,101,.22) !important; }
+.dkd-tab.dkd-over{ outline-color:var(--tk-danger); background:rgba(var(--tk-danger-rgb), .22) !important; }
 .dkd-tab::after{
   content:attr(data-dkd-label); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
-  padding:5px 9px; border-radius:7px; white-space:nowrap; font-size:12px; font-weight:600; pointer-events:none;
-  background:var(--ink-2, #262d3a); color:var(--text-hi, #e8ecf2); box-shadow:0 6px 20px rgba(0,0,0,.35);
+  padding:5px 9px; border-radius:7px; white-space:nowrap; font-size:var(--tk-fs-12); font-weight:600; pointer-events:none;
+  background:var(--ink-2, #262d3a); color:var(--text-hi, #e8ecf2); box-shadow:0 6px 20px var(--tk-shadow-3);
   opacity:0; transition:opacity .12s ease;
 }
 .dkd-tab.dkd-over::after{ opacity:1; }

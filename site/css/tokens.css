@@ -57,6 +57,15 @@
   --tk-teal:#47C9B6;
   --tk-danger:#E06565;
   --tk-good:#6FCF97;
+  --tk-danger-rgb:224,101,101;
+  --tk-good-rgb:111,207,151;
+  /* status lights (good / watch / bad): School Stats, Staff Snapshot, attendance and the other traffic lights */
+  --tk-st-good:#2EE66B;
+  --tk-st-watch:#FFE600;
+  --tk-st-bad:#FF3B3B;
+  --tk-st-good-rgb:46,230,107;
+  --tk-st-watch-rgb:255,230,0;
+  --tk-st-bad-rgb:255,59,59;
 
   /* shape */
   --tk-radius-panel: 14px;
@@ -78,6 +87,25 @@
   --tk-font-ui:'Quicksand', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --tk-font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --tk-font-hand:'Kalam', 'Comic Sans MS', cursive;
+
+  /* overlays and shadows (cleanup Phase 3, 18 Nov 2026): every hand-written white tint, black backing and black shadow
+     rounds to one of these steps. Whole colours, so Light mode converts them: a white tint becomes a dark one, a backing
+     and a shadow are softened (differently, hence two black families). */
+  --tk-tint-1: rgba(255,255,255,.03);
+  --tk-tint-2: rgba(255,255,255,.06);
+  --tk-tint-3: rgba(255,255,255,.10);
+  --tk-tint-4: rgba(255,255,255,.16);
+  --tk-tint-5: rgba(255,255,255,.25);
+  --tk-shade-1: rgba(0,0,0,.15);
+  --tk-shade-2: rgba(0,0,0,.25);
+  --tk-shade-3: rgba(0,0,0,.35);
+  --tk-shade-4: rgba(0,0,0,.45);
+  --tk-shade-5: rgba(0,0,0,.60);
+  --tk-shadow-1: rgba(0,0,0,.15);
+  --tk-shadow-2: rgba(0,0,0,.25);
+  --tk-shadow-3: rgba(0,0,0,.35);
+  --tk-shadow-4: rgba(0,0,0,.45);
+  --tk-shadow-5: rgba(0,0,0,.60);
 
   /* text sizes: the scale every size moves onto in Phase 3 (rem, so text follows the browser's own setting).
      11px is the smallest in the staff apps, 12px wherever a child or a parent reads. */

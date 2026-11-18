@@ -2450,88 +2450,25 @@ function setPinned(id, on){
   saveState();
 }
 
-// One gesture at a time, tracked here; the window listeners below are the only
-// ones, so closing a widget can't leave handlers behind.
-let gesture = null;   // { kind:'move'|'size', el, id, pointerId, sx, sy, ox, oy }
-
-function startGesture(g){
-  if(gesture && gesture.pointerId !== g.pointerId) endGesture();   // a stuck prior gesture would otherwise leave stale drag state and never let go
-  gesture = g;
-  bringToFront(g.el);
-  if(g.kind === 'move') g.el.classList.add('dragging');
-  // An iframe swallows pointer events. If pointer capture were ever lost mid-drag
-  // the document underneath would grab the gesture, so shield it while dragging/resizing.
-  if(docStage) docStage.el.classList.add('shielded');
-}
-
-function moveGesture(e){
-  if(!gesture || e.pointerId !== gesture.pointerId) return;
-  const g = gesture;
-  const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
-  if(g.kind === 'move'){
-    // Keep the panel reachable: never past the top or left edge, and always
-    // leave enough of the title bar on screen (roughly the grip and the start
-    // of the title) that it can be grabbed and dragged back.
-    const maxX = Math.max(0, wall.clientWidth - 150);
-    const maxY = Math.max(0, wall.clientHeight - 44);
-    g.el.style.left = Math.min(maxX, Math.max(0, g.ox + dx)) + 'px';
-    g.el.style.top  = Math.min(maxY, Math.max(0, g.oy + dy)) + 'px';
-  } else {
-    g.el.style.width  = Math.max(180, g.ox + dx) + 'px';
-    g.el.style.height = Math.max(140, g.oy + dy) + 'px';
-  }
-}
-
-function endGesture(e){
-  if(!gesture) return;
-  if(e && e.pointerId !== undefined && e.pointerId !== gesture.pointerId) return;
-  const g = gesture;
-  gesture = null;
-  g.el.classList.remove('dragging');
-  if(docStage) docStage.el.classList.remove('shielded');
-  const layout = state.layout[g.id];
-  if(layout){
-    if(g.kind === 'move'){
-      // offsetLeft/Top are relative to the wall, the same frame the saved
-      // left/top are written in — getBoundingClientRect would be viewport-based.
-      layout.x = g.el.offsetLeft;
-      layout.y = g.el.offsetTop;
-    } else {
-      layout.w = g.el.offsetWidth;
-      layout.h = g.el.offsetHeight;
-    }
-    saveState();
-  }
-}
-
-window.addEventListener('pointermove', moveGesture);
-window.addEventListener('pointerup', endGesture);
-window.addEventListener('pointercancel', endGesture);
-window.addEventListener('blur', ()=> endGesture());
+// Moving and resizing go through js/winmove.js, one file in all four apps (cleanup Phase 2): one press at a time,
+// followed on the whole window, so closing a widget can't leave handlers behind and a lost capture can't strand a drag.
+const docShield = on => { if(docStage) docStage.el.classList.toggle('shielded', on); };   // an iframe would swallow the pointer mid-drag
 
 function makeDraggable(el, id){
-  const head = el.querySelector('.widget-head');
-  head.addEventListener('pointerdown', e=>{
-    if(e.button != null && e.button !== 0) return;         // left button or touch only
-    if(e.target.closest('.widget-head-actions')) return;    // minimise + close stay clickable
-    if(el.classList.contains('widget-full')) return;        // full-screen widgets don't move
-    startGesture({ kind:'move', el, id, pointerId:e.pointerId, sx:e.clientX, sy:e.clientY, ox:el.offsetLeft, oy:el.offsetTop });
-    try{ head.setPointerCapture(e.pointerId); }catch(err){ /* capture is a nicety, not a requirement */ }
-    e.preventDefault();
-  });
+  WinMove.attach({ el, handle: el.querySelector('.widget-head'), kind: 'move',
+    skip: e => !!e.target.closest('.widget-head-actions') || el.classList.contains('widget-full'),   // the buttons stay clickable; full-screen widgets don't move
+    bounds: WinMove.wallBounds(wall),
+    start: () => { bringToFront(el); el.classList.add('dragging'); docShield(true); },
+    // offsetLeft/Top are relative to the wall, the same frame the saved left/top are written in
+    end: () => { el.classList.remove('dragging'); docShield(false); const L = state.layout[id]; if(L){ L.x = el.offsetLeft; L.y = el.offsetTop; saveState(); } } });
   // Touching a panel anywhere raises it, so the one you're using sits on top.
   el.addEventListener('pointerdown', ()=> bringToFront(el));
 }
 
 function makeResizable(el, id){
-  const handle = el.querySelector('.widget-resize');
-  handle.addEventListener('pointerdown', e=>{
-    if(e.button != null && e.button !== 0) return;
-    startGesture({ kind:'size', el, id, pointerId:e.pointerId, sx:e.clientX, sy:e.clientY, ox:el.offsetWidth, oy:el.offsetHeight });
-    try{ handle.setPointerCapture(e.pointerId); }catch(err){}
-    e.preventDefault();
-    e.stopPropagation();
-  });
+  WinMove.attach({ el, handle: el.querySelector('.widget-resize'), kind: 'size', minW: 180, minH: 140,
+    start: () => { bringToFront(el); docShield(true); },
+    end: () => { docShield(false); const L = state.layout[id]; if(L){ L.w = el.offsetWidth; L.h = el.offsetHeight; saveState(); } } });
 }
 
 /* ---------------- Widget implementations ---------------- */

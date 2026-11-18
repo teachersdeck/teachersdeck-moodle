@@ -1,7 +1,7 @@
 /* ================= Whiteboard background (Nov 2026; js/whiteboard.js, the DrawDeck engine's surface:'wall') =================
    The ink layer is #wall's first child: widgets (z 11+), the document stage and pinned widgets paint above it. */
 .wall-ink{ position:absolute; inset:0; z-index:0; }
-.wall-ink .dd-root{ font-size:13px; }
+.wall-ink .dd-root{ font-size:var(--tk-fs-13); }
 
 /* the premium bars (DrawDeck's own, "All drawing tools"): a layer above the widgets, under the corner button and rings;
    placed below TeachersDeck's top bar and clear of its docks */
@@ -14,12 +14,12 @@
 body.dk-sidebar .dd-wall-bars.dd-wall-chrome .dd-rail{ left:124px; }
 
 /* the Premium Whiteboard offer in the Shop's pay dialog */
-.tsp-blurb{ margin:4px 0 10px; font-size:13px; line-height:1.45; }
-.tsp-alt{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px; font-size:13px; }
+.tsp-blurb{ margin:4px 0 10px; font-size:var(--tk-fs-13); line-height:1.45; }
+.tsp-alt{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px; font-size:var(--tk-fs-13); }
 
 /* on a white board the top bar's bare text (title, XP and streak pills) would vanish: give it the panels' plate */
 body.wb-light .topbar > .brand, body.wb-light .topbar > .xp-pill, body.wb-light .topbar > .badge-chip{
-  background:rgba(18,22,30,.86); border-radius:999px; padding:5px 12px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  background:rgba(18,22,30,.86); border-radius:999px; padding:5px 12px; box-shadow:0 4px 14px var(--tk-shadow-1); }
 html[data-mode="light"] body.wb-light .topbar > :is(.brand,.xp-pill,.badge-chip){ background:rgba(255,255,255,.92); box-shadow:0 2px 10px rgba(0,0,0,.12); }
 
 /* glass widgets (Glass Blue and the other premium themes) are nearly clear: over a white board their light text washes
@@ -30,7 +30,7 @@ html:not([data-mode="light"]) body.wb-light #wall > .widget.is-front{ background
 /* the corner button: the dock launcher's look (css/dockstyle.css), bottom-left; the Circle dock style owns it when on */
 .wb-launcher{ left:calc(22px + env(safe-area-inset-left,0px)); right:auto; }
 .wb-launcher svg{ width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-.wb-launcher.wb-active{ box-shadow:0 0 0 4px var(--wb-ink, rgba(255,255,255,.85)), 0 10px 26px rgba(0,0,0,.4); }
+.wb-launcher.wb-active{ box-shadow:0 0 0 4px var(--wb-ink, rgba(255,255,255,.85)), 0 10px 26px var(--tk-shadow-4); }
 body.dk-circle .wb-launcher{ display:none; }
 body.dk-sidebar .wb-launcher{ left:calc(78px + env(safe-area-inset-left,0px)); }
 body.dd-fs .wb-launcher{ display:none; }
@@ -38,15 +38,15 @@ body.dd-fs .wb-launcher{ display:none; }
 /* ring buttons */
 .wb-rings .dk-cat .dk-ic, .wb-rings .dk-wid .dk-ic{ display:grid; place-items:center; }
 .wb-rings .dk-cat svg, .wb-rings .dk-wid svg, .wb-rings .dk-hub svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.wb-dot{ display:block; width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,.85); box-shadow:0 0 0 1px rgba(0,0,0,.35); }
+.wb-dot{ display:block; width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,.85); box-shadow:0 0 0 1px var(--tk-shadow-3); }
 .dk-cat.on .wb-dot{ border-color:#10131a; }
 .wb-lock{ position:absolute; }
-.wb-lock-ic{ position:absolute; right:-4px; top:-4px; width:18px; height:18px; border-radius:50%; background:var(--amber, #E8A33D); color:#1b1306; display:grid; place-items:center; }
+.wb-lock-ic{ position:absolute; right:-4px; top:-4px; width:18px; height:18px; border-radius:50%; background:var(--amber, #E8A33D); color:var(--tk-text-on-accent); display:grid; place-items:center; }
 .wb-lock-ic svg{ width:11px !important; height:11px !important; stroke-width:2.4 !important; }
 .wb-dis{ opacity:.38; cursor:default; }
 
 /* surface choices */
-.wb-sf{ width:22px; height:22px; border-radius:5px; border:1px solid rgba(0,0,0,.25); background:#fff; }
+.wb-sf{ width:22px; height:22px; border-radius:5px; border:1px solid var(--tk-shade-2); background:#fff; }
 .wb-sf-chalk{ background:#22332c; }
 .wb-sf-grid{ background:#fff linear-gradient(#dfe4ec 1px, transparent 1px) 0 0/6px 6px, #fff linear-gradient(90deg, #dfe4ec 1px, transparent 1px) 0 0/6px 6px; }
 .wb-sf-graph{ background:#fff linear-gradient(#c5d0e2 1px, transparent 1px) 0 0/11px 11px, #fff linear-gradient(90deg, #c5d0e2 1px, transparent 1px) 0 0/11px 11px; }

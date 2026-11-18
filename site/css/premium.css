@@ -84,21 +84,21 @@ html[data-td-skin]:not([data-mode="light"]) .primary{ background:var(--sk-acc); 
 .widget-full .skin-face{ height:min(60vh,420px); }
 .widget-full .skin-light{ height:min(60vh,420px); }
 .widget-full .noise-skin{ max-width:520px; height:min(40vh,340px); }
-.skin-face svg, .skin-light svg, .noise-skin svg{ display:block; filter:drop-shadow(0 6px 12px rgba(0,0,0,.35)); }
+.skin-face svg, .skin-light svg, .noise-skin svg{ display:block; filter:drop-shadow(0 6px 12px var(--tk-shadow-3)); }
 .skin-switch{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
 .skin-light{ width:100%; height:138px; margin:0 auto; }
 .skin-light + .traffic-hint{ margin-top:6px; }
 .noise-stage.skin{ flex-direction:column; margin:0 0 8px; }
 .noise-skin{ width:100%; max-width:260px; height:180px; margin:0 auto 4px; }
 .noise-stage.skin .noise-readout{ display:flex; align-items:baseline; justify-content:center; gap:4px; }
-.noise-stage.skin .noise-db{ font-size:24px; }
+.noise-stage.skin .noise-db{ font-size:var(--tk-fs-26); }
 .noise-stage.skin .noise-unit{ margin-top:0; }
 
 /* Dock styles (css/dockstyle.css) take TeachersDeck's colours; Glass Blue gives them its own */
 body{ --hi:var(--text-hi); --lo:var(--text-lo); --gold:var(--amber); }
 html[data-td-skin]:not([data-mode="light"]) body{ --dk-bg:var(--sk-dock); --dk-line:rgba(var(--sk-line-rgb),.35); --dk-ink:var(--sk-ink); --dk-acc:var(--sk-acc); --dk-hov:var(--sk-hov); }
 .dock-style-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
-.dock-style-opt{ display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; }
+.dock-style-opt{ display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 var(--tk-fs-11) 'Quicksand',sans-serif; }
 .dock-style-sw{ height:34px; border-radius:9px; border:2px solid transparent; }
 .dock-style-opt.active .dock-style-sw{ border-color:var(--amber); }
 .dock-style-opt.active{ color:var(--text-hi); }
@@ -125,8 +125,8 @@ html:not(.bento-phone) body.tb-drop.tb-open #tb-edge{ display:none; }
 @media (prefers-reduced-motion:reduce){ html:not(.bento-phone) body.tb-drop #dock-top.edge-dock{ transition:none; } }
 .topbar-mode{ display:flex; gap:6px; margin:-8px 0 20px; }
 .topbar-mode[hidden]{ display:none; }
-.topbar-mode-opt{ flex:1; padding:7px 8px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--text-lo); cursor:pointer; font:600 11.5px 'Quicksand',sans-serif; }
-.topbar-mode-opt.active{ border-color:var(--amber); color:var(--text-hi); background:rgba(255,255,255,.06); }
+.topbar-mode-opt{ flex:1; padding:7px 8px; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--text-lo); cursor:pointer; font:600 var(--tk-fs-12) 'Quicksand',sans-serif; }
+.topbar-mode-opt.active{ border-color:var(--amber); color:var(--text-hi); background:var(--tk-tint-2); }
 
 /* Polish phase 2: a premium theme over your own photo. The glass gets a little thicker so text stays readable on a
    busy picture; "Tint my image" washes the photo with the theme's colour (off by default). */
@@ -137,15 +137,15 @@ html[data-td-tint="1"] .bg-layer::after{ content:""; position:absolute; inset:0;
 html[data-td-skin][data-td-tint="1"] .bg-layer::after{ background:var(--sk-tint); }
 /* Theme row in the drawer */
 .ui-theme-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
-.ui-theme-opt{ position:relative; display:flex; flex-direction:column; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; }
+.ui-theme-opt{ position:relative; display:flex; flex-direction:column; gap:5px; padding:0; border:none; background:none; color:var(--text-lo); cursor:pointer; font:600 var(--tk-fs-11) 'Quicksand',sans-serif; }
 .ui-theme-sw{ height:44px; border-radius:10px; border:2px solid transparent; }
 .ui-theme-opt.active .ui-theme-sw{ border-color:var(--amber); }
 .ui-theme-opt.active{ color:var(--text-hi); }
-.ui-theme-opt.premium::after{ content:"★"; position:absolute; top:4px; right:7px; font-size:11px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+.ui-theme-opt.premium::after{ content:"★"; position:absolute; top:4px; right:7px; font-size:var(--tk-fs-11); color:#fff; text-shadow:0 1px 2px var(--tk-shadow-4); }
 .swatch.theme-bg{ outline:1px dashed rgba(255,255,255,.35); outline-offset:-5px; }
-.bg-photo-state{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-8px 0 14px; font-size:12px; color:var(--text-lo); }
+.bg-photo-state{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-8px 0 14px; font-size:var(--tk-fs-12); color:var(--text-lo); }
 .bg-photo-state[hidden]{ display:none; }
-.bg-photo-reset{ border:1px solid var(--line); background:transparent; color:var(--text-hi); border-radius:8px; padding:5px 9px; font:600 11px 'Quicksand',sans-serif; cursor:pointer; }
+.bg-photo-reset{ border:1px solid var(--line); background:transparent; color:var(--text-hi); border-radius:8px; padding:5px 9px; font:600 var(--tk-fs-11) 'Quicksand',sans-serif; cursor:pointer; }
 #photo-tint-row[hidden], #wallpaper-row[hidden]{ display:none; }
 
 /* Polish phase 3: accents written as literals in the shared files (bento.css, mode.css, drawdeck.css stay identical
@@ -160,7 +160,7 @@ html[data-td-skin]:not([data-mode="light"]) .dd-size.on{ background:rgba(var(--s
 /* ---------- Polish phase 5: premium extras (Glass Blue) ---------- */
 /* Real glass: a soft highlight along the top edge, a faint inner glow, edges that catch the light */
 html[data-td-skin]:not([data-mode="light"]) .widget{
-  background-image:linear-gradient(180deg, rgba(255,255,255,.13) 0%, rgba(255,255,255,.03) 28%, rgba(255,255,255,0) 55%);
+  background-image:linear-gradient(180deg, rgba(255,255,255,.13) 0%, var(--tk-tint-1) 28%, rgba(255,255,255,0) 55%);
   box-shadow:var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 1px rgba(var(--sk-line-rgb),.10), inset 0 -18px 30px -24px rgba(var(--sk-acc-rgb),.25);
 }
 html[data-td-skin]:not([data-mode="light"]) .widget.is-front:not(.dragging){
@@ -193,7 +193,7 @@ html.td-arrive :is(.dock, .edge-dock){ animation:td-settle .7s cubic-bezier(.2,.
   opacity:0; transition:opacity .3s ease; cursor:none; }
 .td-idle.on{ opacity:1; }
 .td-idle-face{ width:min(64vh, 70vw); height:min(64vh, 70vw); }
-.td-idle-face svg{ filter:drop-shadow(0 20px 50px rgba(0,0,0,.5)); }
+.td-idle-face svg{ filter:drop-shadow(0 20px 50px var(--tk-shadow-4)); }
 .td-idle-time{ font:700 clamp(28px, 6vh, 72px)/1 var(--theme-font, 'Quicksand', sans-serif); color:var(--sk-ink, #eaf4ff); letter-spacing:.5px; }
 .td-idle-date{ font-size:clamp(14px, 2.4vh, 26px); color:var(--sk-muted, #a9c4e8); }
 #idle-clock-row[hidden]{ display:none; }
@@ -213,7 +213,7 @@ body.rad-compact #dock .dock-item > span:not(.dock-ic){ display:none; }
 #radial-mode{ margin:-8px 0 12px; }
 
 /* Circle launcher: the same size as the AgentDeck button opposite it (44 px, 18 px from the corner, 22 px icon) */
-.dk-launcher{ width:44px !important; height:44px !important; left:max(18px, env(safe-area-inset-left)) !important; bottom:max(18px, env(safe-area-inset-bottom)) !important; box-shadow:0 8px 18px -6px rgba(0,0,0,.4) !important; }
+.dk-launcher{ width:44px !important; height:44px !important; left:max(18px, env(safe-area-inset-left)) !important; bottom:max(18px, env(safe-area-inset-bottom)) !important; box-shadow:0 8px 18px -6px var(--tk-shadow-4) !important; }
 .dk-launcher svg{ width:22px !important; height:22px !important; }
 
 /* Floating icons (Pro): no panel behind the chosen docks; each icon keeps a faint backing and a soft shadow */
@@ -227,7 +227,7 @@ html body.df-bottom #dock-wrap #dock .dock-item,
 html body:is(.df-sides) :is(#dock-left, #dock-right) .dock-item{ background:transparent !important; }
 html body.df-bottom #dock-wrap #dock .dock-ic,
 html body.df-sides :is(#dock-left, #dock-right) .dock-ic{
-  background:rgba(14,19,28,.46) !important; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.30);
+  background:rgba(14,19,28,.46) !important; border-radius:12px; box-shadow:0 6px 16px var(--tk-shadow-3);
   -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
 }
 html[data-td-skin]:not([data-mode="light"]) body.df-bottom #dock-wrap #dock .dock-ic,
@@ -237,18 +237,18 @@ html[data-td-skin]:not([data-mode="light"]) body.df-sides :is(#dock-left, #dock-
 html[data-mode="light"] body.df-bottom #dock-wrap #dock .dock-ic,
 html[data-mode="light"] body.df-sides :is(#dock-left, #dock-right) .dock-ic{ background:rgba(255,255,255,.78) !important; box-shadow:0 6px 16px rgba(20,30,50,.18); }
 html body.df-bottom #dock-wrap #dock .dock-item > span:not(.dock-ic),
-html body.df-sides :is(#dock-left, #dock-right) .dock-item > span:not(.dock-ic){ text-shadow:0 1px 3px rgba(0,0,0,.65); color:#f2f5f9; }
+html body.df-sides :is(#dock-left, #dock-right) .dock-item > span:not(.dock-ic){ text-shadow:0 1px 3px var(--tk-shadow-5); color:#f2f5f9; }
 html[data-mode="light"] body.df-bottom #dock-wrap #dock .dock-item > span:not(.dock-ic),
 html[data-mode="light"] body.df-sides :is(#dock-left, #dock-right) .dock-item > span:not(.dock-ic){ text-shadow:0 1px 2px rgba(255,255,255,.9); color:#1f2a3c; }
 html body:is(.df-bottom, .df-sides) .dock-item.active .dock-ic{ outline:2px solid rgba(var(--amber-rgb), .8); outline-offset:1px; }
-html body.df-top #dock-top :is(.class-pill, .lang-toggle, .icon-btn, .deck-mode-toggle, .deck-mode-switch){ box-shadow:0 6px 16px rgba(0,0,0,.28); }
+html body.df-top #dock-top :is(.class-pill, .lang-toggle, .icon-btn, .deck-mode-toggle, .deck-mode-switch){ box-shadow:0 6px 16px var(--tk-shadow-2); }
 /* Rings: no discs or dashed circle behind the icons */
 body.df-rings .dk-rings::before, body.df-rings .dk-rings::after{ display:none; }
 body.df-rings .dk-veil{ background:rgba(6,9,14,.18); backdrop-filter:none; }
-body.df-rings :is(.dk-cat, .dk-wid){ box-shadow:0 8px 20px rgba(0,0,0,.4); }
+body.df-rings :is(.dk-cat, .dk-wid){ box-shadow:0 8px 20px var(--tk-shadow-4); }
 /* The switches */
 .floating-head{ display:flex; align-items:center; gap:8px; }
-.pro-badge{ font:800 9.5px 'Quicksand',sans-serif; letter-spacing:.06em; padding:2px 6px; border-radius:6px; background:var(--amber); color:var(--text-on-accent, #231604); }
+.pro-badge{ font:800 var(--tk-fs-11) 'Quicksand',sans-serif; letter-spacing:.06em; padding:2px 6px; border-radius:6px; background:var(--amber); color:var(--text-on-accent, #231604); }
 .floating-opts{ flex-wrap:wrap; margin-top:0; }
 .floating-opts .topbar-mode-opt{ flex:1 1 40%; }
 .topbar-mode-opt.locked{ opacity:.6; }
@@ -256,8 +256,8 @@ body.df-rings :is(.dk-cat, .dk-wid){ box-shadow:0 8px 20px rgba(0,0,0,.4); }
 /* The swatch grid marks premium themes with a star */
 .swatch.premium{ position:relative; }
 .swatch.premium::after{
-  content:"★"; position:absolute; top:4px; right:6px; font-size:11px; line-height:1;
-  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5);
+  content:"★"; position:absolute; top:4px; right:6px; font-size:var(--tk-fs-11); line-height:1;
+  color:#fff; text-shadow:0 1px 2px var(--tk-shadow-4);
 }
 
 
@@ -306,8 +306,8 @@ html[data-td-art] .widget-full::before{ display:none; }
    #td-greet (app.js) shows the theme's greeting from its pack and a "Premium · name" badge in the top bar. */
 #td-greet{ position:absolute; left:50%; top:calc(50% + 9px); transform:translate(-50%,-50%); display:none; align-items:center; gap:10px; pointer-events:none; z-index:1; }
 html[data-td-greet]:not([data-mode="light"]) #td-greet{ display:flex; }
-#td-greet .tg-text{ padding:6px 16px; border:1.5px solid rgba(var(--sk-acc-rgb),.55); border-radius:999px; color:var(--sk-ink); font-size:13px; font-weight:600; white-space:nowrap; background:rgba(0,0,0,.12); }
-#td-greet .tg-badge{ padding:6px 14px; border-radius:999px; background:var(--sk-acc); color:var(--sk-on); font-size:12px; font-weight:800; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+#td-greet .tg-text{ padding:6px 16px; border:1.5px solid rgba(var(--sk-acc-rgb),.55); border-radius:999px; color:var(--sk-ink); font-size:var(--tk-fs-13); font-weight:600; white-space:nowrap; background:var(--tk-shade-1); }
+#td-greet .tg-badge{ padding:6px 14px; border-radius:999px; background:var(--sk-acc); color:var(--sk-on); font-size:var(--tk-fs-12); font-weight:800; white-space:nowrap; box-shadow:0 4px 14px var(--tk-shadow-2); }
 @media (max-width:1180px){ #td-greet .tg-badge{ display:none; } }
 @media (max-width:900px){ html[data-td-greet] #td-greet{ display:none; } }
 html[data-td-greet] .dock-top-widgets:not(:empty) ~ #td-greet{ display:none; }
@@ -331,19 +331,19 @@ html body.df-bottom #dock-wrap{ z-index:950; }
 html body.df-top #dock-top{ z-index:950; }
 
 /* ---------- Choosing a face, meter or light: a short row in the widget; "More…" opens every one ---------- */
-.skin-more{ border:1px dashed var(--line); background:transparent; color:var(--text-lo); border-radius:999px; padding:0 9px; height:20px; font:700 10.5px 'Quicksand',sans-serif; cursor:pointer; }
+.skin-more{ border:1px dashed var(--line); background:transparent; color:var(--text-lo); border-radius:999px; padding:0 9px; height:20px; font:700 var(--tk-fs-11) 'Quicksand',sans-serif; cursor:pointer; }
 .skin-more:hover{ color:var(--text-hi); border-color:var(--amber); }
 .skin-picker-veil{ position:fixed; inset:0; z-index:2600; background:rgba(4,8,14,.55); display:flex; align-items:center; justify-content:center; padding:24px; }
-.skin-picker{ width:min(880px,100%); max-height:min(86vh,760px); overflow:auto; background:var(--ink-1, #1e2732); border:1px solid var(--line); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,.5); padding:16px 18px 20px; color:var(--text-hi); }
-.skin-picker h3{ margin:0 0 4px; font:800 16px 'Quicksand',sans-serif; display:flex; justify-content:space-between; align-items:center; }
-.skin-picker h4{ margin:16px 0 8px; font:700 11px 'Quicksand',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--text-lo); }
+.skin-picker{ width:min(880px,100%); max-height:min(86vh,760px); overflow:auto; background:var(--ink-1, #1e2732); border:1px solid var(--line); border-radius:16px; box-shadow:0 24px 60px var(--tk-shadow-4); padding:16px 18px 20px; color:var(--text-hi); }
+.skin-picker h3{ margin:0 0 4px; font:800 var(--tk-fs-16) 'Quicksand',sans-serif; display:flex; justify-content:space-between; align-items:center; }
+.skin-picker h4{ margin:16px 0 8px; font:700 var(--tk-fs-11) 'Quicksand',sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--text-lo); }
 .skin-picker .sp-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; }
-.skin-picker .sp-opt{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:8px 6px; border:2px solid transparent; border-radius:12px; background:rgba(255,255,255,.04); color:var(--text-lo); cursor:pointer; font:600 11px 'Quicksand',sans-serif; text-align:center; }
-.skin-picker .sp-opt:hover{ background:rgba(255,255,255,.08); color:var(--text-hi); }
+.skin-picker .sp-opt{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:8px 6px; border:2px solid transparent; border-radius:12px; background:var(--tk-tint-1); color:var(--text-lo); cursor:pointer; font:600 var(--tk-fs-11) 'Quicksand',sans-serif; text-align:center; }
+.skin-picker .sp-opt:hover{ background:var(--tk-tint-3); color:var(--text-hi); }
 .skin-picker .sp-opt.on{ border-color:var(--amber); color:var(--text-hi); }
 .skin-picker .sp-art{ width:84px; height:84px; display:flex; align-items:center; justify-content:center; }
 .skin-picker .sp-art svg{ width:100%; height:100%; }
-.skin-picker .sp-close{ border:0; background:transparent; color:var(--text-lo); font-size:20px; cursor:pointer; }
+.skin-picker .sp-close{ border:0; background:transparent; color:var(--text-lo); font-size:var(--tk-fs-20); cursor:pointer; }
 
 /* ---------- Animated wallpaper (js/wallpaper.js): over the theme's gradient (#bg-layer), under the dim (#bg-overlay) ---------- */
 .td-wallpaper{ position:fixed; inset:0; z-index:0; width:100%; height:100%; display:block; pointer-events:none; opacity:0; transition:opacity .8s ease; }
@@ -352,14 +352,14 @@ html body.df-top #dock-top{ z-index:950; }
 
 /* ---------- The Shop (LMS editions, js/tdstore.js): its button next to Browse themes, and the pay dialog ---------- */
 #ui-theme-browse{ gap:8px; flex-wrap:wrap; }
-.td-shop-sw{ display:flex; align-items:center; justify-content:center; font-size:11px; background:var(--amber, #e0a93b); box-shadow:none; }
+.td-shop-sw{ display:flex; align-items:center; justify-content:center; font-size:var(--tk-fs-11); background:var(--amber, #e0a93b); box-shadow:none; }
 .td-shop-modal{ max-width:420px; }
-.td-shop-modal .tsp-item{ font-size:15px; margin:4px 0 12px; }
-.td-shop-modal .tsp-label{ display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--text-lo); }
-.td-shop-modal input{ font:inherit; color:var(--text-hi); background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
-.td-shop-modal .tsp-note{ font-size:12px; margin:8px 0 12px; }
-.td-shop-modal .tsp-amount{ text-align:center; font-size:18px; margin:6px 0; }
-.td-shop-modal .tsp-key{ margin-top:14px; font-size:12.5px; color:var(--text-lo); }
+.td-shop-modal .tsp-item{ font-size:var(--tk-fs-16); margin:4px 0 12px; }
+.td-shop-modal .tsp-label{ display:flex; flex-direction:column; gap:6px; font-size:var(--tk-fs-13); color:var(--text-lo); }
+.td-shop-modal input{ font:inherit; color:var(--text-hi); background:var(--tk-shade-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+.td-shop-modal .tsp-note{ font-size:var(--tk-fs-12); margin:8px 0 12px; }
+.td-shop-modal .tsp-amount{ text-align:center; font-size:var(--tk-fs-20); margin:6px 0; }
+.td-shop-modal .tsp-key{ margin-top:14px; font-size:var(--tk-fs-13); color:var(--text-lo); }
 .td-shop-modal .tsp-key summary{ cursor:pointer; }
 .td-shop-modal .tsp-key-row{ display:flex; gap:8px; margin-top:8px; }
 .td-shop-modal .tsp-key-row input{ flex:1; min-width:0; text-transform:uppercase; letter-spacing:.06em; }

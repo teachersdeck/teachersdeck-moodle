@@ -267,7 +267,24 @@ function buildDockSwatches(){
   grid.innerHTML = '';
   const vi = state.lang === 'vi';
   const opts = [{ style:'standard', name:{ en:'Standard', vi:'Tiêu chuẩn' }, swatch:'linear-gradient(180deg,#2a3542,#161c25)' }].concat(tdDockItems());
-  opts.forEach(o=>{
+  const pickDock = style=>{
+    state.dockStyle = style; saveState(); applyTdDock(); buildDockSwatches();
+    if(style === 'radial' && !state.radialHintSeen){   // one time: how to open the rings
+      state.radialHintSeen = true; saveState();
+      toast(t('ix_right_click_an_empty_part_of_the_scr'), 7000);
+    }
+  };
+  // 18 Nov 2026 (owner): the Clock's card deck (js/facepicker.js), each card a little picture of the dock
+  if(typeof FacePicker !== 'undefined'){
+    const L = vi ? 'vi' : 'en', curStyle = opts.some(o=>o.style === state.dockStyle) ? state.dockStyle : 'standard';
+    const cur = opts.find(o=>o.style === curStyle);
+    const btn = FacePicker.trigger({ lang: L, label: t('ix_choose_a_dock'), current: { name: cur.name[L] || cur.name.en, swatch: cur.swatch } });
+    FacePicker.attach(btn, ()=>({ lang: L, title: t('ix_choose_a_dock'), current: curStyle,
+      options: opts.map(o=>({ key: o.style, name: o.name[L] || o.name.en, html: FacePicker.dockArt(o.style, o.swatch), swatch: o.swatch })),
+      onPick: pickDock, refocus: ()=>document.querySelector('#dock-styles .fp-trigger') }));
+    grid.classList.add('fp-row'); grid.appendChild(btn);
+  }
+  else opts.forEach(o=>{
     const b = document.createElement('button'); b.type = 'button';
     const on = (state.dockStyle || 'standard') === o.style;
     b.className = 'dock-style-opt' + (on ? ' active' : '');
@@ -275,13 +292,7 @@ function buildDockSwatches(){
     b.innerHTML = `<span class="dock-style-sw"></span><span class="dock-style-name"></span>`;
     b.querySelector('.dock-style-sw').style.background = o.swatch || '#1e2732';
     b.querySelector('.dock-style-name').textContent = o.name[vi ? 'vi' : 'en'] || o.name.en;
-    b.addEventListener('click', ()=>{
-      state.dockStyle = o.style; saveState(); applyTdDock(); buildDockSwatches();
-      if(o.style === 'radial' && !state.radialHintSeen){   // one time: how to open the rings
-        state.radialHintSeen = true; saveState();
-        toast(t('ix_right_click_an_empty_part_of_the_scr'), 7000);
-      }
-    });
+    b.addEventListener('click', ()=> pickDock(o.style));
     grid.appendChild(b);
   });
   // With Radial (owner 11 Nov 2026): the rings hold every widget and the gear holds settings, so the docks can go
@@ -344,7 +355,8 @@ function buildPresetSwatches(){
   const tg = document.getElementById('ui-themes');
   if(tg){
     tg.innerHTML = '';
-    [{ id:'classic', name: t('ix_classic'), css: presetBg(PRESETS[0]) }].concat(PREMIUM_THEMES.map(p => ({ id:p.id, name:p.name, css:p.css, premium:true }))).forEach(o=>{
+    // 18 Nov 2026 (owner): the card deck below is the theme picker (the row of swatches only without js/facepicker.js)
+    if(typeof FacePicker === 'undefined') [{ id:'classic', name: t('ix_classic'), css: presetBg(PRESETS[0]) }].concat(PREMIUM_THEMES.map(p => ({ id:p.id, name:p.name, css:p.css, premium:true }))).forEach(o=>{
       const b = document.createElement('button'); b.type = 'button';
       const on = state.uiTheme === o.id;
       b.className = 'ui-theme-opt' + (on ? ' active' : '') + (o.premium ? ' premium' : '');
@@ -384,9 +396,24 @@ function buildPresetSwatches(){
   const opts = (wbOk ? [{ kind:'whiteboard', p:{ id:'whiteboard', css:'#fff' }, title: t('wb_name') }] : [])
     .concat(pt ? [{ kind:'theme', p:pt, title: t('ix_theme_s_background') }] : [])
     .concat(PRESETS.filter(p=>!p.premium).map(p=>({ kind:'preset', p, title:p.name || p.id })));
-  opts.forEach(o=>{
+  const bgOn = o => o.kind === 'whiteboard' ? !!state.whiteboard : (!state.whiteboard && !photo && (o.kind === 'theme' ? !!(pt && state.bgTheme) : (!(pt && state.bgTheme) && state.theme === o.p.id)));
+  // 18 Nov 2026 (owner): the backgrounds are a card deck too, each card painted with its background
+  if(typeof FacePicker !== 'undefined'){
+    const L = vi ? 'vi' : 'en', bgKey = o => o.kind === 'preset' ? o.p.id : o.kind;
+    const curO = opts.find(bgOn) || null;
+    const bgCss = o => o.kind === 'whiteboard' ? 'linear-gradient(180deg,#ffffff,#eef1f4)' : presetBg(o.p);
+    const cap = s => String(s).charAt(0).toUpperCase() + String(s).slice(1);
+    grid.classList.add('fp-row');
+    const btn = FacePicker.trigger({ lang: L, label: t('ix_choose_a_background'),
+      current: curO ? { name: cap(curO.title), swatch: bgCss(curO) } : { name: t('ix_your_image_short'), swatch: 'conic-gradient(#e06565,#e0a93b,#5fb27a,#5b8fd9,#e06565)' } });
+    FacePicker.attach(btn, ()=>({ lang: L, title: t('ix_choose_a_background'), current: curO ? bgKey(curO) : '',
+      options: opts.map(o=>({ key: bgKey(o), name: cap(o.title), bg: bgCss(o), mock: true, badge: o.kind === 'theme' ? t('theme_title') : '' })),
+      onPick: k=>{ const o = opts.find(x=>bgKey(x) === k); if(o) useBackground(o.kind, o.p.id); }, refocus: ()=>document.querySelector('#theme-presets .fp-trigger') }));
+    grid.appendChild(btn);
+  }
+  else opts.forEach(o=>{
     const sw = document.createElement('div');
-    const on = o.kind === 'whiteboard' ? !!state.whiteboard : (!state.whiteboard && !photo && (o.kind === 'theme' ? (pt && state.bgTheme) : (!(pt && state.bgTheme) && state.theme === o.p.id)));
+    const on = bgOn(o);
     sw.className = 'swatch' + (o.kind === 'theme' ? ' premium theme-bg' : '') + (o.kind === 'whiteboard' ? ' wb-swatch' : '') + (on ? ' active' : '');
     sw.style.background = o.kind === 'whiteboard' ? '#fff' : presetBg(o.p);
     sw.title = o.title; sw.setAttribute('role', 'button'); sw.setAttribute('aria-label', o.title); sw.setAttribute('aria-pressed', String(!!on));
@@ -879,7 +906,9 @@ async function openTdShop(anchor){
     const o = { key: i.sku, name: i.name[L] || i.name.en, group: KINDS[kind], badge: owned.has(i.sku) ? (t('ix_yours')) : vndFmt(i.price), price: i.price, owned: owned.has(i.sku) };
     if(kind === 'theme' && first && window.StoreCore){ o.bg = StoreCore.themeBackground(first, false); o.mock = true; }
     else if(kind === 'face' && first){ o.svg = first.svg; o.swatch = first.swatch; }
+    else if(kind === 'dock' && first){ o.html = FacePicker.dockArt(first.style, first.swatch); o.swatch = first.swatch; }
     else if(first){ o.swatch = first.swatch; }
+    if(i.blurb) o.sub = i.blurb[L] || i.blurb.en;
     options.push(o);
   }));
   if(!options.length){ toast(t('ix_nothing_in_the_shop_yet')); return; }

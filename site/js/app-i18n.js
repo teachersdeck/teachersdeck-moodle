@@ -699,6 +699,10 @@ const STRINGS = {
   ix_alarm: { en:"Alarm", vi:"Báo thức" },
   ix_desk: { en:"Desk", vi:"Để bàn" },
   ix_suggested: { en:"Suggested", vi:"Gợi ý" },
+  // 18 Nov 2026: the card deck for every asset (js/facepicker.js)
+  ix_choose_a_dock: { en:"Choose a dock", vi:"Chọn dock" },
+  ix_choose_a_background: { en:"Choose a background", vi:"Chọn nền" },
+  ix_your_image_short: { en:"Your image", vi:"Ảnh của bạn" },
 };
 
 /* v0.14.0 strings: categories, Stats & XP, document tracking. Languages not listed fall back to English. */

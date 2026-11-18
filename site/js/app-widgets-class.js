@@ -44,34 +44,35 @@ function premiumSkins(){
   (state.recentFaces || []).forEach(k=>{ const f = find(all.faces, k); if(f && !faces.some(x=>x.key===k) && faces.length < 5) faces.push(f); });
   return { faces, meter: find(all.meters, state.meterSkin) || own.meter, light: find(all.lights, state.lightSkin) || own.light, all };
 }
-/* "More…": every face, meter or light, grouped (faces by what they are). Picking one keeps it for this widget. */
-function openSkinPicker(kind){
-  const vi = state.lang === 'vi', all = tdPremiumSet('*');
+/* "More…": every face, meter or light, grouped (faces by what they are). Picking one keeps it for this widget.
+   18 Nov 2026 (owner): the Clock's card deck (js/facepicker.js), as everywhere else assets are picked. */
+function openSkinPicker(kind, anchor){
+  const vi = state.lang === 'vi', L = vi ? 'vi' : 'en', all = tdPremiumSet('*');
   const list = kind === 'face' ? all.faces : kind === 'meter' ? all.meters : all.lights;
   const curKey = kind === 'face' ? state.premiumFace : kind === 'meter' ? state.meterSkin : state.lightSkin;
   const FORMS = [['watch', t('ix_wrist_watches')], ['pocket', t('ix_pocket_watches')], ['wall', t('ix_wall_clocks')], ['alarm', t('ix_alarm_clocks')], ['desk', t('ix_desk_clocks')]];
-  const groups = kind === 'face' ? FORMS.map(([f, label])=>[label, list.filter(x=>(x.form||'watch')===f)]) : [[kind === 'meter' ? (t('ix_noise_meters')) : (t('ix_traffic_lights')), list]];
-  const veil = document.createElement('div'); veil.className = 'skin-picker-veil';
+  const label = kind === 'meter' ? t('ix_noise_meters') : t('ix_traffic_lights');
   const title = kind === 'face' ? (t('ix_choose_a_clock_face')) : kind === 'meter' ? (t('ix_choose_a_noise_meter')) : (t('ix_choose_a_traffic_light'));
-  veil.innerHTML = `<div class="skin-picker" role="dialog" aria-modal="true" aria-label="${title}"><h3><span>${title}</span><button type="button" class="sp-close" aria-label="${t('pro_close')}">×</button></h3>` +
-    `<div class="sp-grid"><button type="button" class="sp-opt${!curKey ? ' on' : ''}" data-k=""><span class="sp-art" style="font-size:12px">${t('ix_the_theme_s_own')}</span>${t('ix_default')}</button></div>` +
-    groups.filter(g=>g[1].length).map(([label, items])=>`<h4>${label}</h4><div class="sp-grid">` + items.map((x, i)=>`<button type="button" class="sp-opt${x.key===curKey?' on':''}" data-k="${x.key}"><span class="sp-art">${StoreCore.scopeSvg(x.svg, 'sp' + kind + i + '-')}</span>${x.name[vi?'vi':'en']}</button>`).join('') + '</div>').join('') + '</div>';
-  const close = ()=>{ veil.remove(); document.removeEventListener('keydown', esc, true); };
-  const esc = e=>{ if(e.key === 'Escape'){ e.stopPropagation(); close(); } };
-  veil.addEventListener('click', e=>{
-    if(e.target === veil || e.target.closest('.sp-close')){ close(); return; }
-    const b = e.target.closest('.sp-opt'); if(!b) return;
-    const k = b.dataset.k || null;
-    if(kind === 'face'){ state.premiumFace = k; if(k){ state.recentFaces = [k].concat((state.recentFaces||[]).filter(x=>x!==k)).slice(0, 4); } }
-    else if(kind === 'meter'){ state.meterSkin = k; if(state.noiseMeter && k) state.noiseMeter.style = 'skin'; }
-    else state.lightSkin = k;
-    saveState(); close(); rerenderWidget(kind === 'face' ? 'clock' : kind === 'meter' ? 'noise' : 'traffic');
-  });
-  document.addEventListener('keydown', esc, true);
-  document.body.appendChild(veil);
-  const f = veil.querySelector('.sp-opt.on') || veil.querySelector('.sp-opt'); if(f) f.focus();
+  if(typeof FacePicker === 'undefined') return;
+  // "Default": the theme's own (its drawing when the theme has one)
+  const pt = premiumTheme(), own = pt ? tdPremiumSet(pt.id) : null;
+  const ownItem = own ? (kind === 'face' ? own.faces[0] : kind === 'meter' ? own.meter : own.light) : null;
+  const options = [Object.assign({ key:'', name: t('ix_the_theme_s_own'), group: kind === 'face' ? t('ix_default') : label, badge: t('ix_default') },
+    ownItem && ownItem.svg ? { svg: ownItem.svg } : { glyph: kind === 'light' ? '🚦' : kind === 'meter' ? '🔊' : '🕒' })];
+  const opt = (x, group)=>({ key: x.key, name: x.name[L] || x.name.en, svg: x.svg, swatch: x.swatch, group });
+  if(kind === 'face') FORMS.forEach(([f, g])=>list.forEach(x=>{ if((x.form||'watch') === f) options.push(opt(x, g)); }));
+  else list.forEach(x=>options.push(opt(x, label)));
+  FacePicker.open({ anchor: anchor || null, lang: L, title, options, current: curKey || '',
+    refocus: ()=>{ const w = widgetEls[kind === 'face' ? 'clock' : kind === 'meter' ? 'noise' : 'traffic']; return w && w.el.querySelector('[data-skin-more]'); },
+    onPick: key=>{
+      const k = key || null;
+      if(kind === 'face'){ state.premiumFace = k; if(k){ state.recentFaces = [k].concat((state.recentFaces||[]).filter(x=>x!==k)).slice(0, 4); } }
+      else if(kind === 'meter'){ state.meterSkin = k; if(state.noiseMeter && k) state.noiseMeter.style = 'skin'; }
+      else state.lightSkin = k;
+      saveState(); rerenderWidget(kind === 'face' ? 'clock' : kind === 'meter' ? 'noise' : 'traffic');
+    } });
 }
-document.addEventListener('click', e=>{ const b = e.target.closest('[data-skin-more]'); if(b){ e.stopPropagation(); openSkinPicker(b.dataset.skinMore); } });   // polish phase 2: the Theme alone decides (a photo behind it keeps it)
+document.addEventListener('click', e=>{ const b = e.target.closest('[data-skin-more]'); if(b){ e.stopPropagation(); openSkinPicker(b.dataset.skinMore, b); } });   // polish phase 2: the Theme alone decides (a photo behind it keeps it)
 const reduceMotionNow = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 function refreshSkinnedWidgets(){ ['clock','traffic','noise'].forEach(id=>{ if(widgetEls[id]) rerenderWidget(id); }); }
 

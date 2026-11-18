@@ -1,4 +1,6 @@
 /* FacePicker — a card-deck picker for watch faces, themes and other store items (13 Nov 2026).
+ * 18 Nov 2026 (owner): the one asset deck in every app. Themes, backgrounds, watch faces, docks, noise meters, traffic
+ * lights, Scrapdeck pages and the Shops all pick with it. `AssetDeck` is the same object under a general name.
  *
  * One compact button in the widget (the item in use: its colour, its name, ▾) opens a panel with a stacked deck of
  * cards: the chosen card in the middle, the others fanned out behind it to each side, a little lower, smaller and
@@ -6,18 +8,28 @@
  * middle and the middle card to pick it. It stays the same size whether someone owns two items or every one in the
  * store, so no widget fills with swatches. The deck idea is the owner's (a 21st.dev "stacked carousel", carousel-07);
  * this is a plain-JavaScript version with no libraries.
- * The same file in TeachersDeck and StudentDeck (TeachersDeck's copy is the one to edit; tools/check_shared.py keeps
- * them identical). css/facepicker.css draws it with each app's own colour tokens.
+ * The same file in TeachersDeck, StudentDeck, ParentDeck and AdminDeck (TeachersDeck's copy is the one to edit;
+ * tools/check_shared.py keeps them identical). css/facepicker.css draws it with each app's own colour tokens.
  *
  *   FacePicker.trigger({ current, lang, label })  -> <button>; current = { name, swatch } or null (Classic)
  *   FacePicker.attach(button, getOpts)             click / ↓ on the button opens the deck with getOpts()
  *   FacePicker.open({ anchor, options, current, lang, title, onPick(key), onLocked(option), refocus() })
- *     options: [{ key, name, group, swatch?, svg?, bg?, mock?, badge?, locked? }]
+ *     options: [{ key, name, group, swatch?, svg?, html?, img?, glyph?, bg?, mock?, badge?, locked?, lockLabel?, sub?, noPick? }]
  *       svg   a store drawing, already checked by StoreCore (drawn with StoreCore.scopeSvg)
+ *       html  a preview the app built itself from its own data (escaped by the app): FacePicker.dockArt(), sticker strips
+ *       img   a picture's address (https:, data:image or blob: only); glyph: a character or emoji drawn large
  *       bg    the card's own background (a theme's gradient); mock: true draws a tiny desk on it
+ *       sub   a second line under the caption for the middle card (a Shop blurb)
+ *       lockLabel  the words on a locked card and its pick button (default "Ask at home", StudentDeck's)
+ *       noPick     the card can be looked at but not picked (an item already owned, in a Shop)
  *     current: the key in use. Picking calls onPick(key); a locked option calls onLocked(option) instead.
  *     refocus(): optional, returns the new button when onPick redrew the widget (focus goes back to it).
  *     pickLabel(option): optional, the words on the pick button for that card (the Shop: "Buy · 25,000₫").
+ *     at: a key to put in the middle at first (default: current); group: the group tab to start on;
+ *     onMove(option, group): told whenever the middle card or the group changes; lockLabel: as on an option.
+ *   FacePicker.inline(container, opts)  the same deck drawn in the page (a Shop widget), not as a pop-up. Picking does not
+ *     close it; api.update(options, current) redraws it in place, keeping the group and the middle card.
+ *   FacePicker.dockArt(style, swatch)   a small picture of a dock style (standard, float, magnify, sidebar, circle, radial)
  *
  * Keyboard: Enter / Space / ↓ on the button opens it; ← → move (Home / End, Page Up / Page Down jump five); Enter or
  * Space picks the middle card; Tab moves between the groups, the deck and Close; Escape closes and gives focus back.
@@ -60,34 +72,45 @@
     return { x: 104, y: 20, rot: 9, scale: 0.1, drag: 190 };
   }
 
-  function open(o) {
-    close();
-    var t = tr(o.lang), id = 'fp' + (++seq), anchor = o.anchor || null;
-    var options = (o.options || []).slice(), current = o.current == null ? '' : String(o.current);
-    var groups = [];
-    options.forEach(function (x) { if (groups.indexOf(x.group) < 0) groups.push(x.group); });
-    var group = null;   // null = all
+  function open(o) { close(); return make(o, null); }
+  function inline(container, o) { return make(o || {}, container); }
 
-    var veil = el('div', 'fp-veil');
-    var panel = el('div', 'fp-panel');
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
+  function make(o, host) {
+    var t = tr(o.lang), id = 'fp' + (++seq), anchor = host ? null : (o.anchor || null);
+    var options = [], current = '', groups = [];
+    var group = o.group == null ? null : o.group;   // null = all
+    var atKey = o.at == null ? null : String(o.at);
+    function lockLabel(opt) { return (opt && opt.lockLabel) || o.lockLabel || t.ask; }
+
+    var veil = host ? null : el('div', 'fp-veil');
+    var panel = el('div', 'fp-panel' + (host ? ' fp-inline' : ''));
+    panel.setAttribute('role', host ? 'group' : 'dialog');
+    if (!host) panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-labelledby', id + '-h');
     var head = el('div', 'fp-head');
     var h = el('h3', 'fp-title', o.title || t.title); h.id = id + '-h';
     var x = el('button', 'fp-close', '×'); x.type = 'button'; x.setAttribute('aria-label', t.close);
-    head.appendChild(h); head.appendChild(x);
+    head.appendChild(h);
+    if (!host) head.appendChild(x);
     panel.appendChild(head);
 
     var tabs = el('div', 'fp-tabs'); tabs.setAttribute('role', 'group'); tabs.setAttribute('aria-label', o.title || t.title);
-    if (groups.length > 1) {
-      [null].concat(groups).forEach(function (g) {
-        var c = el('button', 'fp-tab', g == null ? t.all : g); c.type = 'button';
-        c.dataset.g = g == null ? '' : g;
-        tabs.appendChild(c);
-      });
-      panel.appendChild(tabs);
+    function setOptions(list, cur) {
+      options = (list || []).slice(); current = cur == null ? '' : String(cur);
+      groups = [];
+      options.forEach(function (opt) { if (groups.indexOf(opt.group) < 0) groups.push(opt.group); });
+      if (group != null && groups.indexOf(group) < 0) group = null;
+      tabs.innerHTML = '';
+      if (groups.length > 1) {
+        [null].concat(groups).forEach(function (g) {
+          var c = el('button', 'fp-tab', g == null ? t.all : g); c.type = 'button';
+          c.dataset.g = g == null ? '' : g;
+          tabs.appendChild(c);
+        });
+        if (!tabs.parentNode) panel.insertBefore(tabs, head.nextSibling);
+      } else if (tabs.parentNode) tabs.parentNode.removeChild(tabs);
     }
+    setOptions(o.options, o.current);
 
     var stage = el('div', 'fp-stage');
     var deck = el('div', 'fp-deck');
@@ -102,7 +125,9 @@
     var useBtn = el('button', 'fp-use', t.pick); useBtn.type = 'button'; useBtn.tabIndex = -1;
     foot.appendChild(caption); foot.appendChild(useBtn);
     panel.appendChild(foot);
-    veil.appendChild(panel);
+    var sub = el('p', 'fp-sub'); sub.hidden = true;
+    panel.appendChild(sub);
+    if (veil) veil.appendChild(panel);
 
     var cards = [], list = [], pos = 0, target = 0, vel = 0, raf = 0, active = null, L = layout(560);
     var wrap = false;
@@ -112,12 +137,15 @@
       art.dataset.drawn = '1';
       var opt = list[+card.dataset.n];
       if (opt.svg && root.StoreCore && StoreCore.scopeSvg) art.innerHTML = StoreCore.scopeSvg(opt.svg, id + 'p' + card.dataset.i + '-');
+      else if (opt.html) { art.innerHTML = opt.html; art.classList.add('fp-art-html'); }
+      else if (opt.img && /^(https?:|data:image\/|blob:)/i.test(opt.img)) { var im = el('img', 'fp-img'); im.alt = ''; im.draggable = false; im.src = opt.img; art.appendChild(im); }
+      else if (opt.glyph) { art.appendChild(el('span', 'fp-glyph', opt.glyph)); }
       else if (opt.mock) { art.appendChild(el('span', 'fp-mock')); }
       else { var d = el('span', 'fp-dot'); d.style.background = safeCss(opt.swatch, '#2a3542'); art.appendChild(d); }
     }
 
     function build() {
-      deck.innerHTML = ''; cards = [];
+      deck.innerHTML = ''; cards = []; active = null;
       list = options.filter(function (opt) { return group == null || opt.group === group; });
       wrap = list.length >= 5;
       list.forEach(function (opt, n) {
@@ -131,14 +159,16 @@
         c.style.background = safeCss(opt.bg, '');
         if (opt.bg) c.classList.add('has-bg');
         c.appendChild(el('span', 'fp-art'));
-        var badge = opt.locked ? '🔒 ' + t.ask : on ? t.inUse : (opt.badge || opt.group || '');
+        var badge = opt.locked ? '🔒 ' + lockLabel(opt) : on ? t.inUse : (opt.badge || opt.group || '');
         if (badge) c.appendChild(el('span', 'fp-badge', badge));
         c.appendChild(el('span', 'fp-name', opt.name));
-        c.setAttribute('aria-label', opt.name + (opt.locked ? ' (' + t.locked + ')' : '') + (on ? ' — ' + t.inUse : ''));
+        c.setAttribute('aria-label', opt.name + (opt.locked ? ' (' + t.locked + ')' : '') + (on ? ' — ' + t.inUse : '') + (opt.badge && !on && !opt.locked ? ' — ' + opt.badge : ''));
         deck.appendChild(c); cards.push(c);
       });
       Array.prototype.forEach.call(tabs.children, function (c) { c.setAttribute('aria-pressed', (c.dataset.g || null) === group ? 'true' : 'false'); });
-      var sel = cards.findIndex(function (c) { return c.getAttribute('aria-selected') === 'true'; });
+      var sel = -1;
+      if (atKey != null) sel = list.findIndex(function (opt) { return String(opt.key) === atKey; });
+      if (sel < 0) sel = cards.findIndex(function (c) { return c.getAttribute('aria-selected') === 'true'; });
       pos = target = Math.max(0, sel); vel = 0;
       render(); settle(false);
     }
@@ -181,13 +211,16 @@
       if (!raf) { var t0 = performance.now(); raf = root.requestAnimationFrame(function (t1) { step(t1, t0); }); }
     }
     function settle(focus) {
-      var k = centre(); if (k < 0) { caption.textContent = ''; useBtn.disabled = true; return; }
+      var k = centre(); if (k < 0) { caption.textContent = ''; useBtn.disabled = true; sub.hidden = true; return; }
       if (active && active !== cards[k]) active.tabIndex = -1;
       active = cards[k]; active.tabIndex = 0;
       var opt = list[k];
       caption.textContent = opt.name + ' · ' + (k + 1) + ' ' + t.of + ' ' + cards.length;
-      useBtn.disabled = false;
-      useBtn.textContent = opt.locked ? t.ask : (o.pickLabel ? o.pickLabel(opt) : t.pick);
+      sub.textContent = opt.sub || ''; sub.hidden = !opt.sub;
+      useBtn.disabled = !!opt.noPick;
+      useBtn.textContent = opt.locked ? lockLabel(opt) : (o.pickLabel ? o.pickLabel(opt) : t.pick);
+      atKey = String(opt.key);
+      if (o.onMove) o.onMove(opt, group);
       if (focus) active.focus({ preventScroll: true });
     }
     function moveTo(n, focus) {   // n: a card index; with wrap-around the deck turns the short way
@@ -204,6 +237,8 @@
     }
     function pick(c) {
       var opt = list[+c.dataset.n];
+      if (opt.noPick) return;
+      if (host) { if (opt.locked) { if (o.onLocked) o.onLocked(opt); } else if (o.onPick) o.onPick(opt.key); return; }   // an inline deck stays
       if (opt.locked) { if (o.onLocked) { finish(false); o.onLocked(opt); } return; }
       finish(false);
       if (o.onPick) o.onPick(opt.key);
@@ -250,6 +285,8 @@
     stage.addEventListener('pointercancel', endDrag);
     var wheelAt = 0;
     stage.addEventListener('wheel', function (e) {
+      // an inline deck lets an up/down wheel scroll the page; sideways (or with Shift) it turns the deck
+      if (host && Math.abs(e.deltaY) > Math.abs(e.deltaX) && !e.shiftKey) return;
       e.preventDefault();
       var now = performance.now(), d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (now - wheelAt < 120 || Math.abs(d) < 4) return;
@@ -257,8 +294,8 @@
     }, { passive: false });
 
     function onKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(true); return; }
-      if (e.key === 'Tab') {   // keep focus inside the panel
+      if (!host && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(true); return; }
+      if (!host && e.key === 'Tab') {   // keep focus inside the panel
         var f = Array.prototype.filter.call(panel.querySelectorAll('button, [tabindex="0"]'), function (n) { return !n.disabled && n.tabIndex >= 0; });
         if (!f.length) return;
         var i = f.indexOf(document.activeElement);
@@ -279,19 +316,21 @@
       e.preventDefault(); e.stopPropagation();
     }
 
-    veil.addEventListener('click', function (e) {
-      if (e.target === veil || e.target.closest('.fp-close')) { finish(true); return; }
+    (veil || panel).addEventListener('click', function (e) {
+      if (veil && (e.target === veil || e.target.closest('.fp-close'))) { finish(true); return; }
+      if (host) e.stopPropagation();   // the widget around an inline deck does not see its clicks
       var tab = e.target.closest('.fp-tab');
-      if (tab) { group = tab.dataset.g || null; build(); return; }
+      if (tab) { group = tab.dataset.g || null; atKey = null; build(); return; }
       if (e.target.closest('.fp-prev')) { stepBy(-1, false); return; }
       if (e.target.closest('.fp-next')) { stepBy(1, false); return; }
       if (e.target.closest('.fp-use')) { var k = centre(); if (k >= 0) pick(cards[k]); }
     });
-    document.addEventListener('keydown', onKey, true);
+    if (host) panel.addEventListener('keydown', onKey); else document.addEventListener('keydown', onKey, true);
     root.addEventListener('resize', onResize);
     function onResize() { place(); render(); }
 
     function place() {
+      if (host) return;
       panel.style.left = panel.style.top = '';
       if (!anchor || !anchor.isConnected || root.innerWidth < 520) { veil.classList.add('fp-centered'); return; }
       veil.classList.remove('fp-centered');
@@ -307,14 +346,28 @@
       if (raf) root.cancelAnimationFrame(raf);
       document.removeEventListener('keydown', onKey, true);
       root.removeEventListener('resize', onResize);
-      veil.remove();
+      if (veil) veil.remove(); else panel.remove();
       if (anchor) anchor.setAttribute('aria-expanded', 'false');
       if (openPanel === api) openPanel = null;
       if (again) refocus();
     }
-    var api = { close: function () { finish(false); }, el: panel };
-    openPanel = api;
+    var api = { close: function () { finish(false); }, el: panel,
+      /** Inline decks: new options (the basket changed), the same group and middle card; focus stays on the deck. */
+      update: function (newList, cur) {
+        var had = deck.contains(document.activeElement);
+        setOptions(newList, cur); build();
+        if (had && active) active.focus({ preventScroll: true });
+      },
+      key: function () { return atKey; }, group: function () { return group; } };
 
+    if (host) {
+      host.appendChild(panel);
+      build();
+      render();
+      if (o.focus && active) active.focus({ preventScroll: true });
+      return api;
+    }
+    openPanel = api;
     document.body.appendChild(veil);
     if (anchor) anchor.setAttribute('aria-expanded', 'true');
     build();
@@ -332,5 +385,20 @@
     return btn;
   }
 
-  root.FacePicker = { trigger: trigger, open: open, attach: attach, close: close };
+  /* A small picture of each dock style for its card: a little screen with the dock drawn in the dock's own colour. */
+  var DOCKS = {
+    standard: '<i class="fp-dk-bar"></i><b class="fp-dk-row"><i></i><i></i><i></i><i></i><i></i><i></i></b>',
+    float: '<i class="fp-dk-pill"></i><b class="fp-dk-row fp-dk-up"><i></i><i></i><i></i><i></i><i class="fp-dk-acc"></i></b>',
+    magnify: '<i class="fp-dk-pill"></i><b class="fp-dk-row fp-dk-up fp-dk-mag"><i></i><i></i><i></i><i></i><i></i></b>',
+    sidebar: '<i class="fp-dk-rail"></i><b class="fp-dk-col"><i></i><i></i><i></i><i></i><i></i></b>',
+    circle: '<i class="fp-dk-ring2"></i><i class="fp-dk-ring1"></i><i class="fp-dk-btn"></i>',
+    radial: '<i class="fp-dk-ring2"></i><i class="fp-dk-ring1"></i><i class="fp-dk-btn"></i>'
+  };
+  function dockArt(style, swatch) {
+    var s = Object.prototype.hasOwnProperty.call(DOCKS, style) ? style : 'standard';
+    var bg = safeCss(swatch, 'linear-gradient(180deg,#2a3542,#161c25)').replace(/"/g, "'");
+    return '<span class="fp-dk fp-dk-' + s + '" style="--fp-dk:' + bg + '">' + DOCKS[s] + '</span>';
+  }
+
+  root.FacePicker = root.AssetDeck = { trigger: trigger, open: open, inline: inline, attach: attach, close: close, dockArt: dockArt };
 })(typeof window !== 'undefined' ? window : this);

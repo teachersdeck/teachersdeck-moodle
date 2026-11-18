@@ -363,3 +363,7 @@ html body.df-top #dock-top{ z-index:950; }
 .td-shop-modal .tsp-key summary{ cursor:pointer; }
 .td-shop-modal .tsp-key-row{ display:flex; gap:8px; margin-top:8px; }
 .td-shop-modal .tsp-key-row input{ flex:1; min-width:0; text-transform:uppercase; letter-spacing:.06em; }
+/* 18 Nov 2026 (owner): Theme, Backgrounds and Dock pick with the card deck (js/facepicker.js): one button each */
+.ui-theme-grid:empty{ display:none; }
+#ui-theme-browse, #theme-presets.fp-row, #dock-styles.fp-row{ display:flex; justify-content:flex-start; margin-bottom:16px; }
+#theme-presets.fp-row .fp-trigger, #dock-styles.fp-row .fp-trigger, #ui-theme-browse .fp-trigger{ margin:0; }

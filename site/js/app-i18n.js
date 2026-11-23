@@ -694,6 +694,7 @@ const STRINGS = {
   ix_your_store_key_already_has_this: { en:"Your store key already has this.", vi:"Mã cửa hàng của bạn đã có mục này." },
   ix_this_one_is_not_out_yet: { en:"This one is not out yet.", vi:"Mục này chưa ra mắt." },
   ix_paid_your_store_key_a: { en:"Paid. Your store key: {a}", vi:"Đã thanh toán. Mã cửa hàng của bạn: {a}" },
+  ix_store_key_added: { en:"Your Store items are here: find them in Theme.", vi:"Các mục bạn mua đã có ở đây: xem trong Giao diện." },
   ix_pocket: { en:"Pocket", vi:"Bỏ túi" },
   ix_wall: { en:"Wall", vi:"Treo tường" },
   ix_alarm: { en:"Alarm", vi:"Báo thức" },

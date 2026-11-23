@@ -1060,6 +1060,29 @@ document.getElementById('pay-cancel-local').addEventListener('click', e=>{
 // A saved order is checked once at launch, so Pro switches on even if the teacher closed the window while waiting.
 setTimeout(()=>{ if(readProOrder()) checkProOrder(); }, 4000);
 
+// v0.50.0: a key bought on the website Store (myteachersdeck.com/store/) arrives as #redeem=KEY, from the Store page or
+// the receipt email: a Pro key (TDPRO-…) is activated on this device, a store key (SK-…) brings its Shop items. The key
+// is taken off the address at once so it is not left in the history or a shared link.
+(function redeemFromLink(){
+  const m = /(?:^|[#&])redeem=([A-Za-z0-9-]{6,40})/.exec(location.hash || '');
+  if(!m) return;
+  const key = m[1].toUpperCase();
+  try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  setTimeout(async ()=>{
+    if(/^SK-/.test(key)){
+      try{ await TD_STORE.useKey(key); toast(t('ix_store_key_added')); }
+      catch(e){ toast(e.code === 'bad-key' ? t('ix_a_store_key_looks_like_sk_xxxx_xxxx_') : e.status === 404 ? t('ix_no_such_store_key') : t('ix_could_not_connect')); }
+      return;
+    }
+    if(KINDER) return;
+    if(state.license && state.license.pro && state.license.key === key){ toast(t('pro_license_valid')); return; }
+    const r = await activateLicenseOnline(key);
+    if(r.ok){ toast(t('pro_license_valid')); buildProStatus(); return; }
+    toast(t({ 'device-mismatch':'pro_license_device_mismatch', revoked:'pro_license_revoked', expired:'pro_license_expired',
+      network:'pro_license_network_error', 'not-configured':'pro_license_network_error' }[r.reason] || 'pro_license_invalid'));
+  }, 1500);
+})();
+
 document.getElementById('pro-license-activate').addEventListener('click', async ()=>{
   const input = document.getElementById('pro-license-input');
   const btn = document.getElementById('pro-license-activate');

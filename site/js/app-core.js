@@ -354,7 +354,7 @@ const PRO_PRICING_VND = { monthly: 120000, annual: 1050000, founding: 650000 }; 
 // every Pro feature (background photo, school logo, drawer customisation, Office full screen) is open, exactly as in the
 // earlier testing mode. Set it to true at launch to require an activated licence. ?progate=1 in the address previews the
 // gate on this device without changing it. Never gated: anything in the teacher → student → parent → admin loop.
-const PRO_GATE_ENABLED = false;
+const PRO_GATE_ENABLED = true;   // ON since 24 Nov 2026 (owner: "Switch it on now")
 const PRO_GATE = !KINDER && (PRO_GATE_ENABLED || new URLSearchParams(location.search).get('progate') === '1');   // Kinder: the school's licence unlocks everything
 const PRO_WIDGETS_DECIDED = [
   'lessonplanner', 'games', 'scoreboard', 'poll', 'exitticket', 'groupmaker', 'noise', 'music', 'videoplayer', 'soundboard', 'meet',
